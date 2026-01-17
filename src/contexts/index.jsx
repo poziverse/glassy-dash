@@ -3,12 +3,19 @@
  * Central export point for all React Context providers and hooks
  */
 
-export { AuthContext, AuthProvider, useAuth } from './AuthContext';
-export { NotesContext, NotesProvider, useNotes } from './NotesContext';
-export { SettingsContext, SettingsProvider, useSettings } from './SettingsContext';
-export { UIContext, UIProvider, useUI } from './UIContext';
-export { ComposerContext, ComposerProvider, useComposer } from './ComposerContext';
-export { ModalContext, ModalProvider, useModal } from './ModalContext';
+import { AuthProvider } from './AuthContext';
+import { NotesProvider } from './NotesContext';
+import { SettingsProvider } from './SettingsContext';
+import { UIProvider } from './UIContext';
+import { ComposerProvider } from './ComposerContext';
+import { ModalProvider } from './ModalContext';
+
+export * from './AuthContext';
+export * from './NotesContext';
+export * from './SettingsContext';
+export * from './UIContext';
+export * from './ComposerContext';
+export * from './ModalContext';
 
 /**
  * RootProvider Component

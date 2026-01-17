@@ -180,13 +180,12 @@ export function NotesProvider({ children }) {
 
       // Invalidate caches since we modified the note
       invalidateNotesCache();
-      invalidateArchivedNotesCache();
     } catch (error) {
       console.error("Failed to update checklist item:", error);
       // Revert the optimistic update on error (simplified)
       loadNotes().catch(() => {});
     }
-  }, [token, api, notes, loadNotes, invalidateNotesCache, invalidateArchivedNotesCache]);
+  }, [token, api, notes, loadNotes, invalidateNotesCache]);
 
   const reorderNotes = useCallback(async (noteIds) => {
     await api("/notes/reorder", {
