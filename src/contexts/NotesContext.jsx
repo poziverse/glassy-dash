@@ -1,4 +1,5 @@
-import React, { createContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useState, useCallback, useEffect, useContext } from 'react';
+import { AuthContext } from './AuthContext';
 
 export const NotesContext = createContext();
 
@@ -11,7 +12,11 @@ const CACHE_TIMESTAMP_KEY = "glass-keep-notes-cache-timestamp";
  * Provides notes state and operations to the entire app
  * Replaces useNotes hook usage with Context API
  */
-export function NotesProvider({ children, token, userId }) {
+export function NotesProvider({ children }) {
+  const authContext = useContext(AuthContext);
+  const token = authContext?.token;
+  const currentUser = authContext?.currentUser;
+  const userId = currentUser?.id;
   const [notes, setNotes] = useState([]);
   const [notesLoading, setNotesLoading] = useState(false);
   const [search, setSearch] = useState("");

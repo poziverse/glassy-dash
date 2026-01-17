@@ -8,7 +8,8 @@ import { marked as markedParser } from "marked";
 import DrawingCanvas from "./DrawingCanvas";
 import { BACKGROUNDS } from "./backgrounds";
 import { ACCENT_COLORS, THEME_PRESETS } from "./themes";
-import { useAuth, useNotes, useSettings, useCollaboration, useAdmin } from "./hooks";
+import { useAuth, useNotes, useSettings } from "./contexts";
+import { useCollaboration, useAdmin } from "./hooks";
 
 // Ensure we can call marked.parse(...)
 const marked =
@@ -3192,7 +3193,7 @@ export default function App() {
 
   // Use custom hooks for auth, notes, and settings
   const { session, token, currentUser, isAdmin, updateSession, logout } = useAuth();
-  const { notes, notesLoading, search, setSearch, tagFilter, setTagFilter, loadNotes, loadArchivedNotes, toggleArchiveNote, deleteNote, reorderNotes } = useNotes(token);
+  const { notes, notesLoading, search, setSearch, tagFilter, setTagFilter, loadNotes, loadArchivedNotes, toggleArchiveNote, deleteNote, reorderNotes } = useNotes();
   const { 
     dark, 
     backgroundImage, 
