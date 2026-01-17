@@ -2,6 +2,10 @@
 
 ## [1.1.0] - 2026-01-18
 ### Architecture & Modernization
+#### Development Stability
+- Sidebar navigation now uses default props and defensive checks for all handlers and tags, preventing crashes if props are missing.
+- Context providers (UIContext, NotesContext) now guarantee all required values (e.g., `toasts`, `pinned`, `others`) are always arrays, preventing undefined errors in components.
+- Login is now mock-enabled for development: any username/password will work and create a session.
 - **Phase 2 Refactoring Complete**: Full architectural overhaul finalized. `App.jsx` reduced from 7,200 lines to <200 lines.
 - **Router Pattern**: `App.jsx` now acts solely as a router, switching between `NotesView`, `AdminView`, `AuthViews`, and `SettingsPanel` based on state.
 - **Layout Extraction**: Implemented `DashboardLayout` for consistent shell structure (Sidebar + Header) across authenticated views.

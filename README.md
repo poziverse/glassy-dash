@@ -2,7 +2,12 @@
 
 A sleek, Keep-style notes app with Markdown, checklists, images, tag chips, color themes, dark mode, drag-and-drop reordering, import/export, auth, real-time collaboration, and a glassy UI — built with Vite + React and a tiny Express + SQLite API.
 
-**Current Development Status:** Phase 2 Complete (Refactoring & Architecture) - See [PHASE_2_SUMMARY.md](PHASE_2_SUMMARY.md) for details.
+**Current Development Status:**
+- Phase 2 Complete (Refactoring & Architecture)
+- Context providers now ensure all required values are always present (e.g., `toasts`, `pinned`, `others` arrays).
+- Sidebar navigation is now stable for development; all handlers have default no-op functions to prevent crashes.
+- Login works with any username/password for development (mock signIn).
+- See [PHASE_2_SUMMARY.md](PHASE_2_SUMMARY.md) for details.
 
 ---
 **Web App Screenshots**

@@ -64,15 +64,21 @@ const SectionLabel = ({ label, collapsed }) => {
 
 export default function Sidebar({ 
   activeSection = 'overview', 
-  onNavigate, 
+  onNavigate = () => {}, 
   className = '', 
   tags = [], 
-  onTagSelect,
+  onTagSelect = () => {},
   activeTag,
-  isAdmin,
-  collapsed,
-  onToggleCollapse
+  isAdmin = false,
+  collapsed = false,
+  onToggleCollapse = () => {}
 }) {
+  // Defensive: ensure tags is always an array
+  const safeTags = Array.isArray(tags) ? tags : [];
+  // Defensive: ensure handlers are always functions
+  const safeOnNavigate = typeof onNavigate === 'function' ? onNavigate : () => {};
+  const safeOnTagSelect = typeof onTagSelect === 'function' ? onTagSelect : () => {};
+  const safeOnToggleCollapse = typeof onToggleCollapse === 'function' ? onToggleCollapse : () => {};
   return (
     <aside 
       className={`
@@ -106,7 +112,7 @@ export default function Sidebar({
 
       {/* Collapse Toggle - Always visible */}
       <button 
-        onClick={onToggleCollapse}
+        onClick={safeOnToggleCollapse}
         className={`
           absolute top-[72px] -right-3 z-30
           w-6 h-6 rounded-full 
@@ -129,14 +135,14 @@ export default function Sidebar({
           icon={LayoutDashboard} 
           label="All Notes" 
           active={activeSection === 'overview' && !activeTag} 
-          onClick={() => { onNavigate('overview'); onTagSelect?.(null); }} 
+          onClick={() => { safeOnNavigate('overview'); safeOnTagSelect(null); }} 
           collapsed={collapsed}
         />
         <SidebarItem 
           icon={Archive} 
           label="Archive" 
           active={activeTag === 'ARCHIVED' && activeSection === 'overview'} 
-          onClick={() => { onNavigate('overview'); onTagSelect?.('ARCHIVED'); }}
+          onClick={() => { safeOnNavigate('overview'); safeOnTagSelect('ARCHIVED'); }}
           collapsed={collapsed}
         />
         
@@ -145,7 +151,7 @@ export default function Sidebar({
             icon={Shield} 
             label="Admin Panel" 
             active={activeSection === 'admin'} 
-            onClick={() => onNavigate('admin')}
+            onClick={() => safeOnNavigate('admin')}
             collapsed={collapsed}
           />
         )}
@@ -155,28 +161,28 @@ export default function Sidebar({
           icon={Activity} 
           label="Health" 
           active={activeSection === 'health'} 
-          onClick={() => onNavigate('health')}
+          onClick={() => safeOnNavigate('health')}
           collapsed={collapsed}
         />
         <SidebarItem 
           icon={Bell} 
           label="Alerts" 
           active={activeSection === 'alerts'} 
-          onClick={() => onNavigate('alerts')}
+          onClick={() => safeOnNavigate('alerts')}
           collapsed={collapsed}
         />
 
         {tags && tags.length > 0 && (
           <>
             <SectionLabel label="Tags" collapsed={collapsed} />
-            {tags.slice(0, collapsed ? 3 : 10).map(tag => (
+            {safeTags.slice(0, collapsed ? 3 : 10).map(tag => (
               <SidebarItem 
                 key={tag.name}
                 icon={Hash} 
                 label={tag.name} 
                 active={activeTag === tag.name && activeSection === 'overview'} 
                 badge={!collapsed ? tag.count : undefined}
-                onClick={() => { onNavigate('overview'); onTagSelect?.(tag.name); }}
+                onClick={() => { safeOnNavigate('overview'); safeOnTagSelect(tag.name); }}
                 collapsed={collapsed}
               />
             ))}
@@ -195,7 +201,7 @@ export default function Sidebar({
           icon={Settings} 
           label="Settings" 
           active={activeSection === 'settings'} 
-          onClick={() => onNavigate('settings')}
+          onClick={() => safeOnNavigate('settings')}
           collapsed={collapsed}
         />
       </div>

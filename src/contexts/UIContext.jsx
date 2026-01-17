@@ -58,6 +58,7 @@ export function UIProvider({ children }) {
     activeModal,
     modals,
     notifications,
+    toasts: notifications,
     menus,
     sidebarOpen,
     setSidebarOpen,

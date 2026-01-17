@@ -38,6 +38,7 @@ The refactoring of the monolithic `App.jsx` is complete. The application has bee
 - **SettingsPanel**: User preferences.
 
 ## Recent Fixes
-- **Build Repair**: Resolved duplicate symbol definitions in `ModalContext.jsx` caused by merge overlaps.
-- **Missing Exports**: Restored `resizeModalTextarea` and `ALL_IMAGES` utility constants lost during extraction.
-- **Integration**: Verified `NotesView` correctly consumes `DashboardLayout`.
+
+- **Sidebar Stability**: All navigation buttons now use default props and defensive checks, preventing crashes if handlers/tags are missing during development.
+- **Context Value Guarantees**: All context providers now ensure required values (e.g., `toasts`, `pinned`, `others`) are always arrays, preventing undefined errors in components.
+- **Mock Login for Development**: Login now works with any username/password, enabling UI testing without a backend.

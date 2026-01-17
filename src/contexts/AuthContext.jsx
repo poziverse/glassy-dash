@@ -71,6 +71,21 @@ export function AuthProvider({ children }) {
     setSession(authData);
   }, []);
 
+  // Development signIn function (mock API)
+  const signIn = useCallback(async (username, password) => {
+    // Simulate API call delay
+    await new Promise(res => setTimeout(res, 500));
+    // Accept any username/password for dev, return mock user
+    if (username && password) {
+      const user = { username, is_admin: false };
+      const authData = { token: "dev-token", user };
+      setSession(authData);
+      setAuthStorage(authData);
+      return { ok: true, user };
+    }
+    return { ok: false, error: "Invalid credentials" };
+  }, [setSession, setAuthStorage]);
+
   const value = {
     session,
     token,
@@ -78,6 +93,7 @@ export function AuthProvider({ children }) {
     isAdmin,
     logout,
     updateSession,
+    signIn,
   };
 
   return (

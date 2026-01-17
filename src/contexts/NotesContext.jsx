@@ -200,7 +200,9 @@ export function NotesProvider({ children }) {
     notes, setNotes, notesLoading, search, setSearch, tagFilter, setTagFilter,
     loadNotes, loadArchivedNotes, toggleArchiveNote, deleteNote, createNote, 
     updateChecklistItem, togglePin, reorderNotes,
-    invalidateNotesCache, sseConnected, isOnline
+    invalidateNotesCache, sseConnected, isOnline,
+    pinned: Array.isArray(notes) ? notes.filter(n => n.pinned) : [],
+    others: Array.isArray(notes) ? notes.filter(n => !n.pinned) : []
   };
 
   return <NotesContext.Provider value={value}>{children}</NotesContext.Provider>;
