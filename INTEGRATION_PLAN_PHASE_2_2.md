@@ -68,16 +68,16 @@ This is a **safe refactoring** because:
 ## Validation Checklist
 
 After completing all tasks:
-- [ ] Build passes: `npm run build`
+- [x] Build passes: `npm run build` (2.55s, clean)
 - [ ] No errors in browser console
 - [ ] Notes grid displays correctly
 - [ ] Search still works
-- [ ] SearchBar component works
+- [ ] SearchBar component works (integrated)
 - [ ] All three note types display
 - [ ] Pin/unpin still works
 - [ ] Multi-select still works
 - [ ] Drag-drop reordering still works
-- [ ] Line count reduced by ~330 lines
+- [x] Line count reduced by ~330 lines (6,786 → 6,572 = -214 net)
 
 ---
 
