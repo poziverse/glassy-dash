@@ -1,137 +1,172 @@
-import React, { createContext, useState, useCallback, useContext, useRef } from 'react';
-import { useAuth } from './AuthContext';
-import { useNotes } from './NotesContext';
-import { useUI } from './UIContext';
+import React, { createContext, useCallback, useContext, useRef, useEffect } from 'react'
+import { useAuth } from './AuthContext'
+import { useNotes } from './NotesContext'
+import { useUI } from './UIContext'
+import { useModalStore } from '../stores/modalStore'
+import { api } from '../lib/api'
 import {
-  api, uid, runFormat, handleSmartEnter,
-  downloadText, mdForDownload, sanitizeFilename, solid, bgFor,
-  fileToCompressedDataURL
-} from '../utils/helpers';
+  uid,
+  runFormat,
+  downloadText,
+  mdForDownload,
+  sanitizeFilename,
+  fileToCompressedDataURL,
+  handleSmartEnter,
+} from '../utils/helpers'
 
-export const ModalContext = createContext();
+export const ModalContext = createContext()
 
 /**
  * ModalProvider Component
  * Manages the state and logic for the note editor modal
+ * Now bridged to useModalStore for stability and better state synchronization.
  */
 export function ModalProvider({ children }) {
-  const { token, currentUser } = useAuth();
-  const { notes, setNotes, invalidateNotesCache } = useNotes();
-  const { showToast } = useUI();
+  const { token, currentUser } = useAuth()
+  const { notes, setNotes, updateNote, deleteNote, invalidateNotesCache } = useNotes()
+  const { showToast } = useUI()
 
-  // --- Core Modal State ---
-  const [open, setOpen] = useState(false);
-  const [activeId, setActiveId] = useState(null);
-  const [activeNoteObj, setActiveNoteObj] = useState(null);
-  const [mType, setMType] = useState("text"); // 'text' | 'checklist' | 'draw'
-  const [mTitle, setMTitle] = useState("");
-  const [mBody, setMBody] = useState("");
-  const [mTagList, setMTagList] = useState([]);
-  const [mColor, setMColor] = useState("default");
-  const [mTransparency, setMTransparency] = useState(null);
-  const [mImages, setMImages] = useState([]);
-  const [mItems, setMItems] = useState([]);
-  const [mInput, setMInput] = useState("");
-  const [mDrawingData, setMDrawingData] = useState({ paths: [], dimensions: null });
-
-  // --- UI State ---
-  const [viewMode, setViewMode] = useState("edit"); // 'edit' | 'preview'
-  const [showModalFmt, setShowModalFmt] = useState(false);
-  const [modalMenuOpen, setModalMenuOpen] = useState(false);
-  const [showModalColorPop, setShowModalColorPop] = useState(false);
-  const [showModalTransPop, setShowModalTransPop] = useState(false);
-  const [imgViewOpen, setImgViewOpen] = useState(false);
-  const [mImagesViewIndex, setImgViewIndex] = useState(0);
-  const [tagInput, setTagInput] = useState("");
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [checklistDragId, setChecklistDragId] = useState(null);
-
-  // --- Collaboration State ---
-  const [collaborationModalOpen, setCollaborationModalOpen] = useState(false);
-  const [collaboratorUsername, setCollaboratorUsername] = useState("");
-  const [showUserDropdown, setShowUserDropdown] = useState(false);
-  const [filteredUsers, setFilteredUsers] = useState([]);
-  const [addModalCollaborators, setAddModalCollaborators] = useState([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  // Connect to Zustand store
+  const {
+    open,
+    activeId,
+    activeNoteObj,
+    mType,
+    setMType,
+    mTitle,
+    setMTitle,
+    mBody,
+    setMBody,
+    mTagList,
+    setMTagList,
+    mColor,
+    setMColor,
+    mTransparency,
+    setMTransparency,
+    mImages,
+    setMImages,
+    mItems,
+    setMItems,
+    mInput,
+    setMInput,
+    mDrawingData,
+    setMDrawingData,
+    viewMode,
+    setViewMode,
+    showModalFmt,
+    setShowModalFmt,
+    modalMenuOpen,
+    setModalMenuOpen,
+    showModalColorPop,
+    setShowModalColorPop,
+    showModalTransPop,
+    setShowModalTransPop,
+    imgViewOpen,
+    setImgViewOpen,
+    mImagesViewIndex,
+    setMImagesViewIndex,
+    tagInput,
+    setTagInput,
+    confirmDeleteOpen,
+    setConfirmDeleteOpen,
+    isSaving,
+    setSaving: setIsSaving,
+    checklistDragId,
+    setChecklistDragId,
+    modalHasChanges,
+    setModalHasChanges,
+    originalValues,
+    collaborationModalOpen,
+    setCollaborationModalOpen,
+    collaboratorUsername,
+    setCollaboratorUsername,
+    showUserDropdown,
+    setShowUserDropdown,
+    filteredUsers,
+    setFilteredUsers,
+    addModalCollaborators,
+    setAddModalCollaborators,
+    loadingUsers,
+    setLoadingUsers,
+    dropdownPosition,
+    setDropdownPosition,
+    openNote: openNoteStore,
+    closeNote: closeNoteStore,
+    resetModal: resetStore,
+  } = useModalStore()
 
   // --- Refs ---
-  const modalScrollRef = useRef(null);
-  const modalFmtBtnRef = useRef(null);
-  const modalMenuBtnRef = useRef(null);
-  const modalColorBtnRef = useRef(null);
-  const modalTransBtnRef = useRef(null);
-  const modalFileRef = useRef(null);
-  const mBodyRef = useRef(null);
-  const noteViewRef = useRef(null);
-  const collaboratorInputRef = useRef(null);
-  const scrimClickStartRef = useRef(null);
+  const modalScrollRef = useRef(null)
+  const modalFmtBtnRef = useRef(null)
+  const modalMenuBtnRef = useRef(null)
+  const modalColorBtnRef = useRef(null)
+  const modalTransBtnRef = useRef(null)
+  const modalFileRef = useRef(null)
+  const mBodyRef = useRef(null)
+  const noteViewRef = useRef(null)
+  const collaboratorInputRef = useRef(null)
+  const scrimClickStartRef = useRef(null)
 
   const resizeModalTextarea = useCallback(() => {
     if (mBodyRef.current) {
-      mBodyRef.current.style.height = "auto";
-      mBodyRef.current.style.height = mBodyRef.current.scrollHeight + "px";
+      mBodyRef.current.style.height = 'auto'
+      mBodyRef.current.style.height = mBodyRef.current.scrollHeight + 'px'
     }
-  }, []);
-  const prevItemsRef = useRef([]);
-  const prevDrawingRef = useRef(null);
+  }, [])
 
-  const openNote = useCallback(async (noteData) => {
-    setActiveId(noteData.id);
-    setActiveNoteObj(noteData);
-    setMType(noteData.type || "text");
-    setMTitle(noteData.title || "");
-    setMBody(noteData.content || "");
-    setMTagList(noteData.tags || []);
-    setMColor(noteData.color || "default");
-    setMTransparency(noteData.transparency);
-    setMImages(noteData.images || []);
-    setMItems(noteData.items || []);
+  // Detect changes when modal values change
+  useEffect(() => {
+    if (!open) {
+      setModalHasChanges(false)
+      return
+    }
 
-    if (noteData.type === "draw" && noteData.content) {
+    const hasChanges =
+      originalValues.title !== mTitle ||
+      originalValues.body !== mBody ||
+      JSON.stringify(originalValues.tags) !== JSON.stringify(mTagList) ||
+      originalValues.color !== mColor ||
+      originalValues.transparency !== mTransparency ||
+      JSON.stringify(originalValues.images) !== JSON.stringify(mImages) ||
+      JSON.stringify(originalValues.items) !== JSON.stringify(mItems) ||
+      JSON.stringify(originalValues.drawingData) !== JSON.stringify(mDrawingData)
+
+    setModalHasChanges(hasChanges)
+  }, [
+    mTitle,
+    mBody,
+    mTagList,
+    mColor,
+    mTransparency,
+    mImages,
+    mItems,
+    mDrawingData,
+    open,
+    originalValues,
+    setModalHasChanges,
+  ])
+
+  const openNote = useCallback(
+    async noteData => {
+      openNoteStore(noteData)
+
+      // Fetch collaborators
       try {
-        const parsed = JSON.parse(noteData.content);
-        setMDrawingData(parsed);
-        prevDrawingRef.current = parsed;
+        const collaborators = await api(`/notes/${noteData.id}/collaborators`, { token })
+        setAddModalCollaborators(collaborators || [])
       } catch (e) {
-        setMDrawingData({ paths: [], dimensions: null });
-        prevDrawingRef.current = null;
+        console.error('Failed to load collaborators:', e)
       }
-    } else {
-      setMDrawingData({ paths: [], dimensions: null });
-      prevDrawingRef.current = null;
-    }
-
-    prevItemsRef.current = noteData.items || [];
-    setMInput("");
-    setViewMode("edit");
-    setOpen(true);
-
-    // Load collaborators
-    try {
-      const collaborators = await api(`/notes/${noteData.id}/collaborators`, { token });
-      setAddModalCollaborators(collaborators || []);
-    } catch (e) {
-      console.error("Failed to load collaborators:", e);
-    }
-  }, [token]);
+    },
+    [openNoteStore, token, setAddModalCollaborators]
+  )
 
   const closeModal = useCallback(() => {
-    setOpen(false);
-    setActiveId(null);
-    setActiveNoteObj(null);
-    setShowModalFmt(false);
-    setModalMenuOpen(false);
-    setShowModalColorPop(false);
-    setShowModalTransPop(false);
-    setCollaborationModalOpen(false);
-    setConfirmDeleteOpen(false);
-    setAddModalCollaborators([]);
-  }, []);
+    closeNoteStore()
+  }, [closeNoteStore])
 
   const saveModal = useCallback(async () => {
-    if (!activeId) return;
+    if (!activeId || isSaving) return
     const base = {
       id: activeId,
       title: mTitle.trim(),
@@ -139,307 +174,383 @@ export function ModalProvider({ children }) {
       images: mImages,
       color: mColor,
       transparency: mTransparency,
-      pinned: !!notes.find(n => String(n.id) === String(activeId))?.pinned,
-    };
+      pinned: !!activeNoteObj?.pinned,
+    }
     const payload =
-      mType === "text"
-        ? { ...base, type: "text", content: mBody, items: [] }
-        : mType === "checklist"
-          ? { ...base, type: "checklist", content: "", items: mItems }
-          : { ...base, type: "draw", content: JSON.stringify(mDrawingData), items: [] };
+      mType === 'text'
+        ? { ...base, type: 'text', content: mBody, items: [] }
+        : mType === 'checklist'
+          ? { ...base, type: 'checklist', content: '', items: mItems }
+          : { ...base, type: 'draw', content: JSON.stringify(mDrawingData), items: [] }
 
     try {
-      setIsSaving(true);
-      await api(`/notes/${activeId}`, { method: "PUT", token, body: payload });
-      invalidateNotesCache();
-
-      const nowIso = new Date().toISOString();
-      setNotes((prev) => prev.map((n) =>
-        String(n.id) === String(activeId) ? {
-          ...n,
-          ...payload,
-          updated_at: nowIso,
-          lastEditedBy: currentUser?.email || currentUser?.name,
-          lastEditedAt: nowIso
-        } : n
-      ));
-      closeModal();
+      setIsSaving(true)
+      await updateNote(activeId, payload)
+      closeModal()
     } catch (e) {
-      showToast(e.message || "Failed to save note", "error");
+      showToast('Could not save your changes. Please try again.', 'error')
     } finally {
-      setIsSaving(false);
+      setIsSaving(false)
     }
-  }, [activeId, mTitle, mTagList, mImages, mColor, mTransparency, notes, mType, mBody, mItems, mDrawingData, token, invalidateNotesCache, setNotes, currentUser, closeModal, showToast]);
+  }, [
+    activeId,
+    activeNoteObj,
+    isSaving,
+    mTitle,
+    mTagList,
+    mImages,
+    mColor,
+    mTransparency,
+    mType,
+    mBody,
+    mItems,
+    mDrawingData,
+    updateNote,
+    closeModal,
+    showToast,
+    setIsSaving,
+  ])
 
   const deleteModal = useCallback(async () => {
-    if (!activeId) return;
+    if (!activeId) return
     try {
-      const note = notes.find(n => String(n.id) === String(activeId));
-      if (note && note.user_id !== currentUser?.id) {
-        showToast("You can't delete this note as you don't own it", "error");
-        return;
+      const note = activeNoteObj
+      if (note && note.user_id && currentUser?.id && note.user_id !== currentUser.id) {
+        showToast("You can't delete this note as you don't own it", 'error')
+        return
       }
-      await api(`/notes/${activeId}`, { method: "DELETE", token });
-      invalidateNotesCache();
-      setNotes((prev) => prev.filter((n) => String(n.id) !== String(activeId)));
-      closeModal();
-      showToast("Note deleted successfully", "success");
+      await deleteNote(activeId)
+      closeModal()
+      showToast('Note deleted successfully', 'success')
     } catch (e) {
-      showToast(e.message || "Delete failed", "error");
+      showToast('Could not delete this note. Please try again.', 'error')
     }
-  }, [activeId, notes, currentUser, token, invalidateNotesCache, setNotes, closeModal, showToast]);
+  }, [activeId, activeNoteObj, currentUser, deleteNote, closeModal, showToast])
 
-  const formatModal = useCallback((type) => {
-    const result = runFormat(() => mBody, setMBody, mBodyRef, type);
-    if (result && typeof result === 'object' && result.text !== undefined) {
-      setMBody(result.text);
-    }
-  }, [mBody]);
+  const formatModal = useCallback(
+    type => {
+      const result = runFormat(() => mBody, setMBody, mBodyRef, type)
+      if (result && typeof result === 'object' && result.text !== undefined) {
+        setMBody(result.text)
+      }
+    },
+    [mBody, setMBody]
+  )
 
   const handleDownloadNote = useCallback(() => {
-    if (!activeNoteObj) return;
-    const filename = sanitizeFilename(mTitle || "note") + ".md";
-    const content = mdForDownload({ ...activeNoteObj, title: mTitle, content: mBody, tags: mTagList, items: mItems });
-    downloadText(filename, content);
-  }, [activeNoteObj, mTitle, mBody, mTagList, mItems]);
+    if (!activeNoteObj) return
+    const filename = sanitizeFilename(mTitle || 'note') + '.md'
+    const contentText = mdForDownload({
+      ...activeNoteObj,
+      title: mTitle,
+      content: mBody,
+      tags: mTagList,
+      items: mItems,
+    })
+    downloadText(filename, contentText)
+  }, [activeNoteObj, mTitle, mBody, mTagList, mItems])
 
-
-  const addTags = useCallback((raw) => {
-    const parts = raw.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
-    setMTagList((prev) => {
-      const set = new Set(prev.map((x) => x.toLowerCase()));
-      const merged = [...prev];
-      for (const p of parts) {
-        if (!set.has(p.toLowerCase())) {
-          merged.push(p);
-          set.add(p.toLowerCase());
+  const addTags = useCallback(
+    raw => {
+      const parts = raw
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => s.length > 0)
+      setMTagList(prev => {
+        const set = new Set(prev.map(x => x.toLowerCase()))
+        const merged = [...prev]
+        for (const p of parts) {
+          if (!set.has(p.toLowerCase())) {
+            merged.push(p)
+            set.add(p.toLowerCase())
+          }
         }
-      }
-      return merged;
-    });
-  }, []);
+        return merged
+      })
+    },
+    [setMTagList]
+  )
 
-  const handleTagKeyDown = useCallback((e) => {
-    if (e.key === "Enter" || e.key === "," || e.key === "Tab") {
-      e.preventDefault();
-      if (tagInput.trim()) {
-        addTags(tagInput);
-        setTagInput("");
+  const handleTagKeyDown = useCallback(
+    e => {
+      if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
+        e.preventDefault()
+        if (tagInput.trim()) {
+          addTags(tagInput)
+          setTagInput('')
+        }
+      } else if (e.key === 'Backspace' && !tagInput) {
+        setMTagList(mTagList.slice(0, -1))
       }
-    } else if (e.key === "Backspace" && !tagInput) {
-      setMTagList((prev) => prev.slice(0, -1));
-    }
-  }, [tagInput, addTags]);
+    },
+    [tagInput, addTags, mTagList, setMTagList, setTagInput]
+  )
 
   const handleTagBlur = useCallback(() => {
     if (tagInput.trim()) {
-      addTags(tagInput);
-      setTagInput("");
+      addTags(tagInput)
+      setTagInput('')
     }
-  }, [tagInput, addTags]);
+  }, [tagInput, addTags, setTagInput])
 
-  const handleTagPaste = useCallback((e) => {
-    const text = e.clipboardData?.getData("text");
-    if (text && text.includes(",")) {
-      e.preventDefault();
-      addTags(text);
-    }
-  }, [addTags]);
-
-  const onModalBodyClick = useCallback((e) => {
-    if (!(viewMode === "preview" && mType === "text")) return;
-    const a = e.target.closest("a");
-    if (a) {
-      const href = a.getAttribute("href") || "";
-      if (/^(https?:|mailto:|tel:)/i.test(href)) {
-        e.preventDefault();
-        e.stopPropagation();
-        window.open(href, "_blank", "noopener,noreferrer");
+  const handleTagPaste = useCallback(
+    e => {
+      const text = e.clipboardData?.getData('text')
+      if (text && text.includes(',')) {
+        e.preventDefault()
+        addTags(text)
       }
-    }
-  }, [viewMode, mType]);
+    },
+    [addTags]
+  )
 
-  const openImageViewer = useCallback((index) => {
-    setImgViewIndex(index);
-    setImgViewOpen(true);
-  }, []);
+  const onModalBodyClick = useCallback(
+    e => {
+      if (!(viewMode === 'view' && mType === 'text')) return
+      const a = e.target.closest('a')
+      if (a) {
+        const href = a.getAttribute('href') || ''
+        if (/^(https?:|mailto:|tel:)/i.test(href)) {
+          e.preventDefault()
+          e.stopPropagation()
+          window.open(href, '_blank', 'noopener,noreferrer')
+        }
+        return
+      }
+      setViewMode('edit')
+      setTimeout(() => {
+        if (mBodyRef.current) {
+          mBodyRef.current.focus()
+          resizeModalTextarea()
+        }
+      }, 0)
+    },
+    [viewMode, mType, setViewMode, resizeModalTextarea]
+  )
 
-  const closeImageViewer = useCallback(() => setImgViewOpen(false), []);
+  const handleCollaboratorSearch = useCallback(
+    async val => {
+      setCollaboratorUsername(val)
+      if (val.length < 2) {
+        setFilteredUsers([])
+        setShowUserDropdown(false)
+        return
+      }
+      try {
+        setLoadingUsers(true)
+        const results = await api(`/admin/users/search?q=${encodeURIComponent(val)}`, { token })
+        setFilteredUsers(results || [])
+        setShowUserDropdown(results.length > 0)
+        // Position dropdown
+        if (collaboratorInputRef.current) {
+          const rect = collaboratorInputRef.current.getBoundingClientRect()
+          setDropdownPosition({
+            top: rect.bottom + window.scrollY,
+            left: rect.left + window.scrollX,
+            width: rect.width,
+          })
+        }
+      } catch (e) {
+        console.error('Search failed:', e)
+      } finally {
+        setLoadingUsers(false)
+      }
+    },
+    [
+      token,
+      setCollaboratorUsername,
+      setFilteredUsers,
+      setShowUserDropdown,
+      setLoadingUsers,
+      setDropdownPosition,
+    ]
+  )
+
+  const addCollaborator = useCallback(
+    async username => {
+      if (!activeId) return
+      try {
+        const res = await api(`/notes/${activeId}/collaborate`, {
+          method: 'POST',
+          token,
+          body: { username },
+        })
+        setAddModalCollaborators([...addModalCollaborators, res.collaborator])
+        setCollaboratorUsername('')
+        setShowUserDropdown(false)
+        showToast(res.message, 'success')
+      } catch (e) {
+        showToast(e.message || 'Failed to add collaborator', 'error')
+      }
+    },
+    [
+      activeId,
+      token,
+      addModalCollaborators,
+      setAddModalCollaborators,
+      setCollaboratorUsername,
+      setShowUserDropdown,
+      showToast,
+    ]
+  )
+
+  const removeCollaborator = useCallback(
+    async userId => {
+      if (!activeId) return
+      try {
+        await api(`/notes/${activeId}/collaborate/${userId}`, { method: 'DELETE', token })
+        setAddModalCollaborators(addModalCollaborators.filter(c => c.id !== userId))
+        showToast('Collaborator removed', 'success')
+      } catch (e) {
+        showToast('Failed to remove collaborator', 'error')
+      }
+    },
+    [activeId, token, addModalCollaborators, setAddModalCollaborators, showToast]
+  )
+
+  const openImageViewer = useCallback(
+    index => {
+      setMImagesViewIndex(index)
+      setImgViewOpen(true)
+    },
+    [setMImagesViewIndex, setImgViewOpen]
+  )
+
+  const closeImageViewer = useCallback(() => setImgViewOpen(false), [setImgViewOpen])
 
   const nextImage = useCallback(() => {
-    setImgViewIndex((i) => (i + 1) % mImages.length);
-  }, [mImages.length]);
+    setMImagesViewIndex((mImagesViewIndex + 1) % mImages.length)
+  }, [mImagesViewIndex, mImages.length, setMImagesViewIndex])
 
   const prevImage = useCallback(() => {
-    setImgViewIndex((i) => (i - 1 + mImages.length) % mImages.length);
-  }, [mImages.length]);
+    setMImagesViewIndex((mImagesViewIndex - 1 + mImages.length) % mImages.length)
+  }, [mImagesViewIndex, mImages.length, setMImagesViewIndex])
 
-  const addImagesToModal = useCallback(async (fileList) => {
-    const files = Array.from(fileList || []);
-    const results = [];
-    for (const f of files) {
-      try {
-        const src = await fileToCompressedDataURL(f);
-        results.push({ id: uid(), src, name: f.name });
-      } catch (e) {
-        console.error("Image load failed", e);
+  const addImagesToModal = useCallback(
+    async fileList => {
+      const files = Array.from(fileList || [])
+      const results = []
+      for (const f of files) {
+        try {
+          const src = await fileToCompressedDataURL(f)
+          results.push({ id: uid(), src, name: f.name })
+        } catch (e) {
+          console.error('Image load failed', e)
+        }
       }
-    }
-    if (results.length) {
-      setMImages((prev) => [...prev, ...results]);
-    }
-  }, []);
+      if (results.length) {
+        setMImages([...mImages, ...results])
+      }
+    },
+    [mImages, setMImages]
+  )
 
-  const loadCollaboratorsForAddModal = useCallback(async (noteId) => {
-    try {
-      const collaborators = await api(`/notes/${noteId}/collaborators`, { token });
-      setAddModalCollaborators(collaborators || []);
-    } catch (e) {
-      console.error("Failed to load collaborators:", e);
-      setAddModalCollaborators([]);
-    }
-  }, [token]);
+  const onMChecklistDragStart = useCallback(
+    (e, itemId) => {
+      setChecklistDragId(itemId)
+      e.dataTransfer.setData(
+        'application/json',
+        JSON.stringify({ source: 'checklist-modal', id: itemId })
+      )
+    },
+    [setChecklistDragId]
+  )
 
-  // Search users for collaboration dropdown
-  const searchUsers = useCallback(async (query) => {
-    setLoadingUsers(true);
-    try {
-      const searchQuery = query && query.trim().length > 0 ? query.trim() : "";
-      const users = await api(`/users/search?q=${encodeURIComponent(searchQuery)}`, { token });
-      // Filter out current user and existing collaborators
-      const existingCollaboratorIds = new Set(addModalCollaborators.map(c => c.id));
-      const filtered = users.filter(u =>
-        u.id !== currentUser?.id && !existingCollaboratorIds.has(u.id)
-      );
-      setFilteredUsers(filtered);
-      setShowUserDropdown(filtered.length > 0);
-    } catch (e) {
-      console.error("Failed to search users:", e);
-      setFilteredUsers([]);
-      setShowUserDropdown(false);
-    } finally {
-      setLoadingUsers(false);
-    }
-  }, [token, addModalCollaborators, currentUser]);
+  const onMChecklistDragOver = useCallback(e => {
+    e.preventDefault()
+  }, [])
 
-  const addCollaborator = useCallback(async (username) => {
-    try {
-      if (!activeId) return;
-      await api(`/notes/${activeId}/collaborate`, {
-        method: "POST",
-        token,
-        body: { username }
-      });
-      setNotes((prev) => prev.map((n) =>
-        String(n.id) === String(activeId)
-          ? {
-            ...n,
-            collaborators: [...(n.collaborators || []), username],
-            lastEditedBy: currentUser?.email || currentUser?.name,
-            lastEditedAt: new Date().toISOString()
-          }
-          : n
-      ));
-      showToast(`Added ${username} as collaborator successfully!`, "success");
-      setCollaboratorUsername("");
-      setShowUserDropdown(false);
-      setFilteredUsers([]);
-      await loadCollaboratorsForAddModal(activeId);
-    } catch (e) {
-      showToast(e.message || "Failed to add collaborator", "error");
-    }
-  }, [activeId, token, currentUser, setNotes, showToast, loadCollaboratorsForAddModal]);
+  const onMChecklistDrop = useCallback(
+    (e, targetId) => {
+      e.preventDefault()
+      try {
+        const data = JSON.parse(e.dataTransfer.getData('application/json') || '{}')
+        if (data.source !== 'checklist-modal') return
+        const sourceId = data.id
+        if (String(sourceId) === String(targetId)) return
 
-  const removeCollaborator = useCallback(async (username) => {
-    try {
-      if (!activeId) return;
-      await api(`/notes/${activeId}/collaborate`, {
-        method: "DELETE",
-        token,
-        body: { username }
-      });
-      setNotes((prev) => prev.map((n) =>
-        String(n.id) === String(activeId)
-          ? {
-            ...n,
-            collaborators: (n.collaborators || []).filter(u => u !== username),
-            lastEditedBy: currentUser?.email || currentUser?.name,
-            lastEditedAt: new Date().toISOString()
-          }
-          : n
-      ));
-      showToast(`Removed collaborator ${username}`, "success");
-      await loadCollaboratorsForAddModal(activeId);
-    } catch (e) {
-      showToast(e.message || "Failed to remove collaborator", "error");
-    }
-  }, [activeId, token, currentUser, setNotes, showToast, loadCollaboratorsForAddModal]);
+        const items = [...mItems]
+        const sourceIdx = items.findIndex(i => String(i.id) === String(sourceId))
+        const targetIdx = items.findIndex(i => String(i.id) === String(targetId))
+        if (sourceIdx === -1 || targetIdx === -1) return
 
-  const onMChecklistDragStart = useCallback((e, itemId) => {
-    setChecklistDragId(itemId);
-    e.dataTransfer.setData("application/json", JSON.stringify({ source: "checklist-modal", id: itemId }));
-  }, []);
-
-  const onMChecklistDragOver = useCallback((e) => {
-    e.preventDefault();
-  }, []);
-
-  const onMChecklistDrop = useCallback((e, targetId) => {
-    e.preventDefault();
-    try {
-      const data = JSON.parse(e.dataTransfer.getData("application/json") || '{}');
-      if (data.source !== "checklist-modal") return;
-      const sourceId = data.id;
-      if (String(sourceId) === String(targetId)) return;
-
-      const items = [...mItems];
-      const sourceIdx = items.findIndex(i => String(i.id) === String(sourceId));
-      const targetIdx = items.findIndex(i => String(i.id) === String(targetId));
-      if (sourceIdx === -1 || targetIdx === -1) return;
-
-      const [removed] = items.splice(sourceIdx, 1);
-      items.splice(targetIdx, 0, removed);
-      setMItems(items);
-    } catch (err) { }
-    setChecklistDragId(null);
-  }, [mItems]);
+        const [removed] = items.splice(sourceIdx, 1)
+        items.splice(targetIdx, 0, removed)
+        setMItems(items)
+      } catch (err) {}
+      setChecklistDragId(null)
+    },
+    [mItems, setMItems, setChecklistDragId]
+  )
 
   const value = {
     // State
-    open, setOpen,
-    activeId, setActiveId,
-    activeNoteObj, setActiveNoteObj,
-    mType, setMType,
-    mTitle, setMTitle,
-    mBody, setMBody,
-    mTagList, setMTagList,
-    mColor, setMColor,
-    mTransparency, setMTransparency,
-    mImages, setMImages,
-    mItems, setMItems,
-    mInput, setMInput,
-    mDrawingData, setMDrawingData,
-    viewMode, setViewMode,
-    showModalFmt, setShowModalFmt,
-    modalMenuOpen, setModalMenuOpen,
-    showModalColorPop, setShowModalColorPop,
-    showModalTransPop, setShowModalTransPop,
-    imgViewOpen, setImgViewOpen,
-    mImagesViewIndex, setImgViewIndex,
-    tagInput, setTagInput,
-    confirmDeleteOpen, setConfirmDeleteOpen,
-    isSaving, setIsSaving,
-    checklistDragId, setChecklistDragId,
-    collaborationModalOpen, setCollaborationModalOpen,
-    collaboratorUsername, setCollaboratorUsername,
-    showUserDropdown, setShowUserDropdown,
-    filteredUsers, setFilteredUsers,
-    addModalCollaborators, setAddModalCollaborators,
-    loadingUsers, setLoadingUsers,
-    dropdownPosition, setDropdownPosition,
+    open,
+    setOpen: v => (v ? null : closeModal()), // Handle only close
+    activeId,
+    setActiveId: () => {}, // Managed by openNote
+    activeNoteObj,
+    setActiveNoteObj: () => {},
+    mType,
+    setMType,
+    mTitle,
+    setMTitle,
+    mBody,
+    setMBody,
+    mTagList,
+    setMTagList,
+    mColor,
+    setMColor,
+    mTransparency,
+    setMTransparency,
+    mImages,
+    setMImages,
+    mItems,
+    setMItems,
+    mInput,
+    setMInput,
+    mDrawingData,
+    setMDrawingData,
+    viewMode,
+    setViewMode,
+    showModalFmt,
+    setShowModalFmt,
+    modalMenuOpen,
+    setModalMenuOpen,
+    showModalColorPop,
+    setShowModalColorPop,
+    showModalTransPop,
+    setShowModalTransPop,
+    imgViewOpen,
+    setImgViewOpen,
+    mImagesViewIndex,
+    setMImagesViewIndex,
+    tagInput,
+    setTagInput,
+    confirmDeleteOpen,
+    setConfirmDeleteOpen,
+    isSaving,
+    setIsSaving,
+    modalHasChanges,
+    setModalHasChanges,
+    checklistDragId,
+    setChecklistDragId,
+    collaborationModalOpen,
+    setCollaborationModalOpen,
+    collaboratorUsername,
+    setCollaboratorUsername,
+    showUserDropdown,
+    setShowUserDropdown,
+    filteredUsers,
+    setFilteredUsers,
+    addModalCollaborators,
+    setAddModalCollaborators,
+    loadingUsers,
+    setLoadingUsers,
+    dropdownPosition,
+    setDropdownPosition,
 
     // Refs
-    onMChecklistDragStart, onMChecklistDragOver, onMChecklistDrop,
     modalScrollRef,
     modalFmtBtnRef,
     modalMenuBtnRef,
@@ -460,8 +571,6 @@ export function ModalProvider({ children }) {
     handleDownloadNote,
     addCollaborator,
     removeCollaborator,
-    searchUsers,
-    loadCollaboratorsForAddModal,
     addTags,
     handleTagKeyDown,
     handleTagBlur,
@@ -474,23 +583,18 @@ export function ModalProvider({ children }) {
     addImagesToModal,
     resizeModalTextarea,
     handleSmartEnter,
-  };
+    onMChecklistDragStart,
+    onMChecklistDragOver,
+    onMChecklistDrop,
+  }
 
-  return (
-    <ModalContext.Provider value={value}>
-      {children}
-    </ModalContext.Provider>
-  );
+  return <ModalContext.Provider value={value}>{children}</ModalContext.Provider>
 }
 
-/**
- * useModal Hook
- * Convenience hook to access modal context
- */
 export function useModal() {
-  const context = React.useContext(ModalContext);
+  const context = useContext(ModalContext)
   if (!context) {
-    throw new Error('useModal must be used within ModalProvider');
+    throw new Error('useModal must be used within ModalProvider')
   }
-  return context;
+  return context
 }

@@ -122,13 +122,16 @@ export function DrawingPreview({ data, width, height, darkMode = false }) {
         }
 
         ctx.beginPath();
-        ctx.moveTo(path.points[0].x * scale, path.points[0].y * scale);
+        // Safety check for path.points array
+        if (path.points && path.points.length > 0) {
+          ctx.moveTo(path.points[0].x * scale, path.points[0].y * scale);
 
-        for (let i = 1; i < path.points.length; i++) {
-          ctx.lineTo(path.points[i].x * scale, path.points[i].y * scale);
+          for (let i = 1; i < path.points.length; i++) {
+            ctx.lineTo(path.points[i].x * scale, path.points[i].y * scale);
+          }
+
+          ctx.stroke();
         }
-
-        ctx.stroke();
         ctx.globalCompositeOperation = 'source-over';
       }
     });

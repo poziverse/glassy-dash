@@ -15,7 +15,8 @@ COPY ["server", "server"]
 RUN rm -rf server/node_modules
 
 RUN npm run build
-RUN npm prune --omit=dev
+# Don't prune dev deps - dotenv is needed for runtime
+# RUN npm prune --omit=dev
 
 # --- Runtime
 FROM node:18-slim

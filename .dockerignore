@@ -1,9 +1,51 @@
-**/node_modules
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build output
 dist
-data
+build
+
+# Environment files
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
 .git
 .gitignore
+
+# Docker
 Dockerfile
 docker-compose.yml
-npm-debug.log
-.vscode
+docker-compose.prod.yml
+.dockerignore
+
+# Testing
+coverage
+*.test.js
+*.spec.js
+
+# Documentation
+docs
+*.md
+
+# Logs
+logs
+*.log
+
+# Data (mounted as volume)
+data
+*.db
+*.db-shm
+*.db-wal

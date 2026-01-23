@@ -1,6 +1,4 @@
 // Central export for all hooks
-export { useAuth } from './useAuth';
-export { useNotes } from './useNotes';
-export { useSettings } from './useSettings';
+// Note: useAuth, useNotes, useSettings moved to Context API - use hooks from ../contexts instead
 export { useCollaboration } from './useCollaboration';
 export { useAdmin } from './useAdmin';

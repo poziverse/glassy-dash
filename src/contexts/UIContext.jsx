@@ -1,74 +1,38 @@
-import React, { createContext, useState, useCallback } from 'react';
+import React, { createContext, useMemo, useContext } from 'react';
+import { useUIStore } from '../stores/uiStore';
 
 export const UIContext = createContext();
 
 /**
  * UIProvider Component
- * Manages global UI state: modals, notifications, menus
+ * Bridge between Zustand useUIStore and legacy Context consumers
  */
 export function UIProvider({ children }) {
-  const [activeModal, setActiveModal] = useState(null);
-  const [modals, setModals] = useState({});
-  const [notifications, setNotifications] = useState([]);
-  const [menus, setMenus] = useState({});
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const store = useUIStore();
 
-  const openModal = useCallback((type, data = {}) => {
-    setActiveModal(type);
-    setModals(prev => ({ ...prev, [type]: data }));
-  }, []);
-
-  const closeModal = useCallback(() => {
-    setActiveModal(null);
-  }, []);
-
-  const showNotification = useCallback((message, type = 'info', duration = 3000) => {
-    const id = Date.now();
-    const notification = { id, message, type };
-    setNotifications(prev => [...prev, notification]);
-
-    if (duration > 0) {
-      setTimeout(() => {
-        setNotifications(prev => prev.filter(n => n.id !== id));
-      }, duration);
-    }
-
-    return id;
-  }, []);
-
-  const dismissNotification = useCallback((id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  }, []);
-
-  const toggleMenu = useCallback((name) => {
-    setMenus(prev => ({
-      ...prev,
-      [name]: !prev[name],
-    }));
-  }, []);
-
-  const closeMenu = useCallback((name) => {
-    setMenus(prev => ({
-      ...prev,
-      [name]: false,
-    }));
-  }, []);
-
-  const value = {
-    activeModal,
-    modals,
-    notifications,
-    toasts: notifications,
-    menus,
-    sidebarOpen,
-    setSidebarOpen,
-    openModal,
-    closeModal,
-    showNotification,
-    dismissNotification,
-    toggleMenu,
-    closeMenu,
-  };
+  const value = useMemo(() => ({
+    activeModal: store.activeModal,
+    modals: store.modals,
+    notifications: store.notifications,
+    toasts: store.toasts,
+    menus: store.menus,
+    sidebarOpen: store.sidebarOpen,
+    setSidebarOpen: store.setSidebarOpen,
+    settingsPanelOpen: store.settingsPanelOpen,
+    setSettingsPanelOpen: store.setSettingsPanelOpen,
+    genericConfirmOpen: store.genericConfirmOpen,
+    setGenericConfirmOpen: store.setGenericConfirmOpen,
+    genericConfirmConfig: store.genericConfirmConfig,
+    setGenericConfirmConfig: store.setGenericConfirmConfig,
+    openModal: store.openModal,
+    closeModal: store.closeModal,
+    showNotification: store.showNotification,
+    showToast: store.showToast,
+    dismissNotification: store.dismissNotification,
+    toggleMenu: store.toggleMenu,
+    closeMenu: store.closeMenu,
+    showGenericConfirm: store.showGenericConfirm,
+  }), [store]);
 
   return (
     <UIContext.Provider value={value}>
@@ -82,7 +46,7 @@ export function UIProvider({ children }) {
  * Convenience hook to access UI context
  */
 export function useUI() {
-  const context = React.useContext(UIContext);
+  const context = useContext(UIContext);
   if (!context) {
     throw new Error('useUI must be used within UIProvider');
   }

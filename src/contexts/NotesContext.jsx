@@ -1,215 +1,461 @@
-import React, { createContext, useState, useCallback, useContext } from 'react';
-import { AuthContext } from './AuthContext';
-import { useCollaboration } from '../hooks/useCollaboration';
+import React, { createContext, useState, useCallback, useContext, useEffect } from 'react'
+import { AuthContext } from './AuthContext'
+import { useCollaboration } from '../hooks/useCollaboration'
+import { uid, mdForDownload, sanitizeFilename, downloadText } from '../utils/helpers'
+import { api } from '../lib/api'
+import logger from '../utils/logger'
+import {
+  useNotes as useNotesQuery,
+  useTrash,
+  useArchived,
+  notesKeys,
+} from '../hooks/queries/useNotes'
+import { useNotesStore } from '../stores/notesStore'
+import { useQueryClient } from '@tanstack/react-query'
+import {
+  useCreateNote,
+  useUpdateNote,
+  usePatchNote,
+  useDeleteNote,
+  useRestoreNote,
+  useEmptyTrash,
+  usePermanentDeleteNote,
+  useTogglePin,
+  useToggleArchive,
+  useReorderNotes,
+} from '../hooks/mutations/useNoteMutations'
 
-export const NotesContext = createContext();
-
-const NOTES_CACHE_KEY = "glass-keep-notes-";
-const ARCHIVED_NOTES_CACHE_KEY = "glass-keep-archived-notes-";
-const CACHE_TIMESTAMP_KEY = "glass-keep-notes-cache-timestamp";
+export const NotesContext = createContext()
 
 /**
  * NotesProvider Component
- * Provides notes state and operations to the entire app
+ * Provides notes state and operations to entire app
+ * Bridged to useNotesStore for stability.
  */
 export function NotesProvider({ children }) {
-  const authContext = useContext(AuthContext);
-  const token = authContext?.token;
-  const currentUser = authContext?.currentUser;
-  const userId = currentUser?.id;
-  
-  const [notes, setNotes] = useState([]);
-  const [notesLoading, setNotesLoading] = useState(false);
-  const [search, setSearch] = useState("");
-  const [tagFilter, setTagFilter] = useState(null);
+  const { token, currentUser } = useContext(AuthContext) || {}
+  const userId = currentUser?.id
+  const queryClient = useQueryClient()
 
-  // Helper to sort notes by recency
-  const sortNotesByRecency = useCallback((arr) => {
-    if (!Array.isArray(arr)) return [];
-    return [...arr].sort((a, b) => {
-      const aPos = a.position !== undefined ? a.position : a.timestamp;
-      const bPos = b.position !== undefined ? b.position : b.timestamp;
-      return (bPos || 0) - (aPos || 0);
-    });
-  }, []);
+  // Query hooks for data fetching - only enabled if logged in
+  const queryOptions = { enabled: !!token }
+  const {
+    data: notesData,
+    isLoading: notesLoading,
+    refetch: refetchNotes,
+  } = useNotesQuery(queryOptions)
+  const { data: trashData, isLoading: trashLoading, refetch: refetchTrash } = useTrash(queryOptions)
+  const {
+    data: archivedData,
+    isLoading: archivedLoading,
+    refetch: refetchArchived,
+  } = useArchived(queryOptions)
 
-  // API helper
-  const api = useCallback(async (path, { method = "GET", body, token: authToken } = {}) => {
-    const headers = { "Content-Type": "application/json" };
-    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+  // Mutation hooks
+  const createNoteMutation = useCreateNote()
+  const updateNoteMutation = useUpdateNote()
+  const patchNoteMutation = usePatchNote()
+  const deleteNoteMutation = useDeleteNote()
+  const restoreNoteMutation = useRestoreNote()
+  const emptyTrashMutation = useEmptyTrash()
+  const permanentDeleteNoteMutation = usePermanentDeleteNote()
+  const togglePinMutation = useTogglePin()
+  const toggleArchiveMutation = useToggleArchive()
+  const reorderNotesMutation = useReorderNotes()
 
-    try {
-      const res = await fetch(`/api${path}`, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined,
-      });
+  // Zustand Store
+  const {
+    notes,
+    setNotes,
+    pinned,
+    others,
+    trashNotes,
+    setTrashNotes,
+    archivedNotes,
+    setArchivedNotes,
+    tags,
+    search,
+    setSearch,
+    tagFilter,
+    setTagFilter,
+    multiMode,
+    setMultiMode,
+    selectedIds,
+    setSelectedIds,
+    toggleNoteSelection,
+  } = useNotesStore()
 
-      if (res.status === 204) return null;
-      let data = null;
-      try { data = await res.json(); } catch (e) { data = null; }
+  // Calculated properties
+  const allEmpty = !notes.length && !trashNotes.length && !archivedNotes.length
+  const filteredEmptyWithSearch = notes.length === 0 && (search.length > 0 || tagFilter)
 
-      if (res.status === 401) {
-        window.dispatchEvent(new CustomEvent('auth-expired'));
-      }
+  const [viewTrash, setViewTrash] = useState(false)
 
-      if (!res.ok) {
-        const err = new Error(data?.error || `HTTP ${res.status}`);
-        err.status = res.status;
-        throw err;
-      }
-      return data;
-    } catch (error) {
-      throw error;
-    }
-  }, []);
+  // Sync query data to store
+  useEffect(() => {
+    if (notesData) setNotes(notesData)
+  }, [notesData, setNotes])
+  useEffect(() => {
+    if (trashData) setTrashNotes(trashData)
+  }, [trashData, setTrashNotes])
+  useEffect(() => {
+    if (archivedData) setArchivedNotes(archivedData)
+  }, [archivedData, setArchivedNotes])
 
-  // Cache helpers
-  const getCacheKey = useCallback(() => NOTES_CACHE_KEY + (userId || 'anon'), [userId]);
-  const getArchivedCacheKey = useCallback(() => ARCHIVED_NOTES_CACHE_KEY + (userId || 'anon'), [userId]);
+  const isLoading = notesLoading || trashLoading || archivedLoading
 
-  const persistNotesCache = useCallback((notesArray) => {
-    try {
-      localStorage.setItem(getCacheKey(), JSON.stringify(notesArray));
-      localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-    } catch (e) { }
-  }, [getCacheKey]);
+  // Multi-select
+  const onStartMulti = useCallback(() => {
+    setMultiMode(true)
+    setSelectedIds(new Set())
+  }, [setMultiMode, setSelectedIds])
 
+  const onExitMulti = useCallback(() => {
+    setMultiMode(false)
+    setSelectedIds(new Set())
+  }, [setMultiMode, setSelectedIds])
+
+  const onToggleSelect = useCallback(
+    (id, checked) => {
+      toggleNoteSelection(id, checked)
+    },
+    [toggleNoteSelection]
+  )
+
+  const onSelectAllPinned = useCallback(() => {
+    const ids = notes.filter(n => n.pinned).map(n => String(n.id))
+    setSelectedIds(new Set([...selectedIds, ...ids]))
+  }, [notes, selectedIds, setSelectedIds])
+
+  const onSelectAllOthers = useCallback(() => {
+    const ids = notes.filter(n => !n.pinned).map(n => String(n.id))
+    setSelectedIds(new Set([...selectedIds, ...ids]))
+  }, [notes, selectedIds, setSelectedIds])
+
+  // Cache/Persistence helpers (Legacy)
   const invalidateNotesCache = useCallback(() => {
-    try {
-      localStorage.removeItem(getCacheKey());
-      localStorage.removeItem(getArchivedCacheKey());
-      localStorage.removeItem(CACHE_TIMESTAMP_KEY);
-    } catch (e) { }
-  }, [getCacheKey, getArchivedCacheKey]);
+    const keys = [
+      `glass-keep-notes-${userId || 'anon'}`,
+      `glass-keep-archived-notes-${userId || 'anon'}`,
+      `glass-keep-trash-notes-${userId || 'anon'}`,
+      'glass-keep-notes-cache-timestamp',
+    ]
+    keys.forEach(k => {
+      try {
+        localStorage.removeItem(k)
+      } catch (e) {}
+    })
+  }, [userId])
 
-  // Load notes
-  const loadNotes = useCallback(async () => {
-    if (!token) return;
-    setNotesLoading(true);
-    try {
-      const data = await api("/notes", { token });
-      const notesArray = Array.isArray(data) ? data : [];
-      setNotes(sortNotesByRecency(notesArray));
-      persistNotesCache(notesArray);
-    } catch (error) {
-      const cached = localStorage.getItem(getCacheKey());
-      if (cached) setNotes(sortNotesByRecency(JSON.parse(cached)));
-    } finally {
-      setNotesLoading(false);
-    }
-  }, [token, api, sortNotesByRecency, persistNotesCache, getCacheKey]);
-
-  // Load archived notes
-  const loadArchivedNotes = useCallback(async () => {
-    if (!token) return;
-    setNotesLoading(true);
-    try {
-      const data = await api("/notes/archived", { token });
-      const notesArray = Array.isArray(data) ? data : [];
-      setNotes(sortNotesByRecency(notesArray));
-      localStorage.setItem(getArchivedCacheKey(), JSON.stringify(notesArray));
-    } catch (error) {
-      const cached = localStorage.getItem(getArchivedCacheKey());
-      if (cached) setNotes(sortNotesByRecency(JSON.parse(cached)));
-    } finally {
-      setNotesLoading(false);
-    }
-  }, [token, api, sortNotesByRecency, getArchivedCacheKey]);
-
-  // SSE Collaboration
+  // SSE
   const { sseConnected, isOnline } = useCollaboration({
     token,
     tagFilter,
-    onNotesUpdated: loadNotes
-  });
+    onNotesUpdated: () => {
+      // Invalidate all notes queries to trigger refetch
+      queryClient.invalidateQueries({ queryKey: notesKeys.all })
+    },
+  })
 
-  // Note operations
-  const toggleArchiveNote = useCallback(async (noteId, archived) => {
-    await api(`/notes/${noteId}/archive`, { method: "POST", token, body: { archived } });
-    invalidateNotesCache();
-    if (tagFilter === 'ARCHIVED') {
-      await loadArchivedNotes();
-    } else {
-      await loadNotes();
-    }
-  }, [token, api, tagFilter, invalidateNotesCache, loadNotes, loadArchivedNotes]);
+  // Operations
+  const toggleArchiveNote = useCallback(
+    async (noteId, archived) => {
+      try {
+        await toggleArchiveMutation.mutateAsync({ id: noteId, archived: !!archived })
+      } catch (e) {
+        logger.error('toggle_archive_failed', { noteId }, e)
+        throw e
+      }
+    },
+    [toggleArchiveMutation]
+  )
 
-  const deleteNote = useCallback(async (noteId) => {
-    await api(`/notes/${noteId}`, { method: "DELETE", token });
-    setNotes(prev => prev.filter(n => String(n.id) !== String(noteId)));
-    invalidateNotesCache();
-  }, [token, api, invalidateNotesCache]);
+  const deleteNote = useCallback(
+    async noteId => {
+      try {
+        await deleteNoteMutation.mutateAsync(noteId)
+      } catch (e) {
+        logger.error('delete_note_failed', { noteId }, e)
+        throw e
+      }
+    },
+    [deleteNoteMutation]
+  )
 
-  const createNote = useCallback(async (noteData) => {
-    const created = await api("/notes", { method: "POST", body: noteData, token });
-    setNotes((prev) => sortNotesByRecency([created, ...(Array.isArray(prev) ? prev : [])]));
-    invalidateNotesCache();
-    return created;
-  }, [token, api, sortNotesByRecency, invalidateNotesCache]);
+  const restoreNote = useCallback(
+    async noteId => {
+      try {
+        await restoreNoteMutation.mutateAsync(noteId)
+      } catch (e) {
+        logger.error('restore_note_failed', { noteId }, e)
+        throw e
+      }
+    },
+    [restoreNoteMutation]
+  )
 
-  const togglePin = useCallback(async (id, toPinned) => {
-    await api(`/notes/${id}`, { method: "PATCH", token, body: { pinned: !!toPinned } });
-    invalidateNotesCache();
-    setNotes((prev) => prev.map((n) => (String(n.id) === String(id) ? { ...n, pinned: !!toPinned } : n)));
-  }, [token, api, invalidateNotesCache]);
-
-  const updateChecklistItem = useCallback(async (noteId, itemId, checked) => {
-    // Find the note
-    const note = notes.find(n => String(n.id) === String(noteId));
-    if (!note) return;
-
-    // Optimistically update the note
-    const updatedItems = (note.items || []).map(item =>
-      item.id === itemId ? { ...item, done: checked } : item
-    );
-    const updatedNote = { ...note, items: updatedItems };
-
-    // Update local state optimistically
-    setNotes(prev => prev.map(n =>
-      String(n.id) === String(noteId) ? updatedNote : n
-    ));
-
+  const emptyTrash = useCallback(async () => {
     try {
-      // Update on server
-      await api(`/notes/${noteId}`, {
-        method: "PATCH",
-        token,
-        body: { items: updatedItems, type: "checklist", content: "" }
-      });
-
-      // Invalidate caches since we modified the note
-      invalidateNotesCache();
-    } catch (error) {
-      console.error("Failed to update checklist item:", error);
-      // Revert the optimistic update on error (simplified)
-      loadNotes().catch(() => {});
+      await emptyTrashMutation.mutateAsync()
+    } catch (e) {
+      logger.error('empty_trash_failed', {}, e)
+      throw e
     }
-  }, [token, api, notes, loadNotes, invalidateNotesCache]);
+  }, [emptyTrashMutation])
 
-  const reorderNotes = useCallback(async (noteIds) => {
-    await api("/notes/reorder", {
-      method: "POST",
-      token,
-      body: { positions: noteIds.map((id, idx) => ({ id, position: noteIds.length - idx })) }
-    });
-    invalidateNotesCache();
-  }, [token, api, invalidateNotesCache]);
+  const permanentDeleteNote = useCallback(
+    async noteId => {
+      try {
+        await permanentDeleteNoteMutation.mutateAsync(noteId)
+      } catch (e) {
+        logger.error('perm_delete_failed', { noteId }, e)
+        throw e
+      }
+    },
+    [permanentDeleteNoteMutation]
+  )
+
+  const createNote = useCallback(
+    async noteData => {
+      try {
+        return await createNoteMutation.mutateAsync(noteData)
+      } catch (e) {
+        logger.error('create_note_failed', noteData, e)
+        throw e
+      }
+    },
+    [createNoteMutation]
+  )
+
+  const togglePin = useCallback(
+    async (id, toPinned) => {
+      try {
+        await togglePinMutation.mutateAsync({ id, pinned: !!toPinned })
+      } catch (e) {
+        logger.error('toggle_pin_failed', { id }, e)
+        throw e
+      }
+    },
+    [togglePinMutation]
+  )
+
+  const onBulkDelete = useCallback(async () => {
+    if (!selectedIds.size) return
+    const ids = Array.from(selectedIds)
+    try {
+      await Promise.allSettled(ids.map(id => deleteNoteMutation.mutateAsync(id)))
+      onExitMulti()
+    } catch (e) {
+      logger.error('bulk_delete_failed', {}, e)
+    }
+  }, [selectedIds, deleteNoteMutation, onExitMulti])
+
+  const onBulkPin = useCallback(
+    async pinned => {
+      if (!selectedIds.size) return
+      const ids = Array.from(selectedIds)
+      try {
+        await Promise.allSettled(ids.map(id => togglePinMutation.mutateAsync({ id, pinned })))
+        onExitMulti()
+      } catch (e) {
+        logger.error('bulk_pin_failed', { pinned }, e)
+      }
+    },
+    [selectedIds, togglePinMutation, onExitMulti]
+  )
+
+  const onBulkArchive = useCallback(async () => {
+    if (!selectedIds.size) return
+    const ids = Array.from(selectedIds)
+    const archiving = tagFilter !== 'ARCHIVED'
+    try {
+      await Promise.allSettled(
+        ids.map(id => toggleArchiveMutation.mutateAsync({ id, archived: archiving }))
+      )
+      onExitMulti()
+    } catch (e) {
+      logger.error('bulk_archive_failed', { archiving }, e)
+    }
+  }, [selectedIds, toggleArchiveMutation, onExitMulti, tagFilter])
+
+  const onBulkColor = useCallback(
+    async color => {
+      if (!selectedIds.size) return
+      const ids = Array.from(selectedIds)
+      try {
+        await Promise.allSettled(
+          ids.map(id => patchNoteMutation.mutateAsync({ id, updates: { color } }))
+        )
+        onExitMulti()
+      } catch (e) {
+        logger.error('bulk_color_failed', { color }, e)
+      }
+    },
+    [selectedIds, patchNoteMutation, onExitMulti]
+  )
+
+  const onBulkDownloadZip = useCallback(() => {
+    if (!selectedIds.size) return
+    const selectedNotesArr = notes.filter(n => selectedIds.has(String(n.id)))
+    const json = JSON.stringify(selectedNotesArr, null, 2)
+    const fname = `glass-keep-notes-${selectedIds.size}-${Date.now()}.json`
+    downloadText(fname, json)
+    logger.info('bulk_download', { count: selectedIds.size })
+  }, [selectedIds, notes])
+
+  const updateChecklistItem = useCallback(
+    async (noteId, itemId, checked) => {
+      // Search in all lists
+      const note =
+        notes.find(n => String(n.id) === String(noteId)) ||
+        archivedNotes.find(n => String(n.id) === String(noteId))
+
+      if (!note) return
+
+      const updatedItems = note.items.map(item =>
+        item.id === itemId ? { ...item, done: checked } : item
+      )
+
+      try {
+        await patchNoteMutation.mutateAsync({
+          id: noteId,
+          updates: { items: updatedItems, type: 'checklist' },
+        })
+      } catch (e) {
+        logger.error('update_checklist_item_failed', { noteId, itemId }, e)
+      }
+    },
+    [notes, archivedNotes, patchNoteMutation]
+  )
+
+  const updateNote = useCallback(
+    async (id, updates) => {
+      try {
+        return await updateNoteMutation.mutateAsync({ id, updates })
+      } catch (e) {
+        logger.error('update_note_failed', { id }, e)
+        throw e
+      }
+    },
+    [updateNoteMutation]
+  )
+
+  const reorderNotes = useCallback(
+    async noteIds => {
+      try {
+        await reorderNotesMutation.mutateAsync(noteIds)
+        invalidateNotesCache()
+      } catch (e) {
+        logger.error('reorder_notes_failed', { count: noteIds.length }, e)
+        throw e
+      }
+    },
+    [reorderNotesMutation, invalidateNotesCache]
+  )
+
+  // Drag and drop handlers
+  const onDragStart = useCallback((e, noteId) => {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(noteId))
+  }, [])
+
+  const onDragOver = useCallback(e => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }, [])
+
+  const onDragLeave = useCallback(e => {
+    e.preventDefault()
+  }, [])
+
+  const onDrop = useCallback(
+    async (e, targetNoteId) => {
+      e.preventDefault()
+      const draggedId = e.dataTransfer.getData('text/plain')
+
+      if (draggedId && draggedId !== String(targetNoteId)) {
+        const allNotes = [...pinned, ...others]
+        const draggedIdx = allNotes.findIndex(n => String(n.id) === draggedId)
+        const targetIdx = allNotes.findIndex(n => String(n.id) === String(targetNoteId))
+
+        if (draggedIdx === -1 || targetIdx === -1) return
+
+        const reorderedNotes = [...allNotes]
+        const [draggedNote] = reorderedNotes.splice(draggedIdx, 1)
+        reorderedNotes.splice(targetIdx, 0, draggedNote)
+
+        const noteIds = reorderedNotes.map(n => String(n.id))
+        try {
+          // Optimistically update the store if possible,
+          // but since reorder is complex let's just wait for the API
+          await reorderNotes(noteIds)
+        } catch (e) {
+          logger.error('drop_reorder_failed', { from: draggedId, to: targetNoteId }, e)
+        }
+      }
+    },
+    [pinned, others, reorderNotes]
+  )
+
+  const onDragEnd = useCallback(e => {
+    e.preventDefault()
+  }, [])
 
   const value = {
-    notes, setNotes, notesLoading, search, setSearch, tagFilter, setTagFilter,
-    loadNotes, loadArchivedNotes, toggleArchiveNote, deleteNote, createNote, 
-    updateChecklistItem, togglePin, reorderNotes,
-    invalidateNotesCache, sseConnected, isOnline,
-    pinned: Array.isArray(notes) ? notes.filter(n => n.pinned) : [],
-    others: Array.isArray(notes) ? notes.filter(n => !n.pinned) : []
-  };
+    notes,
+    setNotes,
+    pinned,
+    others,
+    trashNotes,
+    setTrashNotes,
+    isLoading,
+    search,
+    setSearch,
+    tagFilter,
+    setTagFilter,
+    tagsWithCounts: tags,
+    filteredEmptyWithSearch,
+    allEmpty,
+    viewTrash,
+    setViewTrash,
+    multiMode,
+    setMultiMode,
+    selectedIds,
+    setSelectedIds,
+    onStartMulti,
+    onExitMulti,
+    onToggleSelect,
+    onSelectAllPinned,
+    onSelectAllOthers,
+    onDragStart,
+    onDragOver,
+    onDragLeave,
+    onDrop,
+    onDragEnd,
+    onBulkDelete,
+    onBulkPin,
+    onBulkArchive,
+    onBulkColor,
+    onBulkDownloadZip,
+    updateChecklistItem,
+    createNote,
+    updateNote,
+    deleteNote,
+    toggleArchiveNote,
+    restoreNote,
+    emptyTrash,
+    permanentDeleteNote,
+    togglePin,
+    invalidateNotesCache,
+    sseConnected,
+    isOnline,
+  }
 
-  return <NotesContext.Provider value={value}>{children}</NotesContext.Provider>;
+  return <NotesContext.Provider value={value}>{children}</NotesContext.Provider>
 }
 
-export function useNotes() {
-  const context = useContext(NotesContext);
-  if (!context) throw new Error('useNotes must be used within NotesProvider');
-  return context;
+export const useNotes = () => {
+  const context = useContext(NotesContext)
+  if (!context) throw new Error('useNotes must be used within NotesProvider')
+  return context
 }

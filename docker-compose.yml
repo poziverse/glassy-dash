@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  GLASSYDASH:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: GLASSYDASH-dev
+    restart: unless-stopped
+    ports:
+      - "5174:5173"
+      - "8080:3001"
+    environment:
+      - NODE_ENV=development
+      - API_PORT=8080
+      - JWT_SECRET=${JWT_SECRET:-dev-please-change-in-production}
+      - DB_FILE=/app/data/notes.db
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-admin}
+    volumes:
+      - .:/app
+      - ~/.glass-keep:/app/data
+    stdin_open: true
+    tty: true

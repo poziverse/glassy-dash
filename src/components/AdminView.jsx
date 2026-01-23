@@ -1,51 +1,71 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth, useSettings, useUI } from '../contexts';
-import { api } from '../utils/helpers';
+import React, { useState, useEffect } from 'react'
+import { useAuth, useSettings, useUI } from '../contexts'
+import { api } from '../lib/api'
 
 export default function AdminView() {
-  const { dark } = useSettings();
-  const { currentUser } = useAuth();
-  const { showGenericConfirm } = useUI(); // Ensure UIContext provides this
-  const token = currentUser?.token;
+  const { dark } = useSettings()
+  const { token, currentUser } = useAuth()
+  const { showGenericConfirm, showToast } = useUI()
 
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(false)
 
   const formatBytes = (n = 0) => {
-    if (!Number.isFinite(n) || n <= 0) return "0 B";
-    const units = ["B", "KB", "MB", "GB", "TB"];
-    const e = Math.min(Math.floor(Math.log10(n) / 3), units.length - 1);
-    const v = n / Math.pow(1024, e);
-    return `${v.toFixed(v >= 100 ? 0 : v >= 10 ? 1 : 2)} ${units[e]}`;
-  };
+    if (!Number.isFinite(n) || n <= 0) return '0 B'
+    const units = ['B', 'KB', 'MB', 'GB', 'TB']
+    const e = Math.min(Math.floor(Math.log10(n) / 3), units.length - 1)
+    const v = n / Math.pow(1024, e)
+    return `${v.toFixed(v >= 100 ? 0 : v >= 10 ? 1 : 2)} ${units[e]}`
+  }
 
   async function load() {
-    setLoading(true);
+    if (!token) {
+      console.warn('AdminView: Cannot load users - no token')
+      return
+    }
+    setLoading(true)
     try {
       // Using api helper which handles /api prefix if needed, or we assume path is relative
-      const data = await api('/admin/users', { token });
-      setUsers(Array.isArray(data) ? data : []);
+      const data = await api('/admin/users', { token })
+      setUsers(Array.isArray(data) ? data : [])
     } catch (e) {
-      alert(e.message || "Failed to load admin data");
-      setUsers([]);
+      // Don't alert on auth-related errors (they'll be handled by AuthContext)
+      if (e.status === 401) {
+        console.error('AdminView: 401 Unauthorized - auth expired')
+        return
+      }
+      showToast('Failed to load admin data: ' + (e.message || 'Unknown error'), 'error')
+      setUsers([])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
   async function removeUser(id) {
+    if (!token) {
+      console.warn('AdminView: Cannot delete user - no token')
+      return
+    }
     try {
       await api(`/admin/users/${id}`, {
-        method: "DELETE",
-        token
-      });
-      setUsers((prev) => prev.filter((u) => u.id !== id));
+        method: 'DELETE',
+        token,
+      })
+      setUsers(prev => prev.filter(u => u.id !== id))
     } catch (e) {
-      alert(e.message || "Delete failed");
+      // Don't alert on auth-related errors
+      if (e.status === 401) {
+        console.error('AdminView: 401 Unauthorized - auth expired')
+        return
+      }
+      showToast('Delete failed: ' + (e.message || 'Unknown error'), 'error')
     }
   }
 
-  useEffect(() => { load(); }, []); // load once
+  useEffect(() => {
+    if (!token || typeof token !== 'string') return // Better guard - ensure token is valid string
+    load()
+  }, [token]) // Depend on token to reload when auth changes
 
   return (
     <div className="min-h-screen px-4 sm:px-6 md:px-8 lg:px-12 py-8">
@@ -62,7 +82,7 @@ export default function AdminView() {
               onClick={load}
               className="px-3 py-1.5 rounded-lg border border-[var(--border-light)] hover:bg-black/5 dark:hover:bg-white/10 text-sm"
             >
-              {loading ? "Refreshing…" : "Refresh"}
+              {loading ? 'Refreshing…' : 'Refresh'}
             </button>
           </div>
 
@@ -86,7 +106,7 @@ export default function AdminView() {
                   </td>
                 </tr>
               )}
-              {users.map((u) => (
+              {users.map(u => (
                 <tr key={u.id} className="border-b border-[var(--border-light)] last:border-0">
                   <td className="py-2 pr-3">{u.name}</td>
                   <td className="py-2 pr-3">{u.email}</td>
@@ -94,17 +114,16 @@ export default function AdminView() {
                   <td className="py-2 pr-3">{formatBytes(u.storage_bytes ?? 0)}</td>
                   <td className="py-2 pr-3">
                     <span
-                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${u.is_admin
-                        ? "bg-green-500/15 text-green-700 dark:text-green-300 border border-green-500/30"
-                        : "bg-gray-500/10 text-gray-700 dark:text-gray-300 border border-gray-500/20"
-                        }`}
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        u.is_admin
+                          ? 'bg-green-500/15 text-green-700 dark:text-green-300 border border-green-500/30'
+                          : 'bg-gray-500/10 text-gray-700 dark:text-gray-300 border border-gray-500/20'
+                      }`}
                     >
-                      {u.is_admin ? "Yes" : "No"}
+                      {u.is_admin ? 'Yes' : 'No'}
                     </span>
                   </td>
-                  <td className="py-2 pr-3">
-                    {new Date(u.created_at).toLocaleString()}
-                  </td>
+                  <td className="py-2 pr-3">{new Date(u.created_at).toLocaleString()}</td>
                   <td className="py-2 pr-3">
                     <button
                       className="px-2.5 py-1.5 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700"
@@ -112,15 +131,15 @@ export default function AdminView() {
                         // If showGenericConfirm is available, use it. Else window.confirm.
                         if (showGenericConfirm) {
                           showGenericConfirm({
-                            title: "Delete User",
-                            message: "Delete this user and ALL their notes? This cannot be undone.",
-                            confirmText: "Delete",
+                            title: 'Delete User',
+                            message: 'Delete this user and ALL their notes? This cannot be undone.',
+                            confirmText: 'Delete',
                             danger: true,
-                            onConfirm: () => removeUser(u.id)
-                          });
+                            onConfirm: () => removeUser(u.id),
+                          })
                         } else {
-                          if (window.confirm("Delete this user and ALL their notes?")) {
-                            removeUser(u.id);
+                          if (window.confirm('Delete this user and ALL their notes?')) {
+                            removeUser(u.id)
                           }
                         }
                       }}
@@ -134,11 +153,9 @@ export default function AdminView() {
             </tbody>
           </table>
 
-          {loading && (
-            <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading…</div>
-          )}
+          {loading && <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">Loading…</div>}
         </div>
       </div>
     </div>
-  );
+  )
 }

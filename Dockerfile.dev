@@ -1,0 +1,32 @@
+FROM node:20-slim
+
+# Install build tools
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy package files
+COPY ["package.json", "package-lock.json", "./"]
+
+# Install all dependencies (including dev)
+RUN npm install
+
+# Install runtime dependencies for sharp
+RUN apt-get update && apt-get install -y \
+    libvips-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create data directory
+RUN mkdir -p /app/data
+
+# Expose ports
+# 5173: Vite dev server (frontend) - Vite default port
+# 8080: Express API server (backend)
+EXPOSE 5173 8080
+
+# Run development server (includes hot reload)
+CMD ["npm", "run", "dev"]

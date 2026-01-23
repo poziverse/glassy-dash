@@ -1,29 +1,111 @@
 import React from 'react';
+import { Tooltip } from './Tooltip';
+import { 
+  Heading1, Heading2, Heading3,
+  Bold, Italic, Strikethrough,
+  InlineCode, CodeBlock,
+  Quote, BulletList, NumberedList, Link
+} from './Icons';
 
 /**
  * FormatToolbar Component
  * Displays markdown formatting buttons (headings, bold, italic, code, etc.)
  * Used in text editors for quick formatting
+ * 
+ * @param {Object} props - Component props
+ * @param {boolean} props.dark - Whether to use dark mode styling
+ * @param {Function} props.onAction - Callback function when a format action is triggered
+ * @returns {React.ReactElement} The format toolbar component
  */
 export function FormatToolbar({ dark, onAction }) {
-  const base = `fmt-btn ${dark ? "hover:bg-white/10" : "hover:bg-black/5"}`;
+  const base = `toolbar-btn p-2 rounded-md transition-all duration-200 ${
+    dark 
+      ? "hover:bg-white/10 text-gray-200" 
+      : "hover:bg-black/5 text-gray-700"
+  }`;
+
+  const divider = (
+    <span className={`mx-1 w-px h-6 ${dark ? "bg-gray-600" : "bg-gray-300"}`} />
+  );
+
   return (
-    <div className={`fmt-pop ${dark ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"}`}>
-      <div className="flex flex-wrap gap-1">
-        <button className={base} onClick={() => onAction("h1")}>H1</button>
-        <button className={base} onClick={() => onAction("h2")}>H2</button>
-        <button className={base} onClick={() => onAction("h3")}>H3</button>
-        <span className="mx-1 opacity-40">|</span>
-        <button className={base} onClick={() => onAction("bold")}><strong>B</strong></button>
-        <button className={base} onClick={() => onAction("italic")}><em>I</em></button>
-        <button className={base} onClick={() => onAction("strike")}><span className="line-through">S</span></button>
-        <button className={base} onClick={() => onAction("code")}>`code`</button>
-        <button className={base} onClick={() => onAction("codeblock")}>&lt;/&gt;</button>
-        <span className="mx-1 opacity-40">|</span>
-        <button className={base} onClick={() => onAction("quote")}>&gt;</button>
-        <button className={base} onClick={() => onAction("ul")}>• list</button>
-        <button className={base} onClick={() => onAction("ol")}>1. list</button>
-        <button className={base} onClick={() => onAction("link")}>🔗</button>
+    <div className={`fmt-pop px-3 py-2 rounded-lg shadow-lg ${
+      dark ? "bg-gray-800 text-gray-100 border border-gray-700" : "bg-white text-gray-800 border border-gray-200"
+    }`}>
+      <div className="flex items-center gap-1">
+        {/* Headings */}
+        <Tooltip text="Heading 1">
+          <button className={base} onClick={() => onAction("h1")} aria-label="Heading 1">
+            <Heading1 />
+          </button>
+        </Tooltip>
+        <Tooltip text="Heading 2">
+          <button className={base} onClick={() => onAction("h2")} aria-label="Heading 2">
+            <Heading2 />
+          </button>
+        </Tooltip>
+        <Tooltip text="Heading 3">
+          <button className={base} onClick={() => onAction("h3")} aria-label="Heading 3">
+            <Heading3 />
+          </button>
+        </Tooltip>
+        
+        {divider}
+
+        {/* Text Formatting */}
+        <Tooltip text="Bold (Ctrl+B)">
+          <button className={base} onClick={() => onAction("bold")} aria-label="Bold">
+            <Bold />
+          </button>
+        </Tooltip>
+        <Tooltip text="Italic (Ctrl+I)">
+          <button className={base} onClick={() => onAction("italic")} aria-label="Italic">
+            <Italic />
+          </button>
+        </Tooltip>
+        <Tooltip text="Strikethrough">
+          <button className={base} onClick={() => onAction("strike")} aria-label="Strikethrough">
+            <Strikethrough />
+          </button>
+        </Tooltip>
+
+        {divider}
+
+        {/* Code */}
+        <Tooltip text="Inline Code">
+          <button className={base} onClick={() => onAction("code")} aria-label="Inline Code">
+            <InlineCode />
+          </button>
+        </Tooltip>
+        <Tooltip text="Code Block">
+          <button className={base} onClick={() => onAction("codeblock")} aria-label="Code Block">
+            <CodeBlock />
+          </button>
+        </Tooltip>
+
+        {divider}
+
+        {/* Lists & Quote */}
+        <Tooltip text="Quote">
+          <button className={base} onClick={() => onAction("quote")} aria-label="Quote">
+            <Quote />
+          </button>
+        </Tooltip>
+        <Tooltip text="Bullet List">
+          <button className={base} onClick={() => onAction("ul")} aria-label="Bullet List">
+            <BulletList />
+          </button>
+        </Tooltip>
+        <Tooltip text="Numbered List">
+          <button className={base} onClick={() => onAction("ol")} aria-label="Numbered List">
+            <NumberedList />
+          </button>
+        </Tooltip>
+        <Tooltip text="Link">
+          <button className={base} onClick={() => onAction("link")} aria-label="Link">
+            <Link />
+          </button>
+        </Tooltip>
       </div>
     </div>
   );

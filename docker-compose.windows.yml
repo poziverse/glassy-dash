@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  GLASSYDASH:
+    image: GLASSYDASH-windows-test:latest
+    container_name: GLASSYDASH-windows
+    restart: unless-stopped
+    ports:
+      - "5174:5173"
+      - "8080:3001"
+    environment:
+      - NODE_ENV=development
+      - API_PORT=8080
+      - JWT_SECRET=please-change-to-secure-secret-in-production
+      - DB_FILE=/app/data/notes.db
+      - ADMIN_EMAILS=admin
+    volumes:
+      - ./data:/app/data
+    stdin_open: true
+    tty: true

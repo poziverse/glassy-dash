@@ -7,7 +7,7 @@
   --color-glass-surface: rgba(255, 255, 255, 0.03);
   --color-glass-highlight: rgba(255, 255, 255, 0.05);
 
-  /* Define accent color that uses the CSS variable */
+  /* Define accent color that uses CSS variable */
   --color-accent: var(--color-accent);
   --color-accent-hover: var(--color-accent-hover);
 }
@@ -36,7 +36,8 @@ body {
     radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.1), transparent 25%),
     linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
   background-attachment: fixed;
-  color: #e5e7eb;
+  background-attachment: fixed;
+  @apply text-gray-900 dark:text-gray-200;
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -48,6 +49,7 @@ body {
     radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.2), transparent 40%), 
     radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.15), transparent 40%),
     linear-gradient(to bottom, #050505, #121212, #0a0a0a);
+    /* No need to set color here as it's handled by @apply in body */
 }
 
 /* Scrollbar styling */
@@ -76,7 +78,7 @@ body {
 }
 
 .glass-card {
-    background: rgba(30, 30, 35, 0.3);
+    /* Background handled by inline styles for dynamic transparency */
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -89,3 +91,71 @@ body {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
 }
 
+/* Masonry Grid Layout - CRITICAL FIX */
+.masonry-grid {
+  column-gap: 1.5rem;
+  column-count: 1;
+}
+
+.note-card {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  display: inline-block;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive Breakpoints */
+@media (min-width: 640px) {
+  .masonry-grid {
+    column-count: 2;
+  }
+}
+
+@media (min-width: 768px) {
+  .masonry-grid {
+    column-count: 3;
+  }
+}
+
+@media (min-width: 1024px) {
+  .masonry-grid {
+    column-count: 4;
+  }
+}
+
+@media (min-width: 1280px) {
+  .masonry-grid {
+    column-count: 5;
+  }
+}
+
+/* Toolbar Button Styling */
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+}
+
+.toolbar-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Format Toolbar Popover */
+.fmt-pop {
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

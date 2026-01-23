@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useAuthStore } from '../stores/authStore';
 
 /**
  * useCollaboration Hook
@@ -19,6 +20,7 @@ export function useCollaboration({ token, tagFilter, onNotesUpdated }) {
   const BASE_RECONNECT_DELAY = 1000;
 
   const connectSSE = useCallback(() => {
+    // Stop if no token is provided
     if (!token) return;
 
     try {
@@ -61,45 +63,29 @@ export function useCollaboration({ token, tagFilter, onNotesUpdated }) {
       es.onerror = (error) => {
         console.log("SSE error, attempting reconnect...", error);
         setSseConnected(false);
-
-        // Check if SSE is in a failed state
-        if (es.readyState === EventSource.CLOSED) {
-          // If it's closed, check if token is still valid
-          try {
-            const auth = JSON.parse(localStorage.getItem('glass-keep-auth') || 'null');
-            if (!auth || !auth.token) {
-              console.log("SSE closed - no valid token, stopping reconnection");
-              return;
-            }
-          } catch (err) {
-            console.error("Error checking auth:", err);
-            return;
-          }
-        }
-
         es.close();
+
+        // Check if token still exists in store before attempting reconnect
+        const currentToken = useAuthStore.getState().token;
+        if (!currentToken) {
+          console.log("SSE stopped - no active session");
+          return;
+        }
 
         if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
           const delay = BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttemptsRef.current);
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttemptsRef.current++;
             
-            // Check token before reconnecting
-            try {
-              const auth = JSON.parse(localStorage.getItem('glass-keep-auth') || 'null');
-              if (!auth || !auth.token) {
-                console.log("SSE reconnection cancelled - no valid token");
-                return;
-              }
-            } catch (err) {
-              console.error("Error checking auth:", err);
-              return;
+            // Re-check token before reconnecting
+            if (useAuthStore.getState().token) {
+              connectSSE();
             }
-            
-            connectSSE();
           }, delay);
         } else {
           console.log("SSE reconnection attempts exhausted");
+          // Optionally notify user, but don't force logout if the main API might still work
+          // window.dispatchEvent(new CustomEvent('auth-expired'));
         }
       };
 
@@ -112,8 +98,8 @@ export function useCollaboration({ token, tagFilter, onNotesUpdated }) {
 
   const startPolling = useCallback(() => {
     pollIntervalRef.current = setInterval(() => {
-      // Only poll if SSE is not connected
-      if (!esRef.current || esRef.current.readyState === EventSource.CLOSED) {
+      // Only poll if SSE is not connected and we have a token
+      if ((!esRef.current || esRef.current.readyState === EventSource.CLOSED) && useAuthStore.getState().token) {
         if (onNotesUpdated) {
           onNotesUpdated();
         }
@@ -123,7 +109,11 @@ export function useCollaboration({ token, tagFilter, onNotesUpdated }) {
 
   // Main SSE connection effect
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setSseConnected(false);
+      if (esRef.current) esRef.current.close();
+      return;
+    }
 
     connectSSE();
 
@@ -147,48 +137,18 @@ export function useCollaboration({ token, tagFilter, onNotesUpdated }) {
     };
   }, [token, connectSSE, startPolling]);
 
-  // Handle page visibility changes
-  useEffect(() => {
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible') {
-        // Page became visible, validate token first
-        try {
-          const auth = JSON.parse(localStorage.getItem('glass-keep-auth') || 'null');
-          if (auth && auth.token) {
-            // Token is valid, reconnect if needed
-            if (esRef.current && esRef.current.readyState === EventSource.CLOSED) {
-              connectSSE();
-            }
-
-            // Also refresh notes when page becomes visible
-            if (onNotesUpdated) {
-              onNotesUpdated();
-            }
-          }
-        } catch (error) {
-          console.error("Error handling visibility change:", error);
-        }
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [connectSSE, onNotesUpdated]);
-
-  // Handle online/offline events
+  // Online/Offline listeners
   useEffect(() => {
     const handleOnline = () => {
-      console.log("App went online");
       setIsOnline(true);
-      // Reconnect SSE if needed
-      if (esRef.current && esRef.current.readyState === EventSource.CLOSED) {
+      if (token && (!esRef.current || esRef.current.readyState === EventSource.CLOSED)) {
         connectSSE();
       }
     };
-
     const handleOffline = () => {
-      console.log("App went offline");
       setIsOnline(false);
+      setSseConnected(false);
+      if (esRef.current) esRef.current.close();
     };
 
     window.addEventListener('online', handleOnline);
@@ -198,26 +158,7 @@ export function useCollaboration({ token, tagFilter, onNotesUpdated }) {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [connectSSE]);
+  }, [token, connectSSE]);
 
-  const disconnect = useCallback(() => {
-    if (esRef.current) {
-      esRef.current.close();
-      esRef.current = null;
-    }
-    setSseConnected(false);
-  }, []);
-
-  const reconnect = useCallback(() => {
-    disconnect();
-    reconnectAttemptsRef.current = 0;
-    connectSSE();
-  }, [disconnect, connectSSE]);
-
-  return {
-    sseConnected,
-    isOnline,
-    disconnect,
-    reconnect,
-  };
+  return { sseConnected, isOnline };
 }

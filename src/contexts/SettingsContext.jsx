@@ -1,192 +1,57 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { ACCENT_COLORS } from '../themes';
+import React, { createContext, useMemo, useContext } from 'react'
+import { useSettingsStore } from '../stores/settingsStore'
 
-export const SettingsContext = createContext();
-
-const DEFAULT_TRANSPARENCY = 'medium';
+export const SettingsContext = createContext()
 
 /**
  * SettingsProvider Component
- * Provides user preferences state and operations to the entire app
- * Replaces useSettings hook usage with Context API
+ * Bridge between Zustand useSettingsStore and legacy Context consumers
  */
 export function SettingsProvider({ children }) {
-  // Dark mode
-  const [dark, setDark] = useState(false);
+  const store = useSettingsStore()
 
-  // Background
-  const [backgroundImage, setBackgroundImage] = useState(() => {
-    try {
-      return localStorage.getItem("glass_keep_bg") || null;
-    } catch (e) { return null; }
-  });
+  const value = useMemo(
+    () => ({
+      // Dark mode
+      dark: store.dark,
+      setDark: store.setDark,
+      toggleDark: store.toggleDark,
 
-  const [backgroundOverlay, setBackgroundOverlay] = useState(() => {
-    try {
-      return localStorage.getItem("glass_keep_bg_overlay") === "true";
-    } catch (e) { return false; }
-  });
+      // Background
+      backgroundImage: store.backgroundImage,
+      setBackgroundImage: store.setBackgroundImage,
+      backgroundOverlay: store.backgroundOverlay,
+      setBackgroundOverlay: store.setBackgroundOverlay,
+      overlayOpacity: store.overlayOpacity,
+      setOverlayOpacity: store.setOverlayOpacity,
 
-  // Accent color
-  const [accentColor, setAccentColor] = useState(() => {
-    try {
-      return localStorage.getItem("glass_keep_accent") || "indigo";
-    } catch (e) { return "indigo"; }
-  });
+      // Accent color
+      accentColor: store.accentColor,
+      setAccentColor: store.setAccentColor,
 
-  // Card transparency
-  const [cardTransparency, setCardTransparency] = useState(() => {
-    try {
-      return localStorage.getItem("glass_keep_transparency") || DEFAULT_TRANSPARENCY;
-    } catch (e) { return DEFAULT_TRANSPARENCY; }
-  });
+      // Transparency
+      cardTransparency: store.cardTransparency,
+      setCardTransparency: store.setCardTransparency,
 
-  // Sidebar preferences
-  const [alwaysShowSidebarOnWide, setAlwaysShowSidebarOnWide] = useState(() => {
-    try { 
-      return localStorage.getItem("sidebarAlwaysVisible") === "true"; 
-    } catch (e) { 
-      return false; 
-    }
-  });
+      // Sidebar
+      alwaysShowSidebarOnWide: store.sidebarAlwaysVisible,
+      setAlwaysShowSidebarOnWide: store.setSidebarAlwaysVisible,
+      sidebarWidth: store.sidebarWidth,
+      setSidebarWidth: store.setSidebarWidth,
 
-  const [sidebarWidth, setSidebarWidth] = useState(() => {
-    try { 
-      return parseInt(localStorage.getItem("sidebarWidth")) || 288; 
-    } catch (e) { 
-      return 288; 
-    }
-  });
+      // View Mode
+      listView: store.listView,
+      setListView: store.setListView,
+      toggleListView: store.toggleListView,
 
-  // Local AI
-  const [localAiEnabled, setLocalAiEnabled] = useState(() => {
-    try {
-      const stored = localStorage.getItem("localAiEnabled");
-      return stored === null ? false : stored === "true";
-    } catch (e) { 
-      return false; 
-    }
-  });
+      // Local AI
+      localAiEnabled: store.localAiEnabled,
+      setLocalAiEnabled: store.setLocalAiEnabled,
+    }),
+    [store]
+  )
 
-  // Main content layout (Grid vs List)
-  const [listView, setListView] = useState(() => {
-    try {
-      return localStorage.getItem("glass_keep_list_view") === "true";
-    } catch (e) { return false; }
-  });
-
-  // Initialize dark mode on mount
-  useEffect(() => {
-    const savedDark =
-      localStorage.getItem("glass-keep-dark-mode") === "true" ||
-      (!("glass-keep-dark-mode" in localStorage) &&
-        window.matchMedia?.("(prefers-color-scheme: dark)").matches);
-    setDark(savedDark);
-    document.documentElement.classList.toggle("dark", savedDark);
-  }, []);
-
-  // Persist background image
-  useEffect(() => {
-    if (backgroundImage) {
-      localStorage.setItem("glass_keep_bg", backgroundImage);
-    } else {
-      localStorage.removeItem("glass_keep_bg");
-    }
-  }, [backgroundImage]);
-
-  // Persist background overlay
-  useEffect(() => {
-    localStorage.setItem("glass_keep_bg_overlay", backgroundOverlay);
-  }, [backgroundOverlay]);
-
-  // Persist and apply accent color
-  useEffect(() => {
-    localStorage.setItem("glass_keep_accent", accentColor);
-    const theme = ACCENT_COLORS.find(c => c.id === accentColor) || ACCENT_COLORS[0];
-    document.documentElement.style.setProperty('--color-accent', theme.hex);
-    document.documentElement.style.setProperty('--color-accent-hover', theme.hover);
-    
-    // Convert hex to rgba for glow effect
-    const hex = theme.hex.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    document.documentElement.style.setProperty('--color-accent-glow', `rgba(${r}, ${g}, ${b}, 0.15)`);
-  }, [accentColor]);
-
-  // Persist card transparency
-  useEffect(() => {
-    localStorage.setItem("glass_keep_transparency", cardTransparency);
-  }, [cardTransparency]);
-
-  // Persist sidebar preferences
-  useEffect(() => {
-    localStorage.setItem("sidebarAlwaysVisible", alwaysShowSidebarOnWide);
-  }, [alwaysShowSidebarOnWide]);
-
-  useEffect(() => {
-    localStorage.setItem("sidebarWidth", sidebarWidth);
-  }, [sidebarWidth]);
-
-  // Persist list view preference
-  useEffect(() => {
-    localStorage.setItem("glass_keep_list_view", listView);
-  }, [listView]);
-
-  // Persist local AI setting
-  useEffect(() => {
-    localStorage.setItem("localAiEnabled", localAiEnabled);
-  }, [localAiEnabled]);
-
-  // Toggle dark mode
-  const toggleDark = useCallback(() => {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("glass-keep-dark-mode", String(next));
-  }, [dark]);
-
-  const value = {
-    // Dark mode
-    dark,
-    setDark,
-    toggleDark,
-
-    // Background
-    backgroundImage,
-    setBackgroundImage,
-    backgroundOverlay,
-    setBackgroundOverlay,
-
-    // Accent color
-    accentColor,
-    setAccentColor,
-
-    // Transparency
-    cardTransparency,
-    setCardTransparency,
-
-    // Sidebar
-    alwaysShowSidebarOnWide,
-    setAlwaysShowSidebarOnWide,
-    sidebarWidth,
-    setSidebarWidth,
-
-    // View Mode
-    listView,
-    setListView,
-    toggleListView: () => setListView(v => !v),
-
-    // Local AI
-    localAiEnabled,
-    setLocalAiEnabled,
-  };
-
-  return (
-    <SettingsContext.Provider value={value}>
-      {children}
-    </SettingsContext.Provider>
-  );
+  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>
 }
 
 /**
@@ -195,9 +60,9 @@ export function SettingsProvider({ children }) {
  * Replaces the original useSettings hook
  */
 export function useSettings() {
-  const context = React.useContext(SettingsContext);
+  const context = useContext(SettingsContext)
   if (!context) {
-    throw new Error('useSettings must be used within SettingsProvider');
+    throw new Error('useSettings must be used within SettingsProvider')
   }
-  return context;
+  return context
 }

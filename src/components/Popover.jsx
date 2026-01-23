@@ -62,7 +62,7 @@ export function Popover({ anchorRef, open, onClose, children, offset = 8 }) {
   return createPortal(
     <div
       ref={boxRef}
-      style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 10000 }}
+      style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 99999 }}
     >
       {children}
     </div>,

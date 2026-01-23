@@ -1,6 +1,9 @@
 /**
  * Contexts Index
  * Central export point for all React Context providers and hooks
+ * 
+ * Note: Components can now use Zustand stores directly from ../stores/
+ * For backward compatibility during migration, useNotesCompat() is available
  */
 
 import { AuthProvider } from './AuthContext';
@@ -9,7 +12,9 @@ import { SettingsProvider } from './SettingsContext';
 import { UIProvider } from './UIContext';
 import { ComposerProvider } from './ComposerContext';
 import { ModalProvider } from './ModalContext';
+import ErrorBoundary from '../components/ErrorBoundary';
 
+// Context exports (for backward compatibility)
 export * from './AuthContext';
 export * from './NotesContext';
 export * from './SettingsContext';
@@ -17,34 +22,60 @@ export * from './UIContext';
 export * from './ComposerContext';
 export * from './ModalContext';
 
+// Zustand stores (recommended for new code)
+export { useAuthStore } from '../stores/authStore';
+export { useNotesStore } from '../stores/notesStore';
+export { useSettingsStore } from '../stores/settingsStore';
+export { useUIStore } from '../stores/uiStore';
+
+// Compatibility hooks (for gradual migration)
+export { useNotesCompat } from '../hooks/useNotesCompat';
+
 /**
  * RootProvider Component
- * Wraps all context providers in the correct order
- * Usage: <RootProvider> <App /> </RootProvider>
  * 
- * Order matters:
- * 1. AuthProvider - Must be first (needed by NotesProvider)
- * 2. SettingsProvider - No dependencies
- * 3. UIProvider - No dependencies
- * 4. ComposerProvider - No dependencies
- * 5. ModalProvider - No dependencies
+ * DEPRECATED: No longer needed with Zustand stores
+ * App.jsx now uses stores directly instead of context providers
  * 
- * NotesProvider is inside AuthProvider to access auth context
+ * This component is kept for backward compatibility during migration
+ * Components should migrate to use Zustand stores directly:
+ * - useAuthStore() for auth state
+ * - useNotesStore() for notes state  
+ * - useSettingsStore() for settings state
+ * - useUIStore() for UI state
+ * 
+ * Or use compatibility hooks:
+ * - useAuth() from AuthContext (will be removed in future)
+ * - useNotesCompat() from useNotesCompat hook (temporary during migration)
  */
 export function RootProvider({ children }) {
   return (
-    <AuthProvider>
-      <NotesProvider>
-        <SettingsProvider>
-          <UIProvider>
-            <ComposerProvider>
-              <ModalProvider>
-                {children}
-              </ModalProvider>
-            </ComposerProvider>
-          </UIProvider>
-        </SettingsProvider>
-      </NotesProvider>
-    </AuthProvider>
+    <ErrorBoundary name="AppRoot">
+      <ErrorBoundary name="AuthProvider">
+        <AuthProvider>
+          <ErrorBoundary name="NotesProvider">
+            <NotesProvider>
+              <ErrorBoundary name="SettingsProvider">
+                <SettingsProvider>
+                  <ErrorBoundary name="UIProvider">
+                    <UIProvider>
+                      <ErrorBoundary name="ComposerProvider">
+                        <ComposerProvider>
+                          <ErrorBoundary name="ModalProvider">
+                            <ModalProvider>
+                              {children}
+                            </ModalProvider>
+                          </ErrorBoundary>
+                        </ComposerProvider>
+                      </ErrorBoundary>
+                    </UIProvider>
+                  </ErrorBoundary>
+                </SettingsProvider>
+              </ErrorBoundary>
+            </NotesProvider>
+          </ErrorBoundary>
+        </AuthProvider>
+      </ErrorBoundary>
+    </ErrorBoundary>
   );
 }
