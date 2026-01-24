@@ -33,6 +33,9 @@ const rateLimit = require('express-rate-limit')
 
 const app = express()
 
+// ---------- CORS ----------
+app.use(cors())
+
 // ---------- Body Parsing ----------
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -44,6 +47,33 @@ try {
   console.log('✓ Monitoring routes mounted at /api/monitoring')
 } catch (err) {
   console.error('Failed to load monitoring routes:', err)
+}
+
+// ---------- YouTube ----------
+try {
+  const youtubeRoutes = require('./routes/youtube')
+  app.use('/api/youtube', youtubeRoutes)
+  console.log('✓ YouTube routes mounted at /api/youtube')
+} catch (err) {
+  console.error('Failed to load YouTube routes:', err)
+}
+
+// ---------- Music ----------
+try {
+  const musicRoutes = require('./routes/music')
+  app.use('/api/music', musicRoutes)
+  console.log('✓ Music routes mounted at /api/music')
+} catch (err) {
+  console.error('Failed to load Music routes:', err)
+}
+
+// ---------- Icons ----------
+try {
+  const iconRoutes = require('./routes/icons')
+  app.use('/api/icons', iconRoutes)
+  console.log('✓ Icon routes mounted at /api/icons')
+} catch (err) {
+  console.error('Failed to load Icon routes:', err)
 }
 
 const apiRateLimiter = rateLimit({
@@ -674,7 +704,9 @@ app.post('/api/notes', auth, async (req, res) => {
   const n = {
     id: body.id || uid(),
     user_id: req.user.id,
-    type: body.type === 'checklist' ? 'checklist' : body.type === 'draw' ? 'draw' : 'text',
+    type: ['text', 'checklist', 'draw', 'youtube', 'music'].includes(body.type)
+      ? body.type
+      : 'text',
     title: String(body.title || ''),
     content: body.type === 'checklist' ? '' : String(body.content || ''),
     items_json: JSON.stringify(Array.isArray(body.items) ? body.items : []),
@@ -971,32 +1003,32 @@ app.get('/api/notes/collaborated', auth, async (req, res) => {
 })
 
 // Archive/Unarchive notes
-app.post('/api/notes/:id/archive', auth, (req, res) => {
+app.post('/api/notes/:id/archive', auth, async (req, res) => {
   const id = req.params.id
   const { archived } = req.body || {}
 
   // Check if note exists and user owns it
-  const existing = getNote.get(id, req.user.id)
+  const existing = await getNote.get(id, req.user.id)
   if (!existing) {
     return res.status(404).json({ error: 'Note not found' })
   }
 
-  const result = updateArchivedNote.run(archived ? 1 : 0, id, req.user.id)
+  const result = await updateArchivedNote.run(archived ? 1 : 0, id, req.user.id)
 
   if (result.changes === 0) {
     return res.status(404).json({ error: 'Note not found or access denied' })
   }
 
   // Update editor tracking
-  updateNoteWithEditor.run(nowISO(), req.user.name || req.user.email, nowISO(), id)
-  broadcastNoteUpdated(id)
+  await updateNoteWithEditor.run(nowISO(), req.user.name || req.user.email, nowISO(), id)
+  await broadcastNoteUpdated(id)
 
   res.json({ ok: true })
 })
 
 // Get archived notes
-app.get('/api/notes/archived', auth, (req, res) => {
-  const rows = listArchivedNotes.all(req.user.id)
+app.get('/api/notes/archived', auth, async (req, res) => {
+  const rows = await listArchivedNotes.all(req.user.id)
   res.json(
     rows.map(r => ({
       id: r.id,
@@ -1478,5 +1510,27 @@ setInterval(() => {
 initializeDatabase().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`API listening on http://0.0.0.0:${PORT}  (env=${NODE_ENV})`)
+  })
+})
+
+// ---------- Global Error Handler ----------
+// Must be registered AFTER all routes - catches unhandled errors
+app.use((err, req, res, next) => {
+  // Log the error with context
+  console.error('❌ Unhandled error:', {
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+    userId: req.user?.id || 'unauthenticated',
+  })
+
+  // Don't leak stack traces in production
+  const isDev = NODE_ENV !== 'production'
+
+  res.status(err.status || 500).json({
+    error: isDev ? err.message : 'Internal server error',
+    ...(isDev && { stack: err.stack }),
+    requestId: req.headers['x-request-id'] || 'unknown',
   })
 })

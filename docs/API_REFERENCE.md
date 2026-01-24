@@ -452,6 +452,28 @@ Same as `/import`
 
 ---
 
+## 5. Icons API
+
+### GET `/api/icons/:collection/:name`
+
+Dynamically fetches and enhances an SVG icon.
+
+- **URL:** `/api/icons/:collection/:name`
+- **Method:** `GET`
+- **Auth Required:** No (Public proxy)
+- **Parameters:**
+  - `collection`: Icon set name (e.g., `lucide`)
+  - `name`: Icon name (e.g., `star`, `user`)
+- **Query Params:**
+  - `color`: Hex code or CSS color (e.g., `#ff0000`, `blue`)
+  - `size`: Size in px (default: `24`)
+  - `stroke`: Stroke width (default: `2`)
+  - `type`: `gradient` (optional) to apply gradient fill
+    - `colors`: Comma separated hex codes for gradient (e.g. `#ff0000,#0000ff`)
+- **Response:** `image/svg+xml`
+
+---
+
 ### POST `/import/markdown`
 
 Import notes from Markdown files.
@@ -732,6 +754,105 @@ Get system statistics (admin only).
     "version": "1.0.0",
     "node_version": "v18.0.0"
   }
+}
+```
+
+---
+
+## Multimedia
+
+### Base URL
+
+```
+/api
+```
+
+### GET `/youtube/metadata/:videoId`
+
+Fetch metadata (title, channel, thumbnail) for a YouTube video.
+
+**Authentication:** Required
+
+**Response (200 OK):**
+
+```json
+{
+  "videoId": "dQw4w9WgXcQ",
+  "title": "Rick Astley - Never Gonna Give You Up",
+  "channelName": "Rick Astley",
+  "thumbnail": "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
+  "thumbnailFallback": "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg"
+}
+```
+
+---
+
+### GET `/music/proxy`
+
+Generic JSON proxy for music server APIs (Search, Browse).
+
+**Authentication:** Required
+
+**Query Parameters:**
+
+- `url` (required) - Full URL to proxy (without encoding, simpler clients might need encoding)
+
+**Response (200 OK):**
+Returns the JSON body from the upstream server.
+
+---
+
+### POST `/music/subsonic-auth`
+
+Generate Subsonic-compatible MD5 token and salt from a password.
+
+**Authentication:** Required
+
+**Request Body:**
+
+```json
+{
+  "password": "mySecretPassword"
+}
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "token": "32948239048230948...",
+  "salt": "a1b2c3"
+}
+```
+
+---
+
+### POST `/music/test-connection`
+
+Test connection to a music server.
+
+**Authentication:** Required
+
+**Request Body:**
+
+```json
+{
+  "service": "navidrome",
+  "serverUrl": "https://music.example.com",
+  "credentials": {
+    "username": "user",
+    "token": "...",
+    "salt": "..."
+  }
+}
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "ok": true,
+  "message": "Connection successful"
 }
 ```
 

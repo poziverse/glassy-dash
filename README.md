@@ -42,6 +42,13 @@ A sleek notes application with Markdown, checklists, images, tag chips, color th
   - Formatting toolbar in editor (composer + modal edit mode)
   - Links open in new tab from view mode
 
+- **Multimedia Support**
+  - **YouTube Integration**: Paste any YouTube URL (video, short, standard) to create a premium embedded player card.
+    - Features: Lazy loading (privacy-friendly), timestamp support, and distraction-free playback.
+  - **Self-Hosted Music**: Stream properly from your Navidrome, Jellyfin, Subsonic, or Ampache server.
+    - Features: Full HTML5 audio player, album art, keyboard shortcuts, and secure proxying.
+  - **Premium Icons**: Insert beautiful SVG icons into your text with the new Icon Widget.
+
 - **Images**
   - Attach multiple images (client-side compression)
   - Thumbs in grid, larger in modal

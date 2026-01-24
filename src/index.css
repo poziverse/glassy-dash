@@ -1,6 +1,6 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
   --color-glass-border: rgba(255, 255, 255, 0.08);
@@ -20,9 +20,9 @@
   --neon-accent: #646cff;
 
   /* Default Accent (Indigo-600) */
-  --color-accent: #6366F1;
+  --color-accent: #6366f1;
   /* Default Accent Hover (Indigo-700) */
-  --color-accent-hover: #4F46E5;
+  --color-accent-hover: #4f46e5;
   /* Accent glow for box-shadows */
   --color-accent-glow: rgba(99, 102, 241, 0.15);
 }
@@ -31,8 +31,8 @@ body {
   margin: 0;
   min-height: 100vh;
   /* Deep space gradient background */
-  background: 
-    radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%), 
+  background:
+    radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%),
     radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.1), transparent 25%),
     linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
   background-attachment: fixed;
@@ -44,12 +44,12 @@ body {
 }
 
 .dark body {
-    /* Ensure dark mode background persists */
-    background: 
-    radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.2), transparent 40%), 
+  /* Ensure dark mode background persists */
+  background:
+    radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.2), transparent 40%),
     radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.15), transparent 40%),
     linear-gradient(to bottom, #050505, #121212, #0a0a0a);
-    /* No need to set color here as it's handled by @apply in body */
+  /* No need to set color here as it's handled by @apply in body */
 }
 
 /* Scrollbar styling */
@@ -71,62 +71,68 @@ body {
 /* Utility class for Glassmorphism */
 .glass-panel {
   background: rgba(20, 20, 25, 0.4);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(var(--glass-blur, 24px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 24px));
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .glass-card {
-    /* Background handled by inline styles for dynamic transparency */
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+  /* Background handled by inline styles for dynamic transparency */
+  backdrop-filter: blur(var(--glass-blur, 16px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s,
+    background-color 0.2s;
 }
 
 .glass-card:hover {
-    background: rgba(40, 40, 45, 0.4);
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  background: rgba(40, 40, 45, 0.4);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
 }
 
-/* Masonry Grid Layout - CRITICAL FIX */
+/* CSS Grid Layout - Fix for Left-to-Right Ordering */
 .masonry-grid {
-  column-gap: 1.5rem;
-  column-count: 1;
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1.5rem;
+  align-items: start; /* Prevents stretching to match row height if undesired */
 }
 
 .note-card {
-  break-inside: avoid;
-  page-break-inside: avoid;
-  display: inline-block;
+  /* Reset masonry specific props */
   width: 100%;
-  margin-bottom: 1.5rem;
+  /* margin-bottom handled by grid gap */
 }
 
-/* Responsive Breakpoints */
+/* Responsive Grid Columns */
 @media (min-width: 640px) {
   .masonry-grid {
-    column-count: 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 768px) {
   .masonry-grid {
-    column-count: 3;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 1024px) {
   .masonry-grid {
-    column-count: 4;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1400px) {
+  /* Adjusted breakpoint for 5 columns */
   .masonry-grid {
-    column-count: 5;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 

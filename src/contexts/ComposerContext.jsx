@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useRef } from 'react'
 import { useNotes } from './NotesContext'
+import { useUI } from './UIContext'
 import { useComposerStore } from '../stores/composerStore'
 import { uid, runFormat, fileToCompressedDataURL, handleSmartEnter } from '../utils/helpers'
 
@@ -12,6 +13,7 @@ export const ComposerContext = createContext()
  */
 export function ComposerProvider({ children }) {
   const { createNote, isOnline } = useNotes()
+  const { showToast } = useUI()
 
   // Connect to Zustand store
   const {
@@ -71,6 +73,8 @@ export function ComposerProvider({ children }) {
     const isText = type === 'text'
     const isChecklist = type === 'checklist'
     const isDraw = type === 'draw'
+    const isYouTube = type === 'youtube'
+    const isMusic = type === 'music'
 
     // Validation
     if (isText) {
@@ -80,6 +84,8 @@ export function ComposerProvider({ children }) {
     } else if (isDraw) {
       const drawPaths = Array.isArray(drawingData) ? drawingData : drawingData?.paths || []
       if (!title.trim() && drawPaths.length === 0) return
+    } else if (isYouTube || isMusic) {
+      if (!content || content === '{}') return
     }
 
     const nowIso = new Date().toISOString()
@@ -87,7 +93,7 @@ export function ComposerProvider({ children }) {
       id: uid(),
       type: type,
       title: title.trim(),
-      content: isText ? content : isDraw ? JSON.stringify(drawingData) : '',
+      content: isDraw ? JSON.stringify(drawingData) : content,
       items: isChecklist ? clItems : [],
       tags: tags
         .split(',')
@@ -105,9 +111,22 @@ export function ComposerProvider({ children }) {
       await createNote(newNote)
       reset()
     } catch (e) {
-      alert(e.message || 'Failed to add note')
+      showToast(e.message || 'Failed to add note', 'error')
     }
-  }, [isOnline, type, title, content, tags, images, clItems, drawingData, color, createNote, reset])
+  }, [
+    isOnline,
+    type,
+    title,
+    content,
+    tags,
+    images,
+    clItems,
+    drawingData,
+    color,
+    createNote,
+    reset,
+    showToast,
+  ])
 
   const onKeyDown = useCallback(
     e => {
@@ -144,7 +163,27 @@ export function ComposerProvider({ children }) {
   )
 
   const format = useCallback(
-    t => {
+    (t, p) => {
+      if (t === 'icon' && p) {
+        const el = contentRef.current
+        if (!el) return
+        const val = content || ''
+        const start = el.selectionStart ?? val.length
+        const end = el.selectionEnd ?? val.length
+        const textToInsert = `![icon:${p}](/api/icons/lucide/${p}.svg)`
+        const newText = val.slice(0, start) + textToInsert + val.slice(end)
+        setContent(newText)
+        setTimeout(() => {
+          try {
+            if (el) {
+              el.focus()
+              const newPos = start + textToInsert.length
+              el.setSelectionRange(newPos, newPos)
+            }
+          } catch (e) {}
+        }, 0)
+        return
+      }
       runFormat(() => content, setContent, contentRef, t)
     },
     [content, setContent]

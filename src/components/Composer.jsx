@@ -6,13 +6,15 @@ import { ColorDot } from './ColorDot'
 import { FormatToolbar } from './FormatToolbar'
 import { ChecklistRow } from './ChecklistRow'
 import DrawingCanvas from '../DrawingCanvas'
-import { FormatIcon, Text, Checklist, DrawIcon } from './Icons'
+import { FormatIcon, Text, Checklist, DrawIcon, YouTubeIcon, MusicIcon } from './Icons'
 import { ACCENT_COLORS } from '../themes'
+import { YouTubeInput } from './YouTubeInput'
+import { MusicInput } from './MusicInput'
 
 /**
  * Composer Component
  * Main note creation component with support for text, checklist, and drawing note types
- * 
+ *
  * Features:
  * - Three note types: Text, Checklist, Drawing
  * - Rich formatting toolbar for text notes
@@ -22,7 +24,7 @@ import { ACCENT_COLORS } from '../themes'
  * - Collapsed/expanded states
  * - Professional SVG icons
  * - Enhanced accessibility with ARIA labels
- * 
+ *
  * @returns {React.ReactElement} The composer component
  */
 export function Composer() {
@@ -124,7 +126,7 @@ export function Composer() {
             className="w-full bg-transparent text-lg font-semibold placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none mb-2 p-2"
           />
 
-          {/* Body, Checklist, or Drawing */}
+          {/* Body, Checklist, Drawing, YouTube, or Music */}
           {type === 'text' ? (
             <textarea
               ref={contentRef}
@@ -165,6 +167,28 @@ export function Composer() {
                 </div>
               )}
             </div>
+          ) : type === 'youtube' ? (
+            <YouTubeInput
+              value={(() => {
+                try {
+                  return content ? JSON.parse(content) : null
+                } catch (e) {
+                  return null
+                }
+              })()}
+              onChange={data => setContent(data ? JSON.stringify(data) : '')}
+            />
+          ) : type === 'music' ? (
+            <MusicInput
+              value={(() => {
+                try {
+                  return content ? JSON.parse(content) : null
+                } catch (e) {
+                  return null
+                }
+              })()}
+              onChange={data => setContent(data ? JSON.stringify(data) : '')}
+            />
           ) : (
             <DrawingCanvas
               data={drawingData}
@@ -229,9 +253,9 @@ export function Composer() {
                   >
                     <FormatToolbar
                       dark={dark}
-                      onAction={t => {
+                      onAction={(t, p) => {
                         setShowFormatting(false)
-                        format(t)
+                        format(t, p)
                       }}
                     />
                   </Popover>
@@ -278,6 +302,32 @@ export function Composer() {
                   aria-label="Drawing note"
                 >
                   <DrawIcon />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType('youtube')}
+                  className={`p-2 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                    type === 'youtube'
+                      ? 'border-red-500 bg-red-500/10 text-red-600 dark:bg-red-500/20'
+                      : 'border-[var(--border-light)] hover:bg-black/5 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400'
+                  }`}
+                  title="YouTube video"
+                  aria-label="YouTube video"
+                >
+                  <YouTubeIcon />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType('music')}
+                  className={`p-2 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                    type === 'music'
+                      ? 'border-purple-500 bg-purple-500/10 text-purple-600 dark:bg-purple-500/20'
+                      : 'border-[var(--border-light)] hover:bg-black/5 dark:hover:bg-white/10 text-gray-600 dark:text-gray-400'
+                  }`}
+                  title="Music player"
+                  aria-label="Music player"
+                >
+                  <MusicIcon />
                 </button>
               </div>
 

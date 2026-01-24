@@ -18,6 +18,14 @@ export const useSettingsStore = create(
       sidebarAlwaysVisible: false,
       sidebarWidth: 288,
       localAiEnabled: false,
+      musicSettings: {
+        service: null,
+        serverUrl: '',
+        username: '',
+        password: '',
+        apiKey: '',
+        userId: '',
+      },
       listView: false,
 
       // Actions
@@ -80,6 +88,10 @@ export const useSettingsStore = create(
       setSidebarAlwaysVisible: sidebarAlwaysVisible => set({ sidebarAlwaysVisible }),
       setSidebarWidth: sidebarWidth => set({ sidebarWidth }),
       setLocalAiEnabled: localAiEnabled => set({ localAiEnabled }),
+      setMusicSettings: settings =>
+        set(state => ({
+          musicSettings: { ...state.musicSettings, ...settings },
+        })),
 
       // Load saved settings into document
       loadSettings: () => {

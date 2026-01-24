@@ -228,7 +228,35 @@ export function ModalProvider({ children }) {
   }, [activeId, activeNoteObj, currentUser, deleteNote, closeModal, showToast])
 
   const formatModal = useCallback(
-    type => {
+    (type, payload) => {
+      // Handle Icon Insertion
+      if (type === 'icon' && payload) {
+        const el = mBodyRef.current
+        if (!el) return
+
+        const val = mBody || '' // Ensure string
+        const start = el.selectionStart ?? val.length
+        const end = el.selectionEnd ?? val.length
+
+        // Construct markdown image
+        // ![icon:star](/api/icons/lucide/star.svg)
+        const textToInsert = `![icon:${payload}](/api/icons/lucide/${payload}.svg)`
+
+        const newText = val.slice(0, start) + textToInsert + val.slice(end)
+        setMBody(newText)
+
+        // Use setTimeout to ensure state update has flushed to DOM
+        setTimeout(() => {
+          if (el) {
+            el.focus()
+            // Move cursor after inserted image
+            const newPos = start + textToInsert.length
+            el.setSelectionRange(newPos, newPos)
+          }
+        }, 0)
+        return
+      }
+
       const result = runFormat(() => mBody, setMBody, mBodyRef, type)
       if (result && typeof result === 'object' && result.text !== undefined) {
         setMBody(result.text)

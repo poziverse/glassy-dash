@@ -2,12 +2,15 @@ import React, { useMemo } from 'react'
 import { PinFilled, PinOutline } from './Icons'
 import { DrawingPreview } from './DrawingPreview'
 import { ChecklistRow } from './ChecklistRow'
+import { YouTubeCard } from './YouTubeCard'
+import { MusicPlayerCard } from './MusicPlayerCard'
 import { useModal } from '../contexts/ModalContext'
 import { useNotes } from '../contexts/NotesContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useSettings } from '../contexts/SettingsContext'
 import { useUI } from '../contexts/UIContext'
 import { bgFor } from '../utils/helpers'
+import { safeUserMarkdown } from '../utils/safe-markdown'
 
 /**
  * mdToPlain - Convert markdown to plain text (imported from App.jsx helpers)
@@ -54,6 +57,8 @@ export function NoteCard({
   const { isOnline } = useUI()
   const isChecklist = n.type === 'checklist'
   const isDraw = n.type === 'draw'
+  const isYouTube = n.type === 'youtube'
+  const isMusic = n.type === 'music'
   const previewText = useMemo(() => mdToPlain(n.content || ''), [n.content])
   const MAX_CHARS = 600
   const isLong = previewText.length > MAX_CHARS
@@ -108,7 +113,7 @@ export function NoteCard({
           }
         }
       }}
-      className={`note-card glass-card rounded-xl p-4 mb-6 cursor-pointer transform hover:scale-[1.02] transition-transform duration-200 relative min-h-[54px] group ${
+      className={`note-card glass-card rounded-xl p-4 cursor-pointer transform hover:scale-[1.02] transition-transform duration-200 relative min-h-[54px] group ${
         multiMode && selected ? 'ring-2 ring-accent ring-offset-2 ring-offset-transparent' : ''
       }`}
       style={{
@@ -213,10 +218,22 @@ export function NoteCard({
       )}
 
       {/* Content preview */}
-      {!isChecklist && !isDraw ? (
-        <div className="text-sm break-words whitespace-pre-wrap line-clamp-6">{displayText}</div>
+      {!isChecklist && !isDraw && !isYouTube && !isMusic ? (
+        <div
+          className="note-content text-sm break-words whitespace-pre-wrap line-clamp-6"
+          dangerouslySetInnerHTML={{
+            __html: safeUserMarkdown(n.content || '').replace(
+              /<img/g,
+              '<img class="max-h-20 inline-block"'
+            ), // Limit inline image height in cards
+          }}
+        />
       ) : isDraw ? (
         <DrawingPreview data={n.content} width={100} height={150} darkMode={dark} />
+      ) : isYouTube ? (
+        <YouTubeCard data={n.content} isPreview={true} />
+      ) : isMusic ? (
+        <MusicPlayerCard data={n.content} isPreview={true} />
       ) : (
         <div className="space-y-2">
           {visibleItems.map(it => (

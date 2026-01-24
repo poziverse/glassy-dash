@@ -2,6 +2,8 @@ import React from 'react'
 import { createPortal } from 'react-dom'
 import DrawingCanvas from '../DrawingCanvas'
 import { ChecklistRow } from './ChecklistRow'
+import { YouTubeCard } from './YouTubeCard'
+import { MusicPlayerCard } from './MusicPlayerCard'
 import {
   CloseIcon,
   DownloadIcon,
@@ -286,9 +288,9 @@ const Modal = ({
                       >
                         <FormatToolbar
                           dark={dark}
-                          onAction={t => {
+                          onAction={(t, p) => {
                             setShowModalFmt(false)
-                            formatModal(t)
+                            formatModal(t, p)
                           }}
                         />
                       </Popover>
@@ -494,6 +496,14 @@ const Modal = ({
                   onMChecklistDragOver={onMChecklistDragOver}
                   onMChecklistDrop={onMChecklistDrop}
                 />
+              ) : mType === 'youtube' ? (
+                <div className="youtube-modal-content">
+                  <YouTubeCard data={mBody} isPreview={false} />
+                </div>
+              ) : mType === 'music' ? (
+                <div className="music-modal-content">
+                  <MusicPlayerCard data={mBody} isPreview={false} />
+                </div>
               ) : (
                 <DrawingCanvas
                   data={mDrawingData}
@@ -724,7 +734,7 @@ const Modal = ({
               >
                 <h3 className="text-lg font-semibold mb-2">Delete this note?</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  This action cannot be undone.
+                  Note will be moved to trash. You can restore it later.
                 </p>
                 <div className="mt-5 flex justify-end gap-3">
                   <button

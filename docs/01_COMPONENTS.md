@@ -1,4 +1,5 @@
 # Glass Keep Components Overview
+
 **Last Updated:** January 20, 2026  
 **Version:** 1.0  
 **Status:** ✅ Complete Overview
@@ -43,9 +44,11 @@ App (Root)
 ### 1. Core Application Components
 
 #### App.jsx
+
 **Purpose:** Root component that manages routing, providers, and overall application structure
 
 **Key Responsibilities:**
+
 - Route configuration (React Router)
 - Context provider tree setup
 - Authentication guard
@@ -58,9 +61,11 @@ App (Root)
 ### 2. Layout Components
 
 #### DashboardLayout
+
 **Purpose:** Main layout wrapper for the dashboard interface
 
 **Key Responsibilities:**
+
 - Sidebar navigation
 - Main content area
 - Responsive layout
@@ -69,9 +74,11 @@ App (Root)
 **File:** `GLASSYDASH/src/components/DashboardLayout.jsx`
 
 #### Sidebar
+
 **Purpose:** Navigation sidebar with tags and filters
 
 **Key Responsibilities:**
+
 - Tag list display
 - Filter options
 - Navigation links
@@ -84,9 +91,11 @@ App (Root)
 ### 3. Authentication Components
 
 #### AuthViews
+
 **Purpose:** Login and registration forms
 
 **Key Responsibilities:**
+
 - User login form
 - User registration form
 - Secret key login
@@ -99,9 +108,11 @@ App (Root)
 ### 4. Note Display Components
 
 #### NotesView
+
 **Purpose:** Main view for displaying notes in grid or list layout
 
 **Key Responsibilities:**
+
 - Note card rendering
 - Layout switching (grid/list)
 - Bulk selection
@@ -111,9 +122,11 @@ App (Root)
 **File:** `GLASSYDASH/src/components/NotesView.jsx`
 
 #### NoteCard
+
 **Purpose:** Individual note card in the notes grid/list
 
 **Key Responsibilities:**
+
 - Note preview display
 - Title, content, tags
 - Pin/unpin functionality
@@ -127,9 +140,11 @@ App (Root)
 ### 5. Note Editing Components
 
 #### Modal
+
 **Purpose:** Modal dialog for viewing and editing notes
 
 **Key Responsibilities:**
+
 - View/Edit mode toggle
 - Note content display/editing
 - Toolbar actions
@@ -139,9 +154,11 @@ App (Root)
 **File:** `GLASSYDASH/src/components/Modal.jsx`
 
 #### Composer
+
 **Purpose:** Note composer for creating new notes
 
 **Key Responsibilities:**
+
 - Note type selection (text/checklist/drawing)
 - Title and content input
 - Tag input
@@ -151,24 +168,41 @@ App (Root)
 **File:** `GLASSYDASH/src/components/Composer.jsx`
 
 #### FormatToolbar
-**Purpose:** Markdown formatting toolbar
+
+**Purpose:** Markdown formatting toolbar with icon picker trigger.
 
 **Key Responsibilities:**
+
 - Formatting buttons (bold, italic, etc.)
 - Markdown insertion
 - Toolbar positioning
-- Context-aware options
+- **Icon Picker Trigger**: Toggle for the icon widget
 
 **File:** `GLASSYDASH/src/components/FormatToolbar.jsx`
+
+#### IconPicker
+
+**Purpose:** Searchable grid UI for selecting premium icons.
+
+**Key Responsibilities:**
+
+- Search filtering
+- Grid display of SVG icons (Lucide)
+- Interactive selection emitting icon name
+- Virtualized or paginated list handling
+
+**File:** `GLASSYDASH/src/components/IconPicker.jsx`
 
 ---
 
 ### 6. Content Type Components
 
 #### ChecklistRow
+
 **Purpose:** Individual checklist item component
 
 **Key Responsibilities:**
+
 - Checkbox for completion toggle
 - Text display/edit
 - Drag handle for reordering
@@ -177,9 +211,11 @@ App (Root)
 **File:** `GLASSYDASH/src/components/ChecklistRow.jsx`
 
 #### DrawingCanvas
+
 **Purpose:** Canvas for drawing handwritten notes
 
 **Key Responsibilities:**
+
 - Freehand drawing
 - Brush size control
 - Color selection
@@ -189,9 +225,11 @@ App (Root)
 **File:** `GLASSYDASH/src/components/DrawingCanvas.jsx`
 
 #### DrawingPreview
+
 **Purpose:** Preview of drawing in note card
 
 **Key Responsibilities:**
+
 - Display thumbnail of drawing
 - Click to open full view
 - Proper scaling
@@ -203,9 +241,11 @@ App (Root)
 ### 7. Search and Navigation Components
 
 #### SearchBar
+
 **Purpose:** Search interface for finding notes
 
 **Key Responsibilities:**
+
 - Search input field
 - AI assistant integration
 - Quick filters
@@ -218,14 +258,16 @@ App (Root)
 ### 8. Settings Components
 
 #### SettingsPanel
-**Purpose:** Settings interface for user preferences
+
+**Purpose:** Settings interface for user preferences (Tabbed Layout).
 
 **Key Responsibilities:**
-- Theme selection
-- Dark mode toggle
-- View mode toggle (grid/list)
-- Background customization
-- Account settings
+
+- **Navigation**: Tabbed interface (Appearance, Integrations, Data, General)
+- **Appearance**: Theme selection, Backgrounds, Accent Color, Transparency
+- **Integrations**: Music Player configuration
+- **Data**: Import/Export, Secret Key management
+- **General**: View modes, Sidebar behavior, Local AI toggle
 
 **File:** `GLASSYDASH/src/components/SettingsPanel.jsx`
 
@@ -234,9 +276,11 @@ App (Root)
 ### 9. Administrative Components
 
 #### AdminView
+
 **Purpose:** Admin panel for user management
 
 **Key Responsibilities:**
+
 - User list display
 - User creation
 - User deletion
@@ -251,9 +295,11 @@ App (Root)
 ### 10. UI Utility Components
 
 #### ColorDot
+
 **Purpose:** Color indicator component
 
 **Key Responsibilities:**
+
 - Display note color
 - Circular indicator
 - Selected state styling
@@ -261,9 +307,11 @@ App (Root)
 **File:** `GLASSYDASH/src/components/ColorDot.jsx`
 
 #### Popover
+
 **Purpose:** Popover UI component for dropdowns and menus
 
 **Key Responsibilities:**
+
 - Positioning
 - Click-outside close
 - Content rendering
@@ -272,9 +320,11 @@ App (Root)
 **File:** `GLASSYDASH/src/components/Popover.jsx`
 
 #### Icons
+
 **Purpose:** Icon component library
 
 **Key Responsibilities:**
+
 - SVG icon rendering
 - Icon size and color
 - Custom icons (checklist, drawing, images)
@@ -282,9 +332,11 @@ App (Root)
 **File:** `GLASSYDASH/src/components/Icons.jsx`
 
 #### ErrorBoundary
+
 **Purpose:** Error boundary for graceful error handling
 
 **Key Responsibilities:**
+
 - Catch React errors
 - Display fallback UI
 - Log errors
@@ -293,15 +345,87 @@ App (Root)
 **File:** `GLASSYDASH/src/components/ErrorBoundary.jsx`
 
 #### ErrorMessage
+
 **Purpose:** Error message display component
 
 **Key Responsibilities:**
+
 - Error display
 - Message formatting
 - Dismiss action
 - Error type styling
 
 **File:** `GLASSYDASH/src/components/ErrorMessage.tsx`
+
+---
+
+---
+
+### 11. Multimedia Components
+
+#### YouTubeCard
+
+**Purpose:** Displays embedded YouTube video with lazy loading.
+
+**Key Responsibilities:**
+
+- Thumbnail preview
+- Inline playback
+- Modal playback
+- Privacy-enhanced embed handling
+
+**File:** `GLASSYDASH/src/components/YouTubeCard.jsx`
+
+#### YouTubeInput
+
+**Purpose:** Input component for validating and previewing YouTube URLs.
+
+**Key Responsibilities:**
+
+- URL validation
+- Metadata fetching (via API)
+- Preview display
+
+**File:** `GLASSYDASH/src/components/YouTubeInput.jsx`
+
+#### MusicPlayerCard
+
+**Purpose:** Full-featured HTML5 audio player for music notes (Single Track or Album Playlist).
+
+**Key Responsibilities:**
+
+- Audio streaming (proxied)
+- Cover art display
+- Playback controls (seek, volume, next/prev)
+- Playlist management & auto-play
+- Keyboard shortcuts
+
+**File:** `GLASSYDASH/src/components/MusicPlayerCard.jsx`
+
+#### MusicInput
+
+**Purpose:** Search interface for finding tracks and albums on music server.
+
+**Key Responsibilities:**
+
+- Server-side search (proxied)
+- Results list rendering (Songs & Albums tabs)
+- Track/Album selection preview
+
+**File:** `GLASSYDASH/src/components/MusicInput.jsx`
+
+#### MusicSettings
+
+**Purpose:** Configuration panel for music service credentials.
+
+**Key Responsibilities:**
+
+- Service selection (Navidrome/Jellyfin/etc)
+- Credential management
+- Connection testing
+- Token generation
+
+**File:** `GLASSYDASH/src/components/MusicSettings.jsx`
 
 ---
 
@@ -367,33 +491,33 @@ User Action → NotesView → Select Multiple Notes
 
 ### Direct Dependencies
 
-| Component | Depends On | Contexts Used |
-|-----------|-------------|----------------|
-| App | All components below | All providers |
-| DashboardLayout | Sidebar, NotesView | Auth, Notes, Settings |
-| NotesView | NoteCard | Notes, UI, Settings |
-| NoteCard | ColorDot, Icons | Notes, Modal |
-| Modal | FormatToolbar, ChecklistRow, DrawingCanvas | Notes, Modal, Collaboration |
-| Composer | FormatToolbar, ColorDot | Composer, Notes |
-| SearchBar | Icons | Notes, UI |
-| SettingsPanel | Icons | Settings, UI |
-| AdminView | Icons, ErrorMessage | Auth, Notes |
-| Sidebar | Icons | Notes, UI |
+| Component       | Depends On                                 | Contexts Used               |
+| --------------- | ------------------------------------------ | --------------------------- |
+| App             | All components below                       | All providers               |
+| DashboardLayout | Sidebar, NotesView                         | Auth, Notes, Settings       |
+| NotesView       | NoteCard                                   | Notes, UI, Settings         |
+| NoteCard        | ColorDot, Icons                            | Notes, Modal                |
+| Modal           | FormatToolbar, ChecklistRow, DrawingCanvas | Notes, Modal, Collaboration |
+| Composer        | FormatToolbar, ColorDot                    | Composer, Notes             |
+| SearchBar       | Icons                                      | Notes, UI                   |
+| SettingsPanel   | Icons                                      | Settings, UI                |
+| AdminView       | Icons, ErrorMessage                        | Auth, Notes                 |
+| Sidebar         | Icons                                      | Notes, UI                   |
 
 ### Context Dependencies
 
-| Component | AuthContext | NotesContext | ModalContext | SettingsContext | ComposerContext | UIContext |
-|-----------|--------------|--------------|---------------|-----------------|-----------------|------------|
-| App | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| DashboardLayout | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| NotesView | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ |
-| NoteCard | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Modal | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
-| Composer | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ |
-| SearchBar | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ |
-| SettingsPanel | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
-| AdminView | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Sidebar | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Component       | AuthContext | NotesContext | ModalContext | SettingsContext | ComposerContext | UIContext |
+| --------------- | ----------- | ------------ | ------------ | --------------- | --------------- | --------- |
+| App             | ✅          | ✅           | ✅           | ✅              | ✅              | ✅        |
+| DashboardLayout | ✅          | ✅           | ✅           | ✅              | ✅              | ✅        |
+| NotesView       | ✅          | ✅           | ❌           | ✅              | ❌              | ✅        |
+| NoteCard        | ❌          | ✅           | ❌           | ❌              | ❌              | ❌        |
+| Modal           | ✅          | ✅           | ✅           | ❌              | ❌              | ✅        |
+| Composer        | ✅          | ✅           | ❌           | ❌              | ✅              | ✅        |
+| SearchBar       | ❌          | ✅           | ❌           | ❌              | ❌              | ✅        |
+| SettingsPanel   | ❌          | ❌           | ❌           | ✅              | ❌              | ✅        |
+| AdminView       | ✅          | ❌           | ❌           | ❌              | ❌              | ✅        |
+| Sidebar         | ❌          | ✅           | ❌           | ❌              | ❌              | ✅        |
 
 ---
 
@@ -432,11 +556,13 @@ Components that rely on context providers:
 Many components share common prop patterns:
 
 #### Data Props
+
 - `data` - Array or object of data
 - `items` - Array of items
 - `note` - Single note object
 
 #### Event Props
+
 - `onClick` - Click handler
 - `onChange` - Change handler
 - `onSubmit` - Submit handler
@@ -444,6 +570,7 @@ Many components share common prop patterns:
 - `onEdit` - Edit handler
 
 #### UI Props
+
 - `className` - CSS classes
 - `style` - Inline styles
 - `disabled` - Disabled state
@@ -451,6 +578,7 @@ Many components share common prop patterns:
 - `error` - Error state
 
 #### Selection Props
+
 - `selected` - Selected state
 - `onSelect` - Selection handler
 - `onDeselect` - Deselection handler
@@ -546,6 +674,6 @@ Components should include appropriate ARIA attributes:
 
 ---
 
-**Component Count:** 20  
-**Documented Components:** 20 (100% overview)  
-**Last Updated:** January 20, 2026
+**Component Count:** 21
+**Documented Components:** 21 (100% overview)  
+**Last Updated:** January 23, 2026

@@ -16,12 +16,12 @@ export function TrashView() {
     setViewTrash,
   } = useNotes()
 
-  const formatDate = (timestamp) => {
+  const formatDate = timestamp => {
     if (!timestamp) return 'Unknown'
     const date = new Date(timestamp * 1000) // Convert from seconds to ms
     const now = new Date()
     const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24))
-    
+
     if (diffDays === 0) return 'Deleted today'
     if (diffDays === 1) return 'Deleted yesterday'
     if (diffDays < 7) return `Deleted ${diffDays} days ago`
@@ -29,16 +29,16 @@ export function TrashView() {
     return `Deleted ${Math.floor(diffDays / 30)} months ago`
   }
 
-  const getDaysUntilExpiration = (timestamp) => {
+  const getDaysUntilExpiration = timestamp => {
     if (!timestamp) return null
     const date = new Date(timestamp * 1000)
-    const expirationDate = new Date(date.getTime() + (30 * 24 * 60 * 60 * 1000))
+    const expirationDate = new Date(date.getTime() + 30 * 24 * 60 * 60 * 1000)
     const now = new Date()
     const diffDays = Math.ceil((expirationDate - now) / (1000 * 60 * 60 * 24))
     return diffDays
   }
 
-  const handleRestore = async (noteId) => {
+  const handleRestore = async noteId => {
     try {
       await restoreNote(noteId)
     } catch (error) {
@@ -46,8 +46,12 @@ export function TrashView() {
     }
   }
 
-  const handlePermanentDelete = async (noteId) => {
-    if (!confirm('Are you sure you want to permanently delete this note? This action cannot be undone.')) {
+  const handlePermanentDelete = async noteId => {
+    if (
+      !confirm(
+        'Are you sure you want to permanently delete this note? This action cannot be undone.'
+      )
+    ) {
       return
     }
     try {
@@ -58,7 +62,11 @@ export function TrashView() {
   }
 
   const handleEmptyTrash = async () => {
-    if (!confirm('Are you sure you want to empty the trash? All notes will be permanently deleted and cannot be recovered.')) {
+    if (
+      !confirm(
+        'Are you sure you want to empty the trash? All notes will be permanently deleted and cannot be recovered.'
+      )
+    ) {
       return
     }
     try {
@@ -78,20 +86,18 @@ export function TrashView() {
       <div className="trash-header">
         <h2>Trash</h2>
         <p className="trash-description">
-          Notes in trash are automatically deleted after 30 days. You can restore them or delete them permanently.
+          Notes in trash are automatically deleted after 30 days. You can restore them or delete
+          them permanently.
         </p>
         <div className="trash-actions">
-          <button 
-            className="btn-empty-trash" 
+          <button
+            className="btn-empty-trash"
             onClick={handleEmptyTrash}
             disabled={trashNotes.length === 0}
           >
             🗑️ Empty Trash
           </button>
-          <button 
-            className="btn-back-to-notes" 
-            onClick={() => setViewTrash(false)}
-          >
+          <button className="btn-back-to-notes" onClick={() => setViewTrash(false)}>
             ← Back to Notes
           </button>
         </div>
@@ -120,43 +126,45 @@ export function TrashView() {
           {trashNotes.map(note => {
             const daysUntilExpiration = getDaysUntilExpiration(note.deleted_at)
             const isExpiringSoon = daysUntilExpiration !== null && daysUntilExpiration <= 7
-            
+
             return (
-              <div 
-                key={note.id} 
-                className={`trash-note ${isExpiringSoon ? 'expiring-soon' : ''}`}
-              >
+              <div key={note.id} className={`trash-note ${isExpiringSoon ? 'expiring-soon' : ''}`}>
                 <div className="trash-note-content">
                   <h3 className="trash-note-title">{note.title || 'Untitled'}</h3>
                   <p className="trash-note-preview">
                     {note.type === 'text' && note.content && (
-                      <>{note.content.substring(0, 150)}{note.content.length > 150 && '...'}</>
+                      <>
+                        {note.content.substring(0, 150)}
+                        {note.content.length > 150 && '...'}
+                      </>
                     )}
                     {note.type === 'checklist' && note.items && (
-                      <>{note.items.length} item{note.items.length !== 1 ? 's' : ''}</>
+                      <>
+                        {note.items.length} item{note.items.length !== 1 ? 's' : ''}
+                      </>
                     )}
                   </p>
                   <div className="trash-note-meta">
-                    <span className="trash-note-type">
-                      {note.type === 'text' ? '📝' : '✅'}
-                    </span>
+                    <span className="trash-note-type">{note.type === 'text' ? '📝' : '✅'}</span>
                     <span className="trash-note-date">{formatDate(note.deleted_at)}</span>
                     {daysUntilExpiration !== null && (
                       <span className={`trash-note-expiration ${isExpiringSoon ? 'warning' : ''}`}>
-                        {daysUntilExpiration <= 0 ? 'Expires soon' : `${daysUntilExpiration} days until expiration`}
+                        {daysUntilExpiration <= 0
+                          ? 'Expires soon'
+                          : `${daysUntilExpiration} days until expiration`}
                       </span>
                     )}
                   </div>
                 </div>
                 <div className="trash-note-actions">
-                  <button 
+                  <button
                     className="btn-restore"
                     onClick={() => handleRestore(note.id)}
                     title="Restore note"
                   >
                     ↩️ Restore
                   </button>
-                  <button 
+                  <button
                     className="btn-permanent-delete"
                     onClick={() => handlePermanentDelete(note.id)}
                     title="Permanently delete"
@@ -176,9 +184,7 @@ export function TrashView() {
           <p>
             <strong>{trashNotes.length}</strong> note{trashNotes.length !== 1 ? 's' : ''} in trash
           </p>
-          <p className="trash-warning">
-            ⚠️ Notes older than 30 days are automatically deleted
-          </p>
+          <p className="trash-warning">⚠️ Notes older than 30 days are automatically deleted</p>
         </div>
       )}
 
@@ -299,7 +305,7 @@ export function TrashView() {
           gap: 1.5rem;
           padding: 1.5rem;
           background: var(--glass-bg, rgba(255, 255, 255, 0.1));
-          backdrop-filter: blur(10px);
+          backdrop-filter: blur(var(--glass-blur, 10px));
           border-radius: 1rem;
           border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.2));
           transition: all 0.3s;

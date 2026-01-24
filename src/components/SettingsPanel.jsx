@@ -1,8 +1,16 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useSettings, useUI, useNotes } from '../contexts'
-import { SettingsIcon, CloseIcon } from './Icons'
+import { SettingsIcon, CloseIcon, MusicIcon, SunIcon, ArchiveIcon, Sparkles } from './Icons'
 import { BACKGROUNDS } from '../backgrounds'
 import { ACCENT_COLORS, THEME_PRESETS, TRANSPARENCY_PRESETS } from '../themes'
+import { MusicSettings } from './MusicSettings'
+
+const TABS = [
+  { id: 'appearance', label: 'Appearance', icon: <SunIcon /> },
+  { id: 'integrations', label: 'Integrations', icon: <MusicIcon /> },
+  { id: 'data', label: 'Data & Backup', icon: <ArchiveIcon /> },
+  { id: 'general', label: 'General', icon: <SettingsIcon /> },
+]
 
 export function SettingsPanel({ inline, ...props }) {
   const {
@@ -36,8 +44,20 @@ export function SettingsPanel({ inline, ...props }) {
   const gkeepFileRef = useRef(null)
   const mdFileRef = useRef(null)
 
+  const [activeTab, setActiveTab] = useState('appearance')
+
   const open = inline ? true : props.open !== undefined ? props.open : settingsPanelOpen
   const onClose = props.onClose || (() => setSettingsPanelOpen(false))
+
+  // Apply dynamic glass blur to root based on current transparency
+  useEffect(() => {
+    const preset = TRANSPARENCY_PRESETS.find(p => p.id === cardTransparency)
+    if (preset) {
+      document.documentElement.style.setProperty('--glass-blur', preset.blur || '16px')
+    } else {
+      document.documentElement.style.setProperty('--glass-blur', '16px')
+    }
+  }, [cardTransparency])
 
   // Prevent body scroll when settings panel is open
   useEffect(() => {
@@ -69,7 +89,7 @@ export function SettingsPanel({ inline, ...props }) {
         className={
           inline
             ? 'w-full h-full'
-            : `fixed top-0 right-0 z-50 h-full w-full sm:w-96 shadow-2xl transition-transform duration-200 ${open ? 'translate-x-0' : 'translate-x-full'}`
+            : `fixed top-0 right-0 z-[55] h-full w-full sm:w-[500px] shadow-2xl transition-transform duration-200 ${open ? 'translate-x-0' : 'translate-x-full'}`
         }
         style={
           inline
@@ -97,556 +117,391 @@ export function SettingsPanel({ inline, ...props }) {
           </div>
         )}
 
-        <div
-          className={
-            inline ? 'max-w-4xl mx-auto space-y-6 p-6' : 'p-4 overflow-y-auto h-[calc(100%-64px)]'
-          }
-        >
-          {/* Section Headers for Inline Mode */}
-          {inline && (
-            <h2 className="text-2xl font-bold mb-6 text-white border-b border-gray-700 pb-4">
-              Settings
-            </h2>
-          )}
-          {/* Data Management Section */}
-          <div className="mb-8">
-            <h4 className="text-md font-semibold mb-4">Data Management</h4>
-            <div className="space-y-3">
+        <div className={`flex flex-col h-[calc(100%-64px)] ${inline ? 'h-full md:flex-row' : ''}`}>
+          {/* Navigation Tabs */}
+          <div
+            className={`
+            flex overflow-x-auto border-b border-[var(--border-light)] flex-shrink-0
+            ${inline ? 'md:flex-col md:border-b-0 md:border-r md:w-60 md:h-full md:overflow-y-auto' : ''}
+          `}
+          >
+            {TABS.map(tab => (
               <button
-                className={`block w-full text-left px-4 py-3 border border-[var(--border-light)] rounded-lg ${dark ? 'hover:bg-white/10' : 'hover:bg-gray-50'} transition-colors`}
-                onClick={async () => {
-                  onClose()
-                  try {
-                    await exportAllNotes()
-                    if (showToast) showToast('Notes exported successfully', 'success')
-                  } catch (e) {
-                    if (showToast) showToast(e.message || 'Export failed', 'error')
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  flex items-center gap-3 px-4 py-3 whitespace-nowrap transition-colors
+                  ${
+                    activeTab === tab.id
+                      ? 'text-accent border-b-2 border-accent md:border-b-0 md:border-l-2 md:bg-accent/5'
+                      : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5 border-transparent md:border-l-2'
                   }
-                }}
+                `}
               >
-                <div className="font-medium">Export ALL notes (.json)</div>
-                <div className="text-sm text-gray-500">Download all notes as JSON file</div>
+                <span className={activeTab === tab.id ? 'text-accent' : ''}>{tab.icon}</span>
+                <span className="font-medium">{tab.label}</span>
               </button>
-
-              <button
-                className={`block w-full text-left px-4 py-3 border border-[var(--border-light)] rounded-lg ${dark ? 'hover:bg-white/10' : 'hover:bg-gray-50'} transition-colors`}
-                onClick={() => {
-                  onClose()
-                  importFileRef.current?.click()
-                }}
-              >
-                <div className="font-medium">Import notes (.json)</div>
-                <div className="text-sm text-gray-500">Import notes from JSON file</div>
-              </button>
-
-              <button
-                className={`block w-full text-left px-4 py-3 border border-[var(--border-light)] rounded-lg ${dark ? 'hover:bg-white/10' : 'hover:bg-gray-50'} transition-colors`}
-                onClick={() => {
-                  onClose()
-                  gkeepFileRef.current?.click()
-                }}
-              >
-                <div className="font-medium">Import Google Keep notes (.json)</div>
-                <div className="text-sm text-gray-500">
-                  Import notes from Google Keep JSON export
-                </div>
-              </button>
-
-              <button
-                className={`block w-full text-left px-4 py-3 border border-[var(--border-light)] rounded-lg ${dark ? 'hover:bg-white/10' : 'hover:bg-gray-50'} transition-colors`}
-                onClick={() => {
-                  onClose()
-                  mdFileRef.current?.click()
-                }}
-              >
-                <div className="font-medium">Import Markdown files (.md)</div>
-                <div className="text-sm text-gray-500">Import notes from Markdown files</div>
-              </button>
-
-              <button
-                className={`block w-full text-left px-4 py-3 border border-[var(--border-light)] rounded-lg ${dark ? 'hover:bg-white/10' : 'hover:bg-gray-50'} transition-colors`}
-                onClick={async () => {
-                  onClose()
-                  try {
-                    await downloadSecretKey()
-                    if (showToast) showToast('Secret key downloaded', 'success')
-                  } catch (e) {
-                    if (showToast) showToast(e.message || 'Download failed', 'error')
-                  }
-                }}
-              >
-                <div className="font-medium">Download secret key (.txt)</div>
-                <div className="text-sm text-gray-500">Download your encryption key for backup</div>
-              </button>
-            </div>
+            ))}
           </div>
 
-          {/* Appearance Section */}
-          <div className="mb-8">
-            <h4 className="text-md font-semibold mb-4">Appearance</h4>
-            <div className="space-y-6">
-              {/* Theme Presets */}
-              <div>
-                <div className="font-medium mb-3">Theme Presets</div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {THEME_PRESETS.map(preset => (
-                    <button
-                      key={preset.id}
-                      onClick={() => {
-                        // Apply all three theme properties at once
-                        setBackgroundImage(preset.backgroundId)
-                        setAccentColor(preset.accentId)
-                        setBackgroundOverlay(preset.overlay)
-
-                        // Apply extended properties if present
-                        if (preset.transparencyId) setCardTransparency(preset.transparencyId)
-                        if (typeof preset.darkMode === 'boolean') {
-                          if (preset.darkMode !== dark) toggleDark()
-                        }
-                        if (typeof preset.overlayOpacity === 'number')
-                          setOverlayOpacity(preset.overlayOpacity)
-                      }}
-                      className="group relative h-24 rounded-lg overflow-hidden border border-[var(--border-light)] hover:border-accent transition-all hover:scale-[1.02] text-left"
-                    >
-                      {/* Preview Background */}
-                      <div className="absolute inset-0 flex">
-                        {preset.backgroundId ? (
-                          <img
-                            src={BACKGROUNDS.find(b => b.id === preset.backgroundId)?.paths?.thumb}
-                            className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity"
-                            alt={preset.name}
-                            onError={e => {
-                              e.target.style.display = 'none'
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]" />
-                        )}
-                        {/* Overlay simulation */}
-                        {preset.overlay && <div className="absolute inset-0 bg-black/20" />}
-                      </div>
-
-                      {/* Content */}
-                      <div className="absolute inset-0 p-3 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/40 to-transparent">
-                        <div className="text-sm font-bold text-white shadow-sm flex items-center gap-2">
-                          <span
-                            className="w-2.5 h-2.5 rounded-full shadow-[0_0_5px_currentColor]"
-                            style={{
-                              backgroundColor:
-                                ACCENT_COLORS.find(c => c.id === preset.accentId)?.hex || '#6366f1',
-                              color:
-                                ACCENT_COLORS.find(c => c.id === preset.accentId)?.hex || '#6366f1',
-                            }}
-                          />
-                          {preset.name}
-                        </div>
-                      </div>
-
-                      {/* Active Indicator (if current state roughly matches preset) */}
-                      {backgroundImage === preset.backgroundId &&
-                        accentColor === preset.accentId && (
-                          <div className="absolute top-2 right-2 bg-accent text-white rounded-full p-0.5 shadow-lg">
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={3}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          </div>
-                        )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Accent Color Picker */}
-              <div>
-                <div className="font-medium mb-3">Accent Color</div>
-                <div className="flex flex-wrap gap-3">
-                  {ACCENT_COLORS.map(color => {
-                    const isSelected = accentColor === color.id
-                    return (
+          {/* Content Area */}
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
+            {/* Appearance Tab */}
+            {activeTab === 'appearance' && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+                <div>
+                  <h4 className="text-lg font-bold mb-4">Theme Presets</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {THEME_PRESETS.map(preset => (
                       <button
-                        key={color.id}
-                        onClick={() => setAccentColor(color.id)}
-                        className={
-                          isSelected
-                            ? 'w-10 h-10 rounded-full flex items-center justify-center transition-all ring-2 ring-offset-2 ring-offset-black/20 ring-white transform scale-110'
-                            : 'w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-105 opacity-80 hover:opacity-100'
-                        }
-                        style={{ backgroundColor: color.hex }}
-                        title={color.name}
+                        key={preset.id}
+                        onClick={() => {
+                          setBackgroundImage(preset.backgroundId)
+                          setAccentColor(preset.accentId)
+                          setBackgroundOverlay(preset.overlay)
+                          if (preset.transparencyId) setCardTransparency(preset.transparencyId)
+                          if (typeof preset.darkMode === 'boolean' && preset.darkMode !== dark)
+                            toggleDark()
+                          if (typeof preset.overlayOpacity === 'number')
+                            setOverlayOpacity(preset.overlayOpacity)
+                        }}
+                        className="group relative h-24 rounded-lg overflow-hidden border border-[var(--border-light)] hover:border-accent transition-all hover:scale-[1.02] text-left shadow-sm"
                       >
-                        {isSelected && (
-                          <svg
-                            className="w-5 h-5 text-white drop-shadow-md"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2.5}
-                              d="M5 13l4 4L19 7"
+                        <div className="absolute inset-0 flex">
+                          {preset.backgroundId ? (
+                            <img
+                              src={
+                                BACKGROUNDS.find(b => b.id === preset.backgroundId)?.paths?.thumb
+                              }
+                              className="w-full h-full object-cover opacity-80"
+                              alt={preset.name}
+                              onError={e => {
+                                e.target.style.display = 'none'
+                              }}
                             />
-                          </svg>
-                        )}
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]" />
+                          )}
+                          {preset.overlay && <div className="absolute inset-0 bg-black/20" />}
+                        </div>
+                        <div className="absolute inset-0 p-2 flex flex-col justify-end bg-gradient-to-t from-black/80 to-transparent">
+                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                            <span
+                              className="w-2 h-2 rounded-full"
+                              style={{
+                                backgroundColor:
+                                  ACCENT_COLORS.find(c => c.id === preset.accentId)?.hex ||
+                                  '#6366f1',
+                              }}
+                            />
+                            {preset.name}
+                          </div>
+                        </div>
                       </button>
-                    )
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* Card Transparency Picker */}
-              <div>
-                <div className="font-medium mb-3">Card Transparency</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                  Default transparency for note cards. Individual cards can override this.
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {TRANSPARENCY_PRESETS.map(preset => (
-                    <button
-                      key={preset.id}
-                      onClick={() => setCardTransparency(preset.id)}
-                      className={`px-3 py-2 rounded-lg border transition-all text-sm ${
-                        cardTransparency === preset.id
-                          ? 'border-accent bg-accent/20 text-accent font-medium'
-                          : 'border-[var(--border-light)] hover:border-gray-400 dark:hover:border-gray-500'
-                      }`}
-                      title={`${Math.round(preset.opacity * 100)}% opacity`}
-                    >
-                      {preset.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="mb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium">Workspace Background</div>
+                <div>
+                  <h4 className="text-lg font-bold mb-4">Workspace Background</h4>
+                  <div className="mb-4 flex items-center justify-between bg-black/5 dark:bg-white/5 p-3 rounded-lg">
+                    <span className="text-sm font-medium">Overlay Theme</span>
                     {backgroundImage && (
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <span className="text-xs text-gray-500">Overlay Theme</span>
+                      <div className="flex items-center gap-4">
+                        {backgroundOverlay && (
+                          <input
+                            type="range"
+                            min="0.3"
+                            max="1.0"
+                            step="0.05"
+                            value={overlayOpacity}
+                            onChange={e => setOverlayOpacity(parseFloat(e.target.value))}
+                            className="w-24 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-[var(--color-accent)]"
+                            title={`Opacity: ${Math.round(overlayOpacity * 100)}%`}
+                          />
+                        )}
                         <button
-                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                            backgroundOverlay ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'
-                          }`}
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${backgroundOverlay ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'}`}
                           onClick={() => setBackgroundOverlay(!backgroundOverlay)}
                         >
                           <span
-                            className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                              backgroundOverlay ? 'translate-x-5' : 'translate-x-1'
-                            }`}
+                            className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${backgroundOverlay ? 'translate-x-5' : 'translate-x-1'}`}
                           />
                         </button>
-                      </label>
+                      </div>
                     )}
                   </div>
-                  {backgroundImage && backgroundOverlay && (
-                    <div className="flex flex-col gap-1 w-full mt-2 pb-1 border-t border-[var(--border-light)] pt-2">
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span>Opacity</span>
-                        <span>{Math.round(overlayOpacity * 100)}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0.3"
-                        max="1.0"
-                        step="0.05"
-                        value={overlayOpacity}
-                        onChange={e => setOverlayOpacity(parseFloat(e.target.value))}
-                        className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-[var(--color-accent)]"
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 p-1">
-                  {/* Default / None Option */}
-                  <button
-                    onClick={() => setBackgroundImage(null)}
-                    className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all ${
-                      !backgroundImage
-                        ? 'border-accent ring-2 ring-accent/50'
-                        : 'border-[var(--border-light)] hover:border-gray-400'
-                    }`}
-                  >
-                    <div className="w-full h-full bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] flex items-center justify-center text-xs text-white font-medium">
-                      Default
-                    </div>
-                    {!backgroundImage && (
-                      <div className="absolute top-2 right-2 bg-accent rounded-full p-0.5">
-                        <svg
-                          className="w-3 h-3 text-white"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={3}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                  </button>
 
-                  {/* Golden Gradient Option */}
-                  <button
-                    onClick={() => setBackgroundImage('golden_gradient')}
-                    className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all ${
-                      backgroundImage === 'golden_gradient'
-                        ? 'border-accent ring-2 ring-accent/50'
-                        : 'border-[var(--border-light)] hover:border-gray-400'
-                    }`}
-                  >
-                    <div className="w-full h-full bg-gradient-to-br from-amber-100 via-yellow-200 to-amber-300 flex items-center justify-center text-xs text-amber-900 font-medium font-bold">
-                      Golden
-                    </div>
-                    {backgroundImage === 'golden_gradient' && (
-                      <div className="absolute top-2 right-2 bg-accent rounded-full p-0.5 shadow-md">
-                        <svg
-                          className="w-3 h-3 text-white"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={3}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                  </button>
-
-                  {/* Wallpaper Options */}
-                  {BACKGROUNDS.map(bg => (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     <button
-                      key={bg.id}
-                      onClick={() => setBackgroundImage(bg.id)}
-                      className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all group ${
-                        backgroundImage === bg.id
-                          ? 'border-accent ring-2 ring-accent/50'
-                          : 'border-[var(--border-light)] hover:border-gray-400'
-                      }`}
-                      title={bg.name}
+                      onClick={() => setBackgroundImage(null)}
+                      className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all ${!backgroundImage ? 'border-accent' : 'border-transparent'}`}
                     >
-                      <img
-                        src={bg.paths.thumb}
-                        alt={bg.name}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="text-[10px] text-white truncate text-center">{bg.name}</div>
+                      <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-xs text-white">
+                        Default
                       </div>
-
-                      {backgroundImage === bg.id && (
-                        <div className="absolute top-2 right-2 bg-accent rounded-full p-0.5 shadow-md">
-                          <svg
-                            className="w-3 h-3 text-white"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={3}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        </div>
-                      )}
                     </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Hidden file inputs for imports */}
-          <input
-            ref={importFileRef}
-            type="file"
-            accept="application/json"
-            className="hidden"
-            onChange={async e => {
-              if (e.target.files && e.target.files.length) {
-                try {
-                  const count = await importNotes(e.target.files)
-                  if (showToast) showToast(`Imported ${count} note(s) successfully`, 'success')
-                } catch (err) {
-                  if (showToast) showToast(err.message || 'Import failed', 'error')
-                }
-                e.target.value = ''
-              }
-            }}
-          />
-          <input
-            ref={gkeepFileRef}
-            type="file"
-            accept="application/json"
-            multiple
-            className="hidden"
-            onChange={async e => {
-              if (e.target.files && e.target.files.length) {
-                try {
-                  const count = await importGoogleKeep(e.target.files)
-                  if (showToast) showToast(`Imported ${count} Google Keep note(s)`, 'success')
-                } catch (err) {
-                  if (showToast) showToast(err.message || 'Import failed', 'error')
-                }
-                e.target.value = ''
-              }
-            }}
-          />
-          <input
-            ref={mdFileRef}
-            type="file"
-            accept=".md,text/markdown"
-            multiple
-            className="hidden"
-            onChange={async e => {
-              if (e.target.files && e.target.files.length) {
-                try {
-                  const count = await importMarkdown(e.target.files)
-                  if (showToast) showToast(`Imported ${count} markdown file(s)`, 'success')
-                } catch (err) {
-                  if (showToast) showToast(err.message || 'Import failed', 'error')
-                }
-                e.target.value = ''
-              }
-            }}
-          />
-
-          {/* UI Preferences Section */}
-          <div className="mb-8">
-            <h4 className="text-md font-semibold mb-4">UI Preferences</h4>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">Dark Mode</div>
-                  <div className="text-sm text-gray-500">Toggle between light and dark theme</div>
-                </div>
-                <button
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    dark ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                  onClick={toggleDark}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      dark ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">Local AI Assistant</div>
-                  <div className="text-sm text-gray-500">
-                    Ask questions about your notes (server-side model)
+                    {BACKGROUNDS.map(bg => (
+                      <button
+                        key={bg.id}
+                        onClick={() => setBackgroundImage(bg.id)}
+                        className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all group ${backgroundImage === bg.id ? 'border-accent' : 'border-transparent'}`}
+                      >
+                        <img
+                          src={bg.paths.thumb}
+                          alt={bg.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <button
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    localAiEnabled ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                  onClick={() => {
-                    if (!localAiEnabled) {
-                      // Show confirmation dialog when enabling
-                      if (showGenericConfirm) {
-                        showGenericConfirm({
-                          title: 'Enable AI Assistant?',
-                          message:
-                            'This will download a ~700MB AI model (Llama-3.2-1B) to the server and may use significant CPU resources. The download will happen in the background. Continue?',
-                          confirmText: 'Enable AI',
-                          cancelText: 'Cancel',
-                          danger: false,
-                          onConfirm: async () => {
-                            setLocalAiEnabled(true)
-                            if (showToast)
-                              showToast(
-                                'AI Assistant enabled. Model will download on first use.',
-                                'success'
-                              )
-                          },
-                        })
-                      } else {
-                        setLocalAiEnabled(true)
-                      }
-                    } else {
-                      // Disable without confirmation
-                      setLocalAiEnabled(false)
-                      if (showToast) showToast('AI Assistant disabled', 'info')
-                    }
-                  }}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      localAiEnabled ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
 
-              <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-medium">List View</div>
-                  <div className="text-sm text-gray-500">
-                    Display notes in a list instead of masonry grid
+                  <h4 className="text-md font-bold mb-3">Accent Color</h4>
+                  <div className="flex flex-wrap gap-3">
+                    {ACCENT_COLORS.map(color => (
+                      <button
+                        key={color.id}
+                        onClick={() => setAccentColor(color.id)}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${accentColor === color.id ? 'ring-2 ring-offset-2 ring-accent scale-110' : 'opacity-80 hover:opacity-100 hover:scale-105'}`}
+                        style={{ backgroundColor: color.hex }}
+                        title={color.name}
+                      >
+                        {accentColor === color.id && (
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        )}
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <button
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    listView ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                  onClick={toggleListView}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      listView ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
 
-              <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-medium">Always show sidebar on wide screens</div>
-                  <div className="text-sm text-gray-500">
-                    Keep tags panel visible on screens wider than 700px
+                  <h4 className="text-md font-bold mb-3">Card Transparency</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {TRANSPARENCY_PRESETS.map(preset => (
+                      <button
+                        key={preset.id}
+                        onClick={() => setCardTransparency(preset.id)}
+                        className={`px-3 py-1.5 rounded border text-xs transition-all ${
+                          cardTransparency === preset.id
+                            ? 'border-accent bg-accent/10 text-accent font-bold'
+                            : 'border-[var(--border-light)] hover:bg-black/5 dark:hover:bg-white/5'
+                        }`}
+                      >
+                        {preset.name}
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <button
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    alwaysShowSidebarOnWide ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                  onClick={() => setAlwaysShowSidebarOnWide(!alwaysShowSidebarOnWide)}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      alwaysShowSidebarOnWide ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
               </div>
-            </div>
+            )}
+
+            {/* Integrations Tab */}
+            {activeTab === 'integrations' && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 p-4 rounded-xl border border-purple-500/20">
+                  <h4 className="text-lg font-bold mb-2 flex items-center gap-2 text-purple-400">
+                    <MusicIcon className="w-5 h-5" />
+                    Self-Hosted Music
+                  </h4>
+                  <p className="text-sm opacity-80 mb-4">
+                    Connect your Navidrome, Jellyfin, Subsonic, or Ampache server to stream
+                    high-quality audio directly in the dashboard.
+                  </p>
+                  <MusicSettings />
+                </div>
+              </div>
+            )}
+
+            {/* Data Tab */}
+            {activeTab === 'data' && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                <div>
+                  <h4 className="text-lg font-bold mb-4">Export & Backup</h4>
+                  <div className="space-y-3">
+                    <button
+                      className="w-full flex items-center justify-between p-4 rounded-lg border border-[var(--border-light)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left"
+                      onClick={exportAllNotes}
+                    >
+                      <div>
+                        <div className="font-medium">Export All Notes (JSON)</div>
+                        <div className="text-xs opacity-60">Full backup including metadata</div>
+                      </div>
+                      <ArchiveIcon />
+                    </button>
+                    <button
+                      className="w-full flex items-center justify-between p-4 rounded-lg border border-[var(--border-light)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-left"
+                      onClick={downloadSecretKey}
+                    >
+                      <div>
+                        <div className="font-medium">Download Secret Key</div>
+                        <div className="text-xs opacity-60">Required for account recovery</div>
+                      </div>
+                      <SettingsIcon />
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-bold mb-4">Import Data</h4>
+                  <div className="grid gap-3">
+                    <button
+                      className="w-full p-3 rounded-lg border border-dashed border-[var(--border-light)] hover:border-accent hover:bg-accent/5 transition-all text-sm font-medium text-center"
+                      onClick={() => importFileRef.current?.click()}
+                    >
+                      Import JSON Backup
+                    </button>
+                    <button
+                      className="w-full p-3 rounded-lg border border-dashed border-[var(--border-light)] hover:border-accent hover:bg-accent/5 transition-all text-sm font-medium text-center"
+                      onClick={() => gkeepFileRef.current?.click()}
+                    >
+                      Import Google Keep JSON
+                    </button>
+                    <button
+                      className="w-full p-3 rounded-lg border border-dashed border-[var(--border-light)] hover:border-accent hover:bg-accent/5 transition-all text-sm font-medium text-center"
+                      onClick={() => mdFileRef.current?.click()}
+                    >
+                      Import Markdown Files (.md)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Hidden Inputs */}
+                <input
+                  ref={importFileRef}
+                  type="file"
+                  accept="application/json"
+                  className="hidden"
+                  onChange={e =>
+                    e.target.files?.length && importNotes(e.target.files) && (e.target.value = '')
+                  }
+                />
+                <input
+                  ref={gkeepFileRef}
+                  type="file"
+                  accept="application/json"
+                  multiple
+                  className="hidden"
+                  onChange={e =>
+                    e.target.files?.length &&
+                    importGoogleKeep(e.target.files) &&
+                    (e.target.value = '')
+                  }
+                />
+                <input
+                  ref={mdFileRef}
+                  type="file"
+                  accept=".md,text/markdown"
+                  multiple
+                  className="hidden"
+                  onChange={e =>
+                    e.target.files?.length &&
+                    importMarkdown(e.target.files) &&
+                    (e.target.value = '')
+                  }
+                />
+              </div>
+            )}
+
+            {/* General Tab */}
+            {activeTab === 'general' && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                <div>
+                  <h4 className="text-lg font-bold mb-4">UI Preferences</h4>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-black/5 dark:hover:bg-white/5">
+                      <div>
+                        <div className="font-medium">Dark Mode</div>
+                        <div className="text-xs opacity-60">Toggle application theme</div>
+                      </div>
+                      <button
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${dark ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'}`}
+                        onClick={toggleDark}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${dark ? 'translate-x-6' : 'translate-x-1'}`}
+                        />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-black/5 dark:hover:bg-white/5">
+                      <div>
+                        <div className="font-medium">List View</div>
+                        <div className="text-xs opacity-60">
+                          Display notes in a list instead of grid
+                        </div>
+                      </div>
+                      <button
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${listView ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'}`}
+                        onClick={toggleListView}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${listView ? 'translate-x-6' : 'translate-x-1'}`}
+                        />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-black/5 dark:hover:bg-white/5">
+                      <div>
+                        <div className="font-medium">Persistent Sidebar</div>
+                        <div className="text-xs opacity-60">
+                          Always show sidebar on wide screens
+                        </div>
+                      </div>
+                      <button
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${alwaysShowSidebarOnWide ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'}`}
+                        onClick={() => setAlwaysShowSidebarOnWide(!alwaysShowSidebarOnWide)}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${alwaysShowSidebarOnWide ? 'translate-x-6' : 'translate-x-1'}`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-purple-500" />
+                    Features
+                  </h4>
+                  <div className="p-4 rounded-lg bg-purple-500/5 border border-purple-500/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-medium">Local AI Assistant</div>
+                      <button
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${localAiEnabled ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+                        onClick={() => {
+                          if (!localAiEnabled && showGenericConfirm) {
+                            showGenericConfirm({
+                              title: 'Enable AI Assistant?',
+                              message:
+                                'This will download a ~700MB AI model to the server. CPU usage may increase.',
+                              confirmText: 'Enable',
+                              onConfirm: () => {
+                                setLocalAiEnabled(true)
+                                showToast('AI Assistant enabled', 'success')
+                              },
+                            })
+                          } else {
+                            setLocalAiEnabled(false)
+                          }
+                        }}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${localAiEnabled ? 'translate-x-6' : 'translate-x-1'}`}
+                        />
+                      </button>
+                    </div>
+                    <p className="text-xs opacity-70">
+                      Enable server-side LLM for answering questions about your notes. Requires
+                      decent server resources.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

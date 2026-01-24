@@ -93,11 +93,11 @@ export const THEME_PRESETS = [
 
 /** ---------- Transparency Presets ---------- */
 export const TRANSPARENCY_PRESETS = [
-  { id: 'solid', name: 'Solid', opacity: 0.95 },
-  { id: 'subtle', name: 'Subtle Glass', opacity: 0.8 },
-  { id: 'medium', name: 'Medium Glass', opacity: 0.6 },
-  { id: 'frosted', name: 'Frosted', opacity: 0.35 },
-  { id: 'airy', name: 'Airy', opacity: 0.2 },
+  { id: 'solid', name: 'Solid', opacity: 0.95, blur: '0px' },
+  { id: 'subtle', name: 'Subtle Glass', opacity: 0.8, blur: '8px' },
+  { id: 'medium', name: 'Medium Glass', opacity: 0.6, blur: '16px' },
+  { id: 'frosted', name: 'Frosted', opacity: 0.35, blur: '24px' },
+  { id: 'airy', name: 'Airy', opacity: 0.2, blur: '10px' },
 ]
 export const DEFAULT_TRANSPARENCY = 'medium' // 0.6 opacity
 
