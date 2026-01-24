@@ -25,6 +25,11 @@ export function SettingsProvider({ children }) {
       overlayOpacity: store.overlayOpacity,
       setOverlayOpacity: store.setOverlayOpacity,
 
+      // Custom Backgrounds
+      customBackgrounds: store.customBackgrounds,
+      addCustomBackground: store.addCustomBackground,
+      removeCustomBackground: store.removeCustomBackground,
+
       // Accent color
       accentColor: store.accentColor,
       setAccentColor: store.setAccentColor,
@@ -51,6 +56,9 @@ export function SettingsProvider({ children }) {
       // Music Player
       musicSettings: store.musicSettings,
       setMusicSettings: store.setMusicSettings,
+
+      // Atomic Preset
+      applyThemePreset: store.applyThemePreset,
     }),
     [store]
   )

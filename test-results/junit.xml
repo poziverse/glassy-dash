@@ -1,0 +1,20 @@
+<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="0.7395330000000001">
+<testsuite name="critical_flows.spec.js" timestamp="2026-01-24T14:01:12.074Z" hostname="chromium" tests="1" failures="1" skipped="0" time="0.002" errors="0">
+<testcase name="Critical User Flows › Complete Authentication and Note Lifecycle" classname="critical_flows.spec.js" time="0.002">
+<failure message="critical_flows.spec.js:18:3 Complete Authentication and Note Lifecycle" type="FAILURE">
+<![CDATA[  [chromium] › critical_flows.spec.js:18:3 › Critical User Flows › Complete Authentication and Note Lifecycle 
+
+    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔═════════════════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
+    ║ Please run the following command to download new browsers:              ║
+    ║                                                                         ║
+    ║     npx playwright install                                              ║
+    ║                                                                         ║
+    ║ <3 Playwright Team                                                      ║
+    ╚═════════════════════════════════════════════════════════════════════════╝
+]]>
+</failure>
+</testcase>
+</testsuite>
+</testsuites>

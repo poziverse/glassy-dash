@@ -1,7 +1,7 @@
 # API Reference
 
 **Version:** ALPHA 1.0  
-**Base URL:** `/api`  
+**Base URL:** `http://localhost:8080/api`  
 **Last Updated:** January 19, 2026
 
 ---

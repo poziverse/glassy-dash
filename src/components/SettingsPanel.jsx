@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useSettings, useUI, useNotes } from '../contexts'
 import { SettingsIcon, CloseIcon, MusicIcon, SunIcon, ArchiveIcon, Sparkles } from './Icons'
 import { BACKGROUNDS } from '../backgrounds'
-import { ACCENT_COLORS, THEME_PRESETS, TRANSPARENCY_PRESETS } from '../themes'
+import { TRANSPARENCY_PRESETS } from '../themes'
 import { MusicSettings } from './MusicSettings'
+import { AppearanceSettings } from './settings/AppearanceSettings'
 
 const TABS = [
   { id: 'appearance', label: 'Appearance', icon: <SunIcon /> },
@@ -147,156 +148,7 @@ export function SettingsPanel({ inline, ...props }) {
           {/* Content Area */}
           <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
             {/* Appearance Tab */}
-            {activeTab === 'appearance' && (
-              <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-                <div>
-                  <h4 className="text-lg font-bold mb-4">Theme Presets</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {THEME_PRESETS.map(preset => (
-                      <button
-                        key={preset.id}
-                        onClick={() => {
-                          setBackgroundImage(preset.backgroundId)
-                          setAccentColor(preset.accentId)
-                          setBackgroundOverlay(preset.overlay)
-                          if (preset.transparencyId) setCardTransparency(preset.transparencyId)
-                          if (typeof preset.darkMode === 'boolean' && preset.darkMode !== dark)
-                            toggleDark()
-                          if (typeof preset.overlayOpacity === 'number')
-                            setOverlayOpacity(preset.overlayOpacity)
-                        }}
-                        className="group relative h-24 rounded-lg overflow-hidden border border-[var(--border-light)] hover:border-accent transition-all hover:scale-[1.02] text-left shadow-sm"
-                      >
-                        <div className="absolute inset-0 flex">
-                          {preset.backgroundId ? (
-                            <img
-                              src={
-                                BACKGROUNDS.find(b => b.id === preset.backgroundId)?.paths?.thumb
-                              }
-                              className="w-full h-full object-cover opacity-80"
-                              alt={preset.name}
-                              onError={e => {
-                                e.target.style.display = 'none'
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]" />
-                          )}
-                          {preset.overlay && <div className="absolute inset-0 bg-black/20" />}
-                        </div>
-                        <div className="absolute inset-0 p-2 flex flex-col justify-end bg-gradient-to-t from-black/80 to-transparent">
-                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                            <span
-                              className="w-2 h-2 rounded-full"
-                              style={{
-                                backgroundColor:
-                                  ACCENT_COLORS.find(c => c.id === preset.accentId)?.hex ||
-                                  '#6366f1',
-                              }}
-                            />
-                            {preset.name}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-lg font-bold mb-4">Workspace Background</h4>
-                  <div className="mb-4 flex items-center justify-between bg-black/5 dark:bg-white/5 p-3 rounded-lg">
-                    <span className="text-sm font-medium">Overlay Theme</span>
-                    {backgroundImage && (
-                      <div className="flex items-center gap-4">
-                        {backgroundOverlay && (
-                          <input
-                            type="range"
-                            min="0.3"
-                            max="1.0"
-                            step="0.05"
-                            value={overlayOpacity}
-                            onChange={e => setOverlayOpacity(parseFloat(e.target.value))}
-                            className="w-24 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-[var(--color-accent)]"
-                            title={`Opacity: ${Math.round(overlayOpacity * 100)}%`}
-                          />
-                        )}
-                        <button
-                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${backgroundOverlay ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'}`}
-                          onClick={() => setBackgroundOverlay(!backgroundOverlay)}
-                        >
-                          <span
-                            className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${backgroundOverlay ? 'translate-x-5' : 'translate-x-1'}`}
-                          />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    <button
-                      onClick={() => setBackgroundImage(null)}
-                      className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all ${!backgroundImage ? 'border-accent' : 'border-transparent'}`}
-                    >
-                      <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-xs text-white">
-                        Default
-                      </div>
-                    </button>
-                    {BACKGROUNDS.map(bg => (
-                      <button
-                        key={bg.id}
-                        onClick={() => setBackgroundImage(bg.id)}
-                        className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all group ${backgroundImage === bg.id ? 'border-accent' : 'border-transparent'}`}
-                      >
-                        <img
-                          src={bg.paths.thumb}
-                          alt={bg.name}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-md font-bold mb-3">Accent Color</h4>
-                  <div className="flex flex-wrap gap-3">
-                    {ACCENT_COLORS.map(color => (
-                      <button
-                        key={color.id}
-                        onClick={() => setAccentColor(color.id)}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${accentColor === color.id ? 'ring-2 ring-offset-2 ring-accent scale-110' : 'opacity-80 hover:opacity-100 hover:scale-105'}`}
-                        style={{ backgroundColor: color.hex }}
-                        title={color.name}
-                      >
-                        {accentColor === color.id && (
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-md font-bold mb-3">Card Transparency</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {TRANSPARENCY_PRESETS.map(preset => (
-                      <button
-                        key={preset.id}
-                        onClick={() => setCardTransparency(preset.id)}
-                        className={`px-3 py-1.5 rounded border text-xs transition-all ${
-                          cardTransparency === preset.id
-                            ? 'border-accent bg-accent/10 text-accent font-bold'
-                            : 'border-[var(--border-light)] hover:bg-black/5 dark:hover:bg-white/5'
-                        }`}
-                      >
-                        {preset.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+            {activeTab === 'appearance' && <AppearanceSettings />}
 
             {/* Integrations Tab */}
             {activeTab === 'integrations' && (

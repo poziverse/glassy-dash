@@ -618,6 +618,60 @@ app.post('/api/login', authRateLimiter, async (req, res) => {
   })
 })
 
+// ---------- Admin ----------
+app.get('/admin/users', auth, async (req, res) => {
+  if (!req.user.is_admin) return res.status(403).json({ error: 'Admin access required' })
+
+  try {
+    const users = await db.prepare('SELECT id, name, email, is_admin, created_at FROM users').all()
+    const result = []
+
+    for (const u of users) {
+      const stats = await db
+        .prepare(
+          `SELECT 
+             COUNT(*) as count, 
+             SUM(length(content) + length(items_json) + length(tags_json) + length(images_json)) as bytes 
+           FROM notes WHERE user_id = ?`
+        )
+        .get(u.id)
+
+      result.push({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        is_admin: !!u.is_admin,
+        created_at: u.created_at,
+        notes: stats ? stats.count : 0,
+        storage_bytes: stats ? stats.bytes : 0,
+      })
+    }
+
+    res.json(result)
+  } catch (err) {
+    console.error('Admin users load failed:', err)
+    res.status(500).json({ error: 'Failed to load users' })
+  }
+})
+
+app.delete('/admin/users/:id', auth, async (req, res) => {
+  if (!req.user.is_admin) return res.status(403).json({ error: 'Admin access required' })
+
+  const targetId = req.params.id
+  if (String(targetId) === String(req.user.id)) {
+    return res.status(400).json({ error: 'Cannot delete yourself' })
+  }
+
+  try {
+    const info = await db.prepare('DELETE FROM users WHERE id = ?').run(targetId)
+    if (info.changes === 0) return res.status(404).json({ error: 'User not found' })
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('Admin user delete failed:', err)
+    res.status(500).json({ error: 'Failed to delete user' })
+  }
+})
+
 // ---------- Secret Key (Recovery) ----------
 function generateSecretKey(bytes = 32) {
   const buf = crypto.randomBytes(bytes)
@@ -1511,6 +1565,11 @@ initializeDatabase().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`API listening on http://0.0.0.0:${PORT}  (env=${NODE_ENV})`)
   })
+})
+
+// ---------- 404 Handler for API ----------
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'API endpoint not found' })
 })
 
 // ---------- Global Error Handler ----------

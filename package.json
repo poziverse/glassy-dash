@@ -57,6 +57,7 @@
     "express-validator": "^7.3.1",
     "framer-motion": "^12.23.12",
     "helmet": "^8.1.0",
+    "idb-keyval": "^6.2.2",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.539.0",
     "marked": "^16.1.2",

@@ -46,7 +46,6 @@ Main dashboard view for displaying and managing notes.
 
 ```jsx
 import { NotesView } from './components/NotesView'
-
 ;<NotesView />
 ```
 
@@ -67,7 +66,6 @@ Administrative panel for user and system management.
 
 ```jsx
 import { AdminView } from './components/AdminView'
-
 ;<AdminView />
 ```
 
@@ -95,7 +93,6 @@ Application shell containing sidebar and main content area.
 
 ```jsx
 import { DashboardLayout } from './components/DashboardLayout'
-
 ;<DashboardLayout showSidebar={true}>
   <NotesGrid />
 </DashboardLayout>
@@ -129,7 +126,6 @@ Search and filter input for notes.
 
 ```jsx
 import { SearchBar } from './components/SearchBar'
-
 ;<SearchBar onSearch={query => console.log(query)} placeholder="Search notes..." />
 ```
 
@@ -160,7 +156,6 @@ interface NoteCardProps {
 
 ```jsx
 import { NoteCard } from './components/NoteCard'
-
 ;<NoteCard
   note={note}
   onClick={id => openNote(id)}
@@ -198,7 +193,6 @@ interface ComposerProps {
 
 ```jsx
 import { Composer } from './components/Composer'
-
 ;<Composer onCreate={note => createNote(note)} defaultType="text" />
 ```
 
@@ -207,6 +201,7 @@ import { Composer } from './components/Composer'
 ### SettingsPanel
 
 User preferences and settings configuration.
+**Note:** Internal tabs are modularized (e.g., `AppearanceSettings`).
 
 **Features:**
 
@@ -215,7 +210,7 @@ User preferences and settings configuration.
 - Accent color picker
 - Card transparency
 - Theme customization
-- Background selection
+- Background selection & **Custom Uploads**
 - Accent color picker
 - Card transparency
 - Overlay opacity slider
@@ -225,7 +220,6 @@ User preferences and settings configuration.
 
 ```jsx
 import { SettingsPanel } from './components/SettingsPanel'
-
 ;<SettingsPanel />
 ```
 
@@ -247,7 +241,6 @@ Complex modal for note editing and configuration.
 
 ```jsx
 import { Modal } from './components/Modal'
-
 ;<Modal
   isOpen={isModalOpen}
   note={currentNote}
@@ -278,7 +271,6 @@ interface DrawingCanvasProps {
 
 ```jsx
 import { DrawingCanvas } from './components/DrawingCanvas'
-
 ;<DrawingCanvas
   content={note.content}
   onChange={content => updateNote({ content })}
@@ -309,7 +301,6 @@ interface ChecklistRowProps {
 
 ```jsx
 import { ChecklistRow } from './components/ChecklistRow'
-
 ;<ChecklistRow
   item={{ id: '1', text: 'Buy milk', done: false }}
   onToggle={id => toggleItem(id)}
@@ -337,7 +328,6 @@ interface FormatToolbarProps {
 
 ```jsx
 import { FormatToolbar } from './components/FormatToolbar'
-
 ;<FormatToolbar onFormat={(format, value) => applyFormat(format, value)} visible={true} />
 ```
 
@@ -608,7 +598,6 @@ interface ErrorBoundaryProps {
 
 ```jsx
 import { ErrorBoundary } from './components/ErrorBoundary'
-
 ;<ErrorBoundary
   fallback={<div>Something went wrong</div>}
   onError={error => logger.error('component_error', { error })}

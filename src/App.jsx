@@ -11,6 +11,8 @@ import { useAllowRegistration } from './hooks/queries/useAuth'
 // Components
 import NotesView from './components/NotesView'
 import AdminView from './components/AdminView'
+import HealthView from './components/HealthView'
+import AlertsView from './components/AlertsView'
 import Modal from './components/ModalWrapper'
 import { LoginView, RegisterView, SecretLoginView } from './components/AuthViews'
 import { SettingsPanel } from './components/SettingsPanel'
@@ -148,6 +150,10 @@ export default function App() {
     // Authenticated
     if (route === '#/admin') {
       currentView = <AdminView />
+    } else if (route === '#/health') {
+      currentView = <HealthView />
+    } else if (route === '#/alerts') {
+      currentView = <AlertsView />
     } else if (route === '#/trash') {
       currentView = <TrashView />
     } else {

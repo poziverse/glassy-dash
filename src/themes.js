@@ -10,12 +10,22 @@ export const ACCENT_COLORS = [
 
 export const THEME_PRESETS = [
   {
+    id: 'space',
+    name: 'Deep Space',
+    backgroundId: null, // Default gradient
+    accentId: 'indigo',
+    overlay: false,
+    overlayOpacity: 0.85,
+    darkMode: true,
+    transparencyId: 'medium',
+  },
+  {
     id: 'cyberpunk',
     name: 'Neon Tokyo',
     backgroundId: 'City-Night.png',
     accentId: 'rose',
     overlay: true,
-    overlayOpacity: 0.85,
+    overlayOpacity: 0.7, // Reduced for better glass visibility
     darkMode: true,
     transparencyId: 'frosted',
   },
@@ -25,7 +35,7 @@ export const THEME_PRESETS = [
     backgroundId: 'Bonsai-Plant.png',
     accentId: 'emerald',
     overlay: true,
-    overlayOpacity: 0.7,
+    overlayOpacity: 0.6,
     darkMode: true,
     transparencyId: 'medium',
   },
@@ -35,18 +45,8 @@ export const THEME_PRESETS = [
     backgroundId: 'Fantasy - Sunset.png',
     accentId: 'amber',
     overlay: true,
-    overlayOpacity: 0.6,
+    overlayOpacity: 0.5, // Lighter for warm glow
     darkMode: false,
-    transparencyId: 'medium',
-  },
-  {
-    id: 'space',
-    name: 'Deep Space',
-    backgroundId: null, // Default gradient
-    accentId: 'indigo',
-    overlay: false,
-    overlayOpacity: 0.85,
-    darkMode: true,
     transparencyId: 'medium',
   },
   {
@@ -75,7 +75,7 @@ export const THEME_PRESETS = [
     backgroundId: 'Nightfall-by-the-Lake.jpg',
     accentId: 'sky',
     overlay: true,
-    overlayOpacity: 0.7,
+    overlayOpacity: 0.6, // Reduced slightly
     darkMode: true,
     transparencyId: 'subtle',
   },
@@ -85,7 +85,7 @@ export const THEME_PRESETS = [
     backgroundId: 'City-Rain.png',
     accentId: 'indigo', // or cyan
     overlay: true,
-    overlayOpacity: 0.8,
+    overlayOpacity: 0.7, // Reduced to show rain
     darkMode: true,
     transparencyId: 'medium',
   },

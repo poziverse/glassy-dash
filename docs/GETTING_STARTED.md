@@ -1,7 +1,7 @@
 # Getting Started with GlassKeep
 
 **Version:** ALPHA 1.0  
-**Last Updated:** January 19, 2026  
+**Last Updated:** January 19, 2026
 
 ---
 
@@ -14,11 +14,13 @@ GlassKeep is a modern, production-ready note-taking application with real-time c
 ## Prerequisites
 
 ### Required
+
 - **Node.js** v18.0.0 or higher
 - **npm** v9.0.0 or higher
 - **Git** (for cloning)
 
 ### Recommended
+
 - **VS Code** with recommended extensions
 - **Modern browser** (Chrome, Firefox, Edge, Safari)
 
@@ -60,7 +62,7 @@ touch .env
 Edit `server/.env`:
 
 ```env
-PORT=3000
+PORT=8080
 NODE_ENV=development
 DATABASE_PATH=../data/notes.db
 JWT_SECRET=your-secure-random-secret-key-here
@@ -92,8 +94,9 @@ npm run dev
 ```
 
 Expected output:
+
 ```
-Server running on port 3000
+Server running on port 8080
 Database connected: ../data/notes.db
 AI Model: Ready
 ```
@@ -106,6 +109,7 @@ npm run dev
 ```
 
 Expected output:
+
 ```
 VITE v7.x.x  ready in xxx ms
 ➜  Local:   http://localhost:5173/
@@ -147,15 +151,16 @@ Then open [http://localhost:5173](http://localhost:5173).
 
 1. Click the gear icon (Settings)
 2. Customize:
-   - **Theme** - Dark/Light mode
+   - **Theme** - Dark/Light mode (Default: Zen Garden)
    - **Accent Color** - Choose your color
-   - **Background Image** - Add a background
+   - **Background Image** - Add a background (or upload your own)
    - **Card Transparency** - Adjust transparency
    - **View Mode** - List or Grid
 
 ### 4. Explore Features
 
 #### Note Features
+
 - **Pin Notes** - Keep important notes at top
 - **Archive Notes** - Hide completed notes
 - **Color Code** - Organize with colors
@@ -165,17 +170,20 @@ Then open [http://localhost:5173](http://localhost:5173).
 - **Multi-select** - Bulk operations
 
 #### Collaboration
+
 1. Open a note
 2. Click "Share" button
 3. Enter username to add collaborator
 4. Real-time sync via Server-Sent Events
 
 #### Import/Export
+
 - **Export JSON** - Full backup
 - **Import Google Keep** - Migrate from Google Keep
 - **Import Markdown** - Import MD files
 
 #### AI Assistant (Optional)
+
 1. Click AI button in toolbar
 2. Ask questions about your notes
 3. Get intelligent suggestions
@@ -185,16 +193,16 @@ Then open [http://localhost:5173](http://localhost:5173).
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `N` | Create new note |
-| `Ctrl/Cmd + S` | Save note |
-| `Ctrl/Cmd + F` | Search notes |
-| `Escape` | Close modal |
-| `Delete` | Delete selected notes |
-| `Ctrl/Cmd + A` | Select all notes |
-| `Ctrl/Cmd + C` | Copy selected notes |
-| `Ctrl/Cmd + V` | Paste clipboard |
+| Shortcut       | Action                |
+| -------------- | --------------------- |
+| `N`            | Create new note       |
+| `Ctrl/Cmd + S` | Save note             |
+| `Ctrl/Cmd + F` | Search notes          |
+| `Escape`       | Close modal           |
+| `Delete`       | Delete selected notes |
+| `Ctrl/Cmd + A` | Select all notes      |
+| `Ctrl/Cmd + C` | Copy selected notes   |
+| `Ctrl/Cmd + V` | Paste clipboard       |
 
 ---
 
@@ -264,11 +272,13 @@ If you create an admin account (first registered user is admin):
 ## System Requirements
 
 ### Development
+
 - **OS:** Windows, macOS, or Linux
 - **RAM:** 4GB minimum, 8GB recommended
 - **Disk:** 500MB free space
 
 ### Production
+
 - **OS:** Linux recommended
 - **RAM:** 2GB minimum
 - **Disk:** 1GB free space

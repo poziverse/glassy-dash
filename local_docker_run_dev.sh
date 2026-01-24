@@ -4,6 +4,10 @@
 
 set -e  # Exit on any error
 
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -28,7 +32,7 @@ docker run -d \
   -e JWT_SECRET=dev-please-change-in-production \
   -e DB_FILE=/app/data/notes.db \
   -e ADMIN_EMAILS=admin \
-  -v "$PWD:/app" \
+  -v "$SCRIPT_DIR:/app" \
   -v "$HOME/.glass-keep:/app/data" \
   glass-keep:dev
 

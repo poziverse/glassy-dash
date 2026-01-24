@@ -5,6 +5,11 @@
 
 set -e  # Exit on any error
 
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+cd "$SCRIPT_DIR"
+
+
 echo "🧹 Removing existing glass-keep container (if exists)..."
 docker rm -f glass-keep 2>/dev/null || true
 
@@ -15,9 +20,9 @@ echo "🚀 Starting glass-keep container..."
 docker run -d \
   --name glass-keep \
   --restart unless-stopped \
-  -p 8080:3001 \
+  -p 8080:8080 \
   -e NODE_ENV=production \
-  -e API_PORT=3001 \
+  -e API_PORT=8080 \
   -e JWT_SECRET=dev-please-change \
   -e DB_FILE=/app/data/notes.db \
   -e ADMIN_EMAILS=adminniku \

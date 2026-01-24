@@ -1,25 +1,26 @@
-import React from 'react';
-import { 
-  LayoutDashboard, 
-  Layers, 
-  Bell, 
-  Activity, 
-  Settings, 
+import React from 'react'
+import {
+  LayoutDashboard,
+  Layers,
+  Bell,
+  Activity,
+  Settings,
   Archive,
   Shield,
   Hash,
   ChevronLeft,
-  ChevronRight
-} from 'lucide-react';
+  ChevronRight,
+} from 'lucide-react'
 
 const SidebarItem = ({ icon: Icon, label, active, onClick, collapsed, badge }) => {
   return (
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative overflow-hidden
-        ${active 
-          ? 'bg-[var(--color-accent)]/15 text-white border border-[var(--color-accent)]/30 shadow-[0_0_20px_var(--color-accent-glow)]' 
-          : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+        ${
+          active
+            ? 'bg-[var(--color-accent)]/15 text-white border border-[var(--color-accent)]/30 shadow-[0_0_20px_var(--color-accent-glow)]'
+            : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
         }
       `}
       title={collapsed ? label : undefined}
@@ -28,59 +29,59 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, collapsed, badge }) =
       {active && (
         <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-accent)]/10 to-transparent pointer-events-none" />
       )}
-      
-      <Icon 
-        size={20} 
-        className={`relative z-10 transition-colors flex-shrink-0 ${active ? 'text-[var(--color-accent)]' : 'text-gray-500 group-hover:text-gray-300'}`} 
+
+      <Icon
+        size={20}
+        className={`relative z-10 transition-colors flex-shrink-0 ${active ? 'text-[var(--color-accent)]' : 'text-gray-500 group-hover:text-gray-300'}`}
       />
-      
+
       {!collapsed && (
         <span className="relative z-10 text-sm font-medium tracking-wide flex-1 text-left truncate">
           {label}
         </span>
       )}
-      
+
       {!collapsed && badge && (
         <span className="relative z-10 text-xs bg-white/10 px-2 py-0.5 rounded-full text-gray-400 font-medium">
           {badge}
         </span>
       )}
-      
+
       {active && !collapsed && !badge && (
         <div className="relative z-10 w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] shadow-[0_0_8px_var(--color-accent)]" />
       )}
     </button>
-  );
-};
+  )
+}
 
 const SectionLabel = ({ label, collapsed }) => {
-  if (collapsed) return <div className="h-px bg-white/5 mx-2 my-4" />;
+  if (collapsed) return <div className="h-px bg-white/5 mx-2 my-4" />
   return (
     <div className="px-3 mb-2 mt-6 text-[10px] font-bold text-gray-500/80 uppercase tracking-[0.2em]">
       {label}
     </div>
-  );
-};
+  )
+}
 
-export default function Sidebar({ 
-  activeSection = 'overview', 
-  onNavigate = () => {}, 
-  className = '', 
-  tags = [], 
+export default function Sidebar({
+  activeSection = 'overview',
+  onNavigate = () => {},
+  className = '',
+  tags = [],
   onTagSelect = () => {},
   activeTag,
   isAdmin = false,
   collapsed = false,
-  onToggleCollapse = () => {}
+  onToggleCollapse = () => {},
 }) {
   // Defensive: ensure tags is always an array
-  const safeTags = Array.isArray(tags) ? tags : [];
+  const safeTags = Array.isArray(tags) ? tags : []
   // Defensive: ensure handlers are always functions
-  const safeOnNavigate = typeof onNavigate === 'function' ? onNavigate : () => {};
-  const safeOnTagSelect = typeof onTagSelect === 'function' ? onTagSelect : () => {};
-  const safeOnToggleCollapse = typeof onToggleCollapse === 'function' ? onToggleCollapse : () => {};
+  const safeOnNavigate = typeof onNavigate === 'function' ? onNavigate : () => {}
+  const safeOnTagSelect = typeof onTagSelect === 'function' ? onTagSelect : () => {}
+  const safeOnToggleCollapse = typeof onToggleCollapse === 'function' ? onToggleCollapse : () => {}
   return (
-    <aside 
+    <aside
       className={`
         flex flex-col h-full transition-all duration-300 ease-out relative
         ${collapsed ? 'w-[72px]' : 'w-64'}
@@ -89,10 +90,10 @@ export default function Sidebar({
     >
       {/* Glass background with unified styling */}
       <div className="absolute inset-0 bg-[#0c0c14]/70 backdrop-blur-2xl border-r border-white/[0.06]" />
-      
+
       {/* Subtle gradient overlay for depth */}
       <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] via-transparent to-transparent pointer-events-none" />
-      
+
       {/* Inner glow at top matching accent */}
       <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-[var(--color-accent)]/[0.03] to-transparent pointer-events-none" />
 
@@ -111,7 +112,7 @@ export default function Sidebar({
       </div>
 
       {/* Collapse Toggle - Always visible */}
-      <button 
+      <button
         onClick={safeOnToggleCollapse}
         className={`
           absolute top-[72px] -right-3 z-30
@@ -129,45 +130,40 @@ export default function Sidebar({
 
       {/* Nav Content */}
       <div className="relative flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-thin scrollbar-thumb-white/10">
-        
         <SectionLabel label="Views" collapsed={collapsed} />
-        <SidebarItem 
-          icon={LayoutDashboard} 
-          label="All Notes" 
-          active={activeSection === 'overview' && !activeTag} 
-          onClick={() => { safeOnNavigate('overview'); safeOnTagSelect(null); }} 
+        <SidebarItem
+          icon={LayoutDashboard}
+          label="All Notes"
+          active={activeSection === 'overview' && !activeTag}
+          onClick={() => {
+            safeOnNavigate('overview')
+            safeOnTagSelect(null)
+          }}
           collapsed={collapsed}
         />
-        <SidebarItem 
-          icon={Archive} 
-          label="Archive" 
-          active={activeTag === 'ARCHIVED' && activeSection === 'overview'} 
-          onClick={() => { safeOnNavigate('overview'); safeOnTagSelect('ARCHIVED'); }}
+        <SidebarItem
+          icon={Archive}
+          label="Archive"
+          active={activeTag === 'ARCHIVED' && activeSection === 'overview'}
+          onClick={() => {
+            safeOnNavigate('overview')
+            safeOnTagSelect('ARCHIVED')
+          }}
           collapsed={collapsed}
         />
-        
-        {isAdmin && (
-          <SidebarItem 
-            icon={Shield} 
-            label="Admin Panel" 
-            active={activeSection === 'admin'} 
-            onClick={() => safeOnNavigate('admin')}
-            collapsed={collapsed}
-          />
-        )}
 
         <SectionLabel label="System" collapsed={collapsed} />
-        <SidebarItem 
-          icon={Activity} 
-          label="Health" 
-          active={activeSection === 'health'} 
+        <SidebarItem
+          icon={Activity}
+          label="Health"
+          active={activeSection === 'health'}
           onClick={() => safeOnNavigate('health')}
           collapsed={collapsed}
         />
-        <SidebarItem 
-          icon={Bell} 
-          label="Alerts" 
-          active={activeSection === 'alerts'} 
+        <SidebarItem
+          icon={Bell}
+          label="Alerts"
+          active={activeSection === 'alerts'}
           onClick={() => safeOnNavigate('alerts')}
           collapsed={collapsed}
         />
@@ -176,13 +172,16 @@ export default function Sidebar({
           <>
             <SectionLabel label="Tags" collapsed={collapsed} />
             {safeTags.slice(0, collapsed ? 3 : 10).map(tag => (
-              <SidebarItem 
+              <SidebarItem
                 key={tag.name}
-                icon={Hash} 
-                label={tag.name} 
-                active={activeTag === tag.name && activeSection === 'overview'} 
+                icon={Hash}
+                label={tag.name}
+                active={activeTag === tag.name && activeSection === 'overview'}
                 badge={!collapsed ? tag.count : undefined}
-                onClick={() => { safeOnNavigate('overview'); safeOnTagSelect(tag.name); }}
+                onClick={() => {
+                  safeOnNavigate('overview')
+                  safeOnTagSelect(tag.name)
+                }}
                 collapsed={collapsed}
               />
             ))}
@@ -196,15 +195,24 @@ export default function Sidebar({
       </div>
 
       {/* Bottom Section - Settings */}
-      <div className="relative p-3 border-t border-white/[0.06]">
-        <SidebarItem 
-          icon={Settings} 
-          label="Settings" 
-          active={activeSection === 'settings'} 
+      <div className="relative p-3 border-t border-white/[0.06] space-y-1">
+        {isAdmin && (
+          <SidebarItem
+            icon={Shield}
+            label="Admin Panel"
+            active={activeSection === 'admin'}
+            onClick={() => safeOnNavigate('admin')}
+            collapsed={collapsed}
+          />
+        )}
+        <SidebarItem
+          icon={Settings}
+          label="Settings"
+          active={activeSection === 'settings'}
           onClick={() => safeOnNavigate('settings')}
           collapsed={collapsed}
         />
       </div>
     </aside>
-  );
+  )
 }

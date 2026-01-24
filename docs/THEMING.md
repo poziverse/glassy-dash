@@ -72,7 +72,7 @@ The theming system uses CSS custom properties (variables) defined on the `:root`
 
 ### 2.2 Theme State Management
 
-```typescript
+````typescript
 interface ThemeState {
   // Mode
   dark: boolean
@@ -81,10 +81,10 @@ interface ThemeState {
   accentColor: AccentColor
 
   // Background
-  backgroundImage: string | null | 'golden_gradient'
+  backgroundImage: string | null | 'Bonsai-Plant.png' // Default: Bonsai-Plant.png
 
   // Preset
-  themePreset: string | null
+  themePreset: string | null // Default: zen
 
   // View Mode
   viewMode: 'grid' | 'list'
@@ -93,21 +93,39 @@ interface ThemeState {
   compactMode: boolean
 
   // Overlay Opacity
-  overlayOpacity: number // 0.0 to 1.0
+  overlayOpacity: number // Default: 0.6
 
   // Card Transparency Preset
   cardTransparency: string
+
+  // Custom Backgrounds
+  customBackgrounds: Array<{ id: string, name: string, timestamp: number }>
 }
 
+### 2.3 Custom Backgrounds (New)
+
+Custom backgrounds are implemented using a privacy-focused "Offline-First" approach:
+
+1.  **Storage**: Images are stored in the browser's **IndexedDB** using `src/utils/userStorage.js`.
+2.  **Privacy**: No images are uploaded to the server. They stay on the user's device.
+3.  **Limits**: Max 5MB per file.
+4.  **Rendering**: Images are loaded as Blobs and rendered via `URL.createObjectURL`.
+
+```javascript
+// Example ID format in state
+backgroundImage: "custom:550e8400-e29b-41d4-a716-446655440000"
+````
+
 type AccentColor =
-  | 'neon' // #8b5cf6 (purple)
-  | 'rose' // #f43f5e (red)
-  | 'emerald' // #10b981 (green)
-  | 'amber' // #f59e0b (yellow)
-  | 'cyan' // #06b6d4 (cyan)
-  | 'violet' // #8b5cf6 (violet)
-  | 'pink' // #ec4899 (pink)
-```
+| 'neon' // #8b5cf6 (purple)
+| 'rose' // #f43f5e (red)
+| 'emerald' // #10b981 (green)
+| 'amber' // #f59e0b (yellow)
+| 'cyan' // #06b6d4 (cyan)
+| 'violet' // #8b5cf6 (violet)
+| 'pink' // #ec4899 (pink)
+
+````
 
 ---
 
@@ -159,7 +177,7 @@ export function setAccentColor(color) {
   root.classList.remove('theme-neon', 'theme-rose', 'theme-emerald', ...);
   root.classList.add(`theme-${color}`);
 }
-```
+````
 
 ---
 
@@ -169,38 +187,6 @@ export function setAccentColor(color) {
 
 ```javascript
 export const themePresets = {
-  neonTokyo: {
-    name: 'Neon Tokyo',
-    accent: 'rose',
-    background: 'City-Night.png',
-    dark: true,
-    overlay: true,
-    overlayOpacity: 0.85,
-    transparencyId: 'frosted',
-    description: 'Vibrant cyberpunk aesthetic with neon accents',
-  },
-
-  zenGarden: {
-    name: 'Zen Garden',
-    accent: 'emerald',
-    background: 'Bonsai-Plant.png',
-    dark: true,
-    overlay: true,
-    overlayOpacity: 0.7,
-    transparencyId: 'medium',
-    description: 'Peaceful nature theme with green accents',
-  },
-  goldenHour: {
-    name: 'Golden Hour',
-    accent: 'amber',
-    background: 'Fantasy - Sunset.png',
-    dark: false,
-    overlay: true,
-    overlayOpacity: 0.6,
-    transparencyId: 'medium',
-    description: 'Warm golden theme with amber accents',
-  },
-
   deepSpace: {
     name: 'Deep Space',
     accent: 'indigo',
@@ -212,49 +198,28 @@ export const themePresets = {
     description: 'Classic dark theme with gradient background',
   },
 
-  darkNature: {
-    name: 'Dark Nature',
+  neonTokyo: {
+    name: 'Neon Tokyo',
+    accent: 'rose',
+    background: 'City-Night.png',
+    dark: true,
+    overlay: true,
+    overlayOpacity: 0.7, // Reduced for visibility
+    transparencyId: 'frosted',
+    description: 'Vibrant cyberpunk aesthetic with neon accents',
+  },
+
+  zenGarden: {
+    name: 'Zen Garden',
     accent: 'emerald',
-    background: 'Dark_Nature.png',
+    background: 'Bonsai-Plant.png',
     dark: true,
     overlay: true,
     overlayOpacity: 0.6,
-    transparencyId: 'frosted',
-    description: 'Deep forest tones with emerald accents',
-  },
-
-  etherealSilk: {
-    name: 'Ethereal Silk',
-    accent: 'violet',
-    background: 'Nix Silk 06.png',
-    dark: true,
-    overlay: true,
-    overlayOpacity: 0.4,
-    transparencyId: 'airy',
-    description: 'Soft, flowing silk texture with violet hues',
-  },
-
-  midnightBlue: {
-    name: 'Midnight Blue',
-    accent: 'sky',
-    background: 'Nightfall-by-the-Lake.jpg',
-    dark: true,
-    overlay: true,
-    overlayOpacity: 0.7,
-    transparencyId: 'subtle',
-    description: 'Calm lakeside night with sky blue accents',
-  },
-
-  urbanRain: {
-    name: 'Urban Rain',
-    accent: 'indigo',
-    background: 'City-Rain.png',
-    dark: true,
-    overlay: true,
-    overlayOpacity: 0.8,
     transparencyId: 'medium',
-    description: 'Moody rainy city with deep indigo accents',
+    description: 'Peaceful nature theme with green accents',
   },
+  // ... other presets
 }
 /* Note: Presets now control Dark Mode, Card Transparency, and Overlay Opacity to ensure optimal visual combinations. */
 ```
@@ -284,6 +249,22 @@ export function applyThemePreset(presetName) {
 | **Medium**  | Medium Glass | 0.50    | Balanced glass effect (Default)        |
 | **Frosted** | Frosted      | 0.30    | Stronger blur, distinct glass feel     |
 | **Airy**    | Airy         | 0.12    | Highly transparent, ethereal look      |
+
+### 4.4 Transparency Interaction Logic
+
+To ensure the "Glassmorphism" effect is visible and high-quality, the system balances two critical opacity layers:
+
+1.  **Overlay Opacity** (`--bg-tertiary`): A dark/light tint over the background image.
+    - _High Overlay (0.8+)_: Maximum text readability, but kills the glass effect (background becomes too solid).
+    - _Low Overlay (0.3)_: Vivid glass effect, but potential readability issues on busy backgrounds.
+2.  **Card Transparency** (`--glass-blur`): The blur applied to the note cards.
+    - _Rule_: **Higher Blur requires Lower Overlay**.
+    - _Reasoning_: If the overlay is too dark, there is no texture for the blur to interact with, making the card look like a solid grey box.
+
+**Optimal Settings Strategy:**
+
+- For **Frosted** glass (high blur), keep Overlay Opacity below `0.75`.
+- For **Airy** glass (low opacity), keep Overlay Opacity below `0.5`.
 
 ---
 

@@ -5,15 +5,16 @@ import { ACCENT_COLORS } from '../themes'
 export const useSettingsStore = create(
   persist(
     (set, get) => ({
-      // Initial state
-      dark: false,
+      // Initial state (Default: Zen Garden)
+      dark: true,
       viewMode: 'grid',
-      theme: 'default',
+      theme: 'zen',
       background: 'default',
-      accentColor: 'indigo',
-      backgroundImage: null,
-      backgroundOverlay: false,
-      overlayOpacity: 0.85,
+      accentColor: 'emerald',
+      customBackgrounds: [], // { id, name, timestamp }
+      backgroundImage: 'Bonsai-Plant.png',
+      backgroundOverlay: true,
+      overlayOpacity: 0.6,
       cardTransparency: 'medium',
       sidebarAlwaysVisible: false,
       sidebarWidth: 288,
@@ -65,6 +66,30 @@ export const useSettingsStore = create(
       setBackgroundOverlay: backgroundOverlay => set({ backgroundOverlay }),
       setOverlayOpacity: overlayOpacity => set({ overlayOpacity }),
 
+      // Custom Background Actions
+      setCustomBackgrounds: customBackgrounds => set({ customBackgrounds }),
+
+      addCustomBackground: (id, name) => {
+        set(state => ({
+          customBackgrounds: [...state.customBackgrounds, { id, name, timestamp: Date.now() }],
+        }))
+      },
+
+      removeCustomBackground: id => {
+        set(state => {
+          // If the deleted background is currently active, reset to default
+          let newBgImage = state.backgroundImage
+          if (state.backgroundImage === `custom:${id}`) {
+            newBgImage = null
+          }
+
+          return {
+            customBackgrounds: state.customBackgrounds.filter(bg => bg.id !== id),
+            backgroundImage: newBgImage,
+          }
+        })
+      },
+
       setAccentColor: color => {
         set({ accentColor: color })
         // Update CSS variable for accent
@@ -92,6 +117,41 @@ export const useSettingsStore = create(
         set(state => ({
           musicSettings: { ...state.musicSettings, ...settings },
         })),
+
+      // Atomic Theme Application (Prevents Flicker)
+      applyThemePreset: preset => {
+        const updates = {}
+        if (preset.backgroundId !== undefined) updates.backgroundImage = preset.backgroundId
+        if (preset.accentId !== undefined) updates.accentColor = preset.accentId
+        if (preset.overlay !== undefined) updates.backgroundOverlay = preset.overlay
+        if (preset.transparencyId !== undefined) updates.cardTransparency = preset.transparencyId
+        if (typeof preset.darkMode === 'boolean') updates.dark = preset.darkMode
+        if (typeof preset.overlayOpacity === 'number')
+          updates.overlayOpacity = preset.overlayOpacity
+
+        set(updates)
+
+        // Apply side effects immediately
+        const state = get() // Get updated state
+
+        // Dark Mode
+        if (state.dark) document.documentElement.classList.add('dark')
+        else document.documentElement.classList.remove('dark')
+
+        // Accent Color & CSS Vars
+        const theme = ACCENT_COLORS.find(c => c.id === state.accentColor) || ACCENT_COLORS[0]
+        document.documentElement.style.setProperty('--color-accent', theme.hex)
+        document.documentElement.style.setProperty('--color-accent-hover', theme.hover)
+
+        const hex = theme.hex.replace('#', '')
+        const r = parseInt(hex.substring(0, 2), 16)
+        const g = parseInt(hex.substring(2, 4), 16)
+        const b = parseInt(hex.substring(4, 6), 16)
+        document.documentElement.style.setProperty(
+          '--color-accent-glow',
+          `rgba(${r}, ${g}, ${b}, 0.15)`
+        )
+      },
 
       // Load saved settings into document
       loadSettings: () => {

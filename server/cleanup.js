@@ -36,7 +36,6 @@ async function cleanupTrash(daysOld = 30) {
 
     if (count === 0) {
       console.log(`✅ No old notes to clean up. Trash is fresh!`)
-      await db.close()
       return
     }
 
@@ -141,11 +140,6 @@ if (require.main === module) {
         console.log('  node server/cleanup.js stats')
     }
   })()
-}
-
-module.exports = {
-  cleanupTrash,
-  showStats,
 }
 
 module.exports = {

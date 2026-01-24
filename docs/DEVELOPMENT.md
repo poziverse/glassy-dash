@@ -1,7 +1,7 @@
 # Development Guide
 
 **Version:** ALPHA 1.0  
-**Last Updated:** January 19, 2026  
+**Last Updated:** January 19, 2026
 
 ---
 
@@ -59,7 +59,7 @@ touch .env
 Create `server/.env`:
 
 ```env
-PORT=3000
+PORT=8080
 NODE_ENV=development
 DATABASE_PATH=../data/notes.db
 JWT_SECRET=your-secret-key
@@ -234,20 +234,18 @@ server/index.js
 **Using Contexts in Components:**
 
 ```jsx
-import { useNotes } from '../contexts/NotesContext';
-import { useSettings } from '../contexts/SettingsContext';
+import { useNotes } from '../contexts/NotesContext'
+import { useSettings } from '../contexts/SettingsContext'
 
 function MyComponent() {
-  const { notes, createNote, deleteNote } = useNotes();
-  const { dark, setDark } = useSettings();
+  const { notes, createNote, deleteNote } = useNotes()
+  const { dark, setDark } = useSettings()
 
   return (
     <div className={dark ? 'dark' : 'light'}>
-      <button onClick={() => createNote({ title: 'New' })}>
-        Create Note
-      </button>
+      <button onClick={() => createNote({ title: 'New' })}>Create Note</button>
     </div>
-  );
+  )
 }
 ```
 
@@ -264,10 +262,10 @@ function MyComponent() {
 
 ```jsx
 // Settings persist to localStorage
-const { settings, updateSettings } = useSettings();
+const { settings, updateSettings } = useSettings()
 
 // Auth tokens in localStorage
-const { token, login, logout } = useAuth();
+const { token, login, logout } = useAuth()
 ```
 
 **Server-Side:**
@@ -288,26 +286,23 @@ const { token, login, logout } = useAuth();
 
 ```jsx
 // src/components/MyComponent.jsx
-import React from 'react';
+import React from 'react'
 
 export function MyComponent({ title, onSave }) {
-  const [value, setValue] = React.useState('');
+  const [value, setValue] = React.useState('')
 
   const handleSave = () => {
-    onSave(value);
-    setValue('');
-  };
+    onSave(value)
+    setValue('')
+  }
 
   return (
     <div className="my-component">
       <h2>{title}</h2>
-      <input
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-      />
+      <input value={value} onChange={e => setValue(e.target.value)} />
       <button onClick={handleSave}>Save</button>
     </div>
-  );
+  )
 }
 ```
 
@@ -326,7 +321,7 @@ export function MyComponent({ title, onSave }) {
 
 ```javascript
 // src/components/index.js
-export { MyComponent } from './MyComponent';
+export { MyComponent } from './MyComponent'
 ```
 
 ### Component Best Practices
@@ -339,17 +334,13 @@ export { MyComponent } from './MyComponent';
 
 ```jsx
 // Good: Pure component with memoization
-import React, { memo } from 'react';
+import React, { memo } from 'react'
 
 const NoteCard = memo(({ note, onClick }) => {
-  return (
-    <div onClick={() => onClick(note.id)}>
-      {note.title}
-    </div>
-  );
-});
+  return <div onClick={() => onClick(note.id)}>{note.title}</div>
+})
 
-export default NoteCard;
+export default NoteCard
 ```
 
 ---
@@ -376,42 +367,43 @@ npm test -- NoteCard.test.jsx
 
 ```jsx
 // src/components/__tests__/NoteCard.test.jsx
-import { render, screen, fireEvent } from '@testing-library/react';
-import { NotesContext } from '../../contexts/NotesContext';
-import NoteCard from '../NoteCard';
+import { render, screen, fireEvent } from '@testing-library/react'
+import { NotesContext } from '../../contexts/NotesContext'
+import NoteCard from '../NoteCard'
 
 describe('NoteCard', () => {
-  const mockDeleteNote = jest.fn();
+  const mockDeleteNote = jest.fn()
 
-  const renderWithProvider = (component) => {
+  const renderWithProvider = component => {
     return render(
       <NotesContext.Provider value={{ deleteNote: mockDeleteNote }}>
         {component}
       </NotesContext.Provider>
-    );
-  };
+    )
+  }
 
   it('renders note title', () => {
-    const note = { id: 1, title: 'Test Note' };
-    renderWithProvider(<NoteCard note={note} />);
-    
-    expect(screen.getByText('Test Note')).toBeInTheDocument();
-  });
+    const note = { id: 1, title: 'Test Note' }
+    renderWithProvider(<NoteCard note={note} />)
+
+    expect(screen.getByText('Test Note')).toBeInTheDocument()
+  })
 
   it('calls delete on delete button click', () => {
-    const note = { id: 1, title: 'Test' };
-    renderWithProvider(<NoteCard note={note} />);
-    
-    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
-    
-    expect(mockDeleteNote).toHaveBeenCalledWith(1);
-  });
-});
+    const note = { id: 1, title: 'Test' }
+    renderWithProvider(<NoteCard note={note} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /delete/i }))
+
+    expect(mockDeleteNote).toHaveBeenCalledWith(1)
+  })
+})
 ```
 
 ### Test Coverage
 
 **Current Coverage:**
+
 - GlassKeep: 20 test cases
 - DashyDash: 28 test cases
 - Total: 48 test cases
@@ -466,27 +458,27 @@ chore: update dependencies to latest versions
 
 ```javascript
 // server/routes/myroute.js
-const express = require('express');
-const router = express.Router();
+const express = require('express')
+const router = express.Router()
 
 router.get('/', async (req, res) => {
   try {
-    const data = await getData();
-    res.json(data);
+    const data = await getData()
+    res.json(data)
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message })
   }
-});
+})
 
-module.exports = router;
+module.exports = router
 ```
 
 **2. Register in Server:**
 
 ```javascript
 // server/index.js
-const myRoute = require('./routes/myroute');
-app.use('/api/myroute', myRoute);
+const myRoute = require('./routes/myroute')
+app.use('/api/myroute', myRoute)
 ```
 
 **3. Add API Wrapper:**
@@ -494,7 +486,7 @@ app.use('/api/myroute', myRoute);
 ```javascript
 // src/utils/helpers.js
 export async function myApiCall() {
-  return api('/api/myroute');
+  return api('/api/myroute')
 }
 ```
 
@@ -505,19 +497,19 @@ export async function myApiCall() {
 ```javascript
 // server/migrations/add_new_note_type.js
 module.exports = {
-  up: (db) => {
+  up: db => {
     db.exec(`
       ALTER TABLE notes
       ADD COLUMN new_field TEXT;
-    `);
+    `)
   },
-  down: (db) => {
+  down: db => {
     db.exec(`
       ALTER TABLE notes
       DROP COLUMN new_field;
-    `);
-  }
-};
+    `)
+  },
+}
 ```
 
 **2. Create Component:**
@@ -533,7 +525,7 @@ export function NewNoteType({ note, onSave }) {
 
 ```jsx
 // src/components/Modal.jsx
-import { NewNoteType } from './NewNoteType';
+import { NewNoteType } from './NewNoteType'
 
 // Add to note type switch
 ```
@@ -544,16 +536,16 @@ import { NewNoteType } from './NewNoteType';
 
 ```jsx
 // src/contexts/SettingsContext.jsx
-const [newSetting, setNewSetting] = useState(false);
+const [newSetting, setNewSetting] = useState(false)
 
 const value = {
   // ... existing
   newSetting,
-  setNewSetting: (val) => {
-    setNewSetting(val);
-    localStorage.setItem('newSetting', JSON.stringify(val));
-  }
-};
+  setNewSetting: val => {
+    setNewSetting(val)
+    localStorage.setItem('newSetting', JSON.stringify(val))
+  },
+}
 ```
 
 **2. Add UI:**
@@ -562,11 +554,7 @@ const value = {
 // src/components/SettingsPanel.jsx
 <div className="setting-item">
   <label>New Setting</label>
-  <input
-    type="checkbox"
-    checked={newSetting}
-    onChange={(e) => setNewSetting(e.target.checked)}
-  />
+  <input type="checkbox" checked={newSetting} onChange={e => setNewSetting(e.target.checked)} />
 </div>
 ```
 
@@ -609,19 +597,22 @@ npm run dev
 ```jsx
 // Memoize expensive computations
 const sortedNotes = useMemo(() => {
-  return notes.sort((a, b) => a.position - b.position);
-}, [notes]);
+  return notes.sort((a, b) => a.position - b.position)
+}, [notes])
 
 // Memoize callbacks
-const handleDelete = useCallback((id) => {
-  deleteNote(id);
-}, [deleteNote]);
+const handleDelete = useCallback(
+  id => {
+    deleteNote(id)
+  },
+  [deleteNote]
+)
 
 // Code splitting
-const HeavyComponent = React.lazy(() => import('./HeavyComponent'));
+const HeavyComponent = React.lazy(() => import('./HeavyComponent'))
 
 // Lazy load with Suspense
-<Suspense fallback={<Spinner />}>
+;<Suspense fallback={<Spinner />}>
   <HeavyComponent />
 </Suspense>
 ```
@@ -630,19 +621,19 @@ const HeavyComponent = React.lazy(() => import('./HeavyComponent'));
 
 ```javascript
 // Use prepared statements
-const stmt = db.prepare('SELECT * FROM notes WHERE user_id = ?');
-const notes = stmt.all(userId);
+const stmt = db.prepare('SELECT * FROM notes WHERE user_id = ?')
+const notes = stmt.all(userId)
 
 // Enable caching
-const cache = require('../middleware/cache');
-app.get('/api/notes', cache('5m'), getNotes);
+const cache = require('../middleware/cache')
+app.get('/api/notes', cache('5m'), getNotes)
 
 // Batch operations
 db.transaction(() => {
   notes.forEach(note => {
-    db.prepare('INSERT INTO notes (...) VALUES (...)').run(note);
-  });
-})();
+    db.prepare('INSERT INTO notes (...) VALUES (...)').run(note)
+  })
+})()
 ```
 
 ---
@@ -653,30 +644,30 @@ db.transaction(() => {
 
 ```jsx
 // Sanitize user input
-import DOMPurify from 'dompurify';
-const cleanContent = DOMPurify.sanitize(userContent);
+import DOMPurify from 'dompurify'
+const cleanContent = DOMPurify.sanitize(userContent)
 
 // Never store secrets in frontend code
 // Use environment variables
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL
 ```
 
 ### Backend Security
 
 ```javascript
 // Validate input
-const { title } = req.body;
+const { title } = req.body
 if (!title || title.length > 200) {
-  return res.status(400).json({ error: 'Invalid title' });
+  return res.status(400).json({ error: 'Invalid title' })
 }
 
 // Use prepared statements (SQL injection prevention)
-const stmt = db.prepare('SELECT * FROM notes WHERE id = ?');
-const note = stmt.get(noteId);
+const stmt = db.prepare('SELECT * FROM notes WHERE id = ?')
+const note = stmt.get(noteId)
 
 // Rate limiting
-const rateLimit = require('express-rate-limit');
-app.use('/api/auth/', rateLimit({ windowMs: 60000, max: 5 }));
+const rateLimit = require('express-rate-limit')
+app.use('/api/auth/', rateLimit({ windowMs: 60000, max: 5 }))
 ```
 
 ---

@@ -31,6 +31,7 @@ A sleek notes application with Markdown, checklists, images, tag chips, color th
   - Toggle whether new account sign-ups are allowed (off by default).
   - View all users with: Name, Email/Username, Is Admin, Notes count, Storage used, Created at.
   - Delete user (also deletes their notes; protected against deleting last admin).
+  - **Mission Control (Health Dashboard)**: Real-time system telemetry page showing CPU/Memory vitals, DB stats, and API performance.
 
 - **Notes**
   - Text notes with Markdown (H1/H2/H3, bold, italic, strike, links, blockquote, inline/fenced code)

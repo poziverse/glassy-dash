@@ -148,42 +148,58 @@ export default function NotesView() {
         </div>
       )}
 
-      {currentBg && currentBg.paths?.desktop && (
-        <div className="fixed inset-0 z-[-1] pointer-events-none">
-          <img
-            src={currentBg.paths.desktop}
-            srcSet={
-              currentBg.paths.mobile && currentBg.paths.xl
-                ? `${currentBg.paths.mobile} 800w, ${currentBg.paths.desktop} 1920w, ${currentBg.paths.xl} 3840w`
-                : undefined
-            }
-            sizes="100vw"
-            alt="Background"
-            className="w-full h-full object-cover animate-in fade-in duration-700"
-          />
-          {backgroundOverlay && (
-            <div
-              className="absolute inset-0 transition-opacity duration-700"
-              style={{
-                background: dark
-                  ? `radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.2), transparent 40%), 
+      {backgroundImage?.startsWith('custom:') ? (
+        <CustomBackgroundRenderer
+          id={backgroundImage.split(':')[1]}
+          dark={dark}
+          backgroundOverlay={backgroundOverlay}
+          overlayOpacity={overlayOpacity}
+        />
+      ) : (
+        currentBg &&
+        currentBg.paths?.desktop && (
+          <div className="fixed inset-0 z-[-1] pointer-events-none">
+            <img
+              src={currentBg.paths.desktop}
+              srcSet={
+                currentBg.paths.mobile && currentBg.paths.xl
+                  ? `${currentBg.paths.mobile} 800w, ${currentBg.paths.desktop} 1920w, ${currentBg.paths.xl} 3840w`
+                  : undefined
+              }
+              sizes="100vw"
+              alt="Background"
+              className="w-full h-full object-cover animate-in fade-in duration-700"
+            />
+            {backgroundOverlay && (
+              <div
+                className="absolute inset-0 transition-opacity duration-700"
+                style={{
+                  background: dark
+                    ? `radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.2), transparent 40%), 
                       radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.15), transparent 40%),
                       linear-gradient(to bottom, #050505, #121212, #0a0a0a)`
-                  : `radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%), 
+                    : `radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%), 
                       radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.1), transparent 25%),
                       linear-gradient(to bottom, #0f0c29, #302b63, #24243e)`,
-                overflow: 'hidden',
-                opacity: overlayOpacity,
-              }}
-            />
-          )}
-          {dark && !backgroundOverlay && <div className="absolute inset-0 bg-black/40" />}
-        </div>
+                  overflow: 'hidden',
+                  opacity: overlayOpacity,
+                }}
+              />
+            )}
+            {dark && !backgroundOverlay && <div className="absolute inset-0 bg-black/40" />}
+          </div>
+        )
       )}
 
       <DashboardLayout
         activeSection={activeSection}
-        onNavigate={setActiveSection}
+        onNavigate={section => {
+          if (['health', 'alerts', 'admin'].includes(section)) {
+            window.location.hash = `#/${section}`
+          } else {
+            setActiveSection(section)
+          }
+        }}
         user={currentUser}
         onSearch={setSearch}
         tags={tagsWithCounts}
@@ -429,5 +445,50 @@ export default function NotesView() {
         </div>
       </DashboardLayout>
     </>
+  )
+}
+
+function CustomBackgroundRenderer({ id, dark, backgroundOverlay, overlayOpacity }) {
+  const [url, setUrl] = React.useState(null)
+
+  React.useEffect(() => {
+    let active = true
+    import('../utils/userStorage').then(({ getCustomBackground }) => {
+      getCustomBackground(id).then(blob => {
+        if (active && blob) {
+          setUrl(URL.createObjectURL(blob))
+        }
+      })
+    })
+    return () => (active = false)
+  }, [id])
+
+  if (!url) return <div className="fixed inset-0 z-[-1] bg-black/90" />
+
+  return (
+    <div className="fixed inset-0 z-[-1] pointer-events-none">
+      <img
+        src={url}
+        alt="Custom Background"
+        className="w-full h-full object-cover animate-in fade-in duration-700"
+      />
+      {backgroundOverlay && (
+        <div
+          className="absolute inset-0 transition-opacity duration-700"
+          style={{
+            background: dark
+              ? `radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.2), transparent 40%), 
+                  radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.15), transparent 40%),
+                  linear-gradient(to bottom, #050505, #121212, #0a0a0a)`
+              : `radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%), 
+                  radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.1), transparent 25%),
+                  linear-gradient(to bottom, #0f0c29, #302b63, #24243e)`,
+            overflow: 'hidden',
+            opacity: overlayOpacity,
+          }}
+        />
+      )}
+      {dark && !backgroundOverlay && <div className="absolute inset-0 bg-black/40" />}
+    </div>
   )
 }
