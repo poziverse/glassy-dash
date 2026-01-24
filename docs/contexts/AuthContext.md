@@ -317,7 +317,7 @@ const setAuthStorage = useCallback((obj) => {
 ## Session Persistence
 
 ### localStorage Key
-- **Key:** `'glass-keep-auth'`
+- **Key:** `'glassy-dash-auth'`
 - **Format:** JSON string
 - **Content:**
 ```javascript
@@ -371,7 +371,7 @@ useEffect(() => {
     try {
       const keys = Object.keys(localStorage);
       keys.forEach(key => {
-        if (key.includes('glass-keep-')) {
+        if (key.includes('glassy-dash-')) {
           localStorage.removeItem(key);
         }
       });
@@ -916,7 +916,7 @@ test('User can logout', async ({ page }) => {
   await expect(page).toHaveURL(/\/login/);
   
   // Verify session cleared
-  const session = await page.evaluate(() => localStorage.getItem('glass-keep-auth'));
+  const session = await page.evaluate(() => localStorage.getItem('glassy-dash-auth'));
   expect(session).toBeNull();
 });
 
@@ -944,7 +944,7 @@ test('Auth expiration clears cache', async ({ page }) => {
   
   // Add some cache
   await page.evaluate(() => {
-    localStorage.setItem('glass-keep-notes', '[{id: 1}]');
+    localStorage.setItem('glassy-dash-notes', '[{id: 1}]');
   });
   
   // Simulate auth expiration
@@ -953,7 +953,7 @@ test('Auth expiration clears cache', async ({ page }) => {
   });
   
   // Verify cache cleared
-  const cache = await page.evaluate(() => localStorage.getItem('glass-keep-notes'));
+  const cache = await page.evaluate(() => localStorage.getItem('glassy-dash-notes'));
   expect(cache).toBeNull();
 });
 ```
@@ -1017,7 +1017,7 @@ test('Auth expiration clears cache', async ({ page }) => {
 - Clear function not called
 
 **Solutions:**
-1. Verify cache keys include 'glass-keep-'
+1. Verify cache keys include 'glassy-dash-'
 2. Check localStorage is accessible
 3. Verify logout function called
 4. Check for errors in clear function

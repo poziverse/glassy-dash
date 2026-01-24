@@ -4,7 +4,7 @@
  */
 
 const API_BASE = "/api";
-const AUTH_KEY = "glass-keep-auth";
+const AUTH_KEY = "glassy-dash-auth";
 
 const getAuthToken = () => {
   try {

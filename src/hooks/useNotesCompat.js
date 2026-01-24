@@ -5,10 +5,10 @@ import { api } from '../lib/api'
 import { uid, mdForDownload, sanitizeFilename, downloadText } from '../utils/helpers'
 import logger from '../utils/logger'
 
-const NOTES_CACHE_KEY = 'glass-keep-notes-'
-const ARCHIVED_NOTES_CACHE_KEY = 'glass-keep-archived-notes-'
-const TRASH_NOTES_CACHE_KEY = 'glass-keep-trash-notes-'
-const CACHE_TIMESTAMP_KEY = 'glass-keep-notes-cache-timestamp'
+const NOTES_CACHE_KEY = 'glassy-dash-notes-'
+const ARCHIVED_NOTES_CACHE_KEY = 'glassy-dash-archived-notes-'
+const TRASH_NOTES_CACHE_KEY = 'glassy-dash-trash-notes-'
+const CACHE_TIMESTAMP_KEY = 'glassy-dash-notes-cache-timestamp'
 
 /**
  * useNotesCompat Hook
@@ -218,7 +218,7 @@ export function useNotesCompat() {
       const data = await api('/notes/export', { token })
       const json = JSON.stringify(data, null, 2)
       const ts = new Date().toISOString().replace(/[:.]/g, '-')
-      const fname = sanitizeFilename(`glass-keep-notes-${userId || 'user'}-${ts}`) + '.json'
+      const fname = sanitizeFilename(`glassy-dash-notes-${userId || 'user'}-${ts}`) + '.json'
       downloadText(fname, json)
       logger.info('notes_exported', {
         count: Array.isArray(data?.notes) ? data.notes.length : 0,
@@ -261,7 +261,7 @@ export function useNotesCompat() {
     const data = await api('/secret-key', { method: 'POST', token })
     if (!data?.key) throw new Error('Secret key not returned by server')
     const ts = new Date().toISOString().replace(/[:.]/g, '-')
-    const fname = `glass-keep-secret-key-${ts}.txt`
+    const fname = `glassy-dash-secret-key-${ts}.txt`
     const content =
       `Glass Keep  Secret Recovery Key\n\n` +
       `Keep this key safe. Anyone with this key can sign in as you.\n\n` +
@@ -464,7 +464,7 @@ export function useNotesCompat() {
     if (!selectedIds.size) return
     const selectedNotesArr = notes.filter(n => selectedIds.has(String(n.id)))
     const json = JSON.stringify(selectedNotesArr, null, 2)
-    const fname = `glass-keep-notes-${selectedIds.size}-${Date.now()}.json`
+    const fname = `glassy-dash-notes-${selectedIds.size}-${Date.now()}.json`
     downloadText(fname, json)
     logger.info('bulk_download', { count: selectedIds.size })
   }

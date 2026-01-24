@@ -2,7 +2,7 @@
 
 ## 1. Modular Architecture
 
-**React GlassKeep** operates on a fully modular, Context-driven architecture. The codebase has moved away from a monolithic structure to a separation of concerns between Routing, Views, Layouts, and State.
+**React GlassyDash** operates on a fully modular, Context-driven architecture. The codebase has moved away from a monolithic structure to a separation of concerns between Routing, Views, Layouts, and State.
 
 ### Core Structure
 - **Root Entry (`App.jsx`)**: Acts as a high-level router and provider shell. It listens to authentication state and hash routes to switch between top-level views (`NotesView`, `AdminView`, `LoginView`, `RegisterView`).
@@ -173,14 +173,14 @@ Heavy logic is moved out of components into `src/utils/helpers.js`:
 - **Coverage**: @vitest/coverage-v8 with multiple formats
 
 ### Test Suites
-- **GlassKeep**: 20 test cases (Auth, Notes, Collaboration)
+- **GlassyDash**: 20 test cases (Auth, Notes, Collaboration)
 - **DashyDash**: 28 test cases (Widgets, Settings, AI Companion)
 - **Total**: 48 test cases covering critical paths
 
 ### CI/CD Pipeline
 - GitHub Actions workflow
 - Runs on push to main/develop and pull requests
-- Separate jobs for GlassKeep and DashyDash
+- Separate jobs for GlassyDash and DashyDash
 - Coverage report generation
 
 ---
@@ -573,7 +573,7 @@ npm run api         # Start API server
 
 ## Conclusion
 
-GlassKeep now features a comprehensive, production-ready architecture with:
+GlassyDash now features a comprehensive, production-ready architecture with:
 - Modular, Context-driven state management
 - Multi-layer security (Helmet, rate limiting, validation, XSS/CSRF/SQL protection)
 - Performance optimization (caching, prepared statements, monitoring)

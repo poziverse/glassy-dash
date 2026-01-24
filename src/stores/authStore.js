@@ -13,15 +13,15 @@ export const useAuthStore = create(
       login: (user, token) => {
         set({ currentUser: user, token, isAuthenticated: true });
         // Store token for API calls
-        localStorage.setItem('glass-keep-token', token);
+        localStorage.setItem('glassy-dash-token', token);
       },
 
       logout: () => {
         set({ currentUser: null, token: null, isAuthenticated: false });
         // Clear token from localStorage
-        localStorage.removeItem('glass-keep-token');
+        localStorage.removeItem('glassy-dash-token');
         // Clear user data from localStorage
-        localStorage.removeItem('glass-keep-user');
+        localStorage.removeItem('glassy-dash-user');
       },
 
       updateUser: (updates) => {
@@ -31,16 +31,16 @@ export const useAuthStore = create(
         // Update localStorage
         if (get().currentUser) {
           const updatedUser = { ...get().currentUser, ...updates };
-          localStorage.setItem('glass-keep-user', JSON.stringify(updatedUser));
+          localStorage.setItem('glassy-dash-user', JSON.stringify(updatedUser));
         }
       },
 
       setToken: (token) => {
         set({ token, isAuthenticated: !!token });
         if (token) {
-          localStorage.setItem('glass-keep-token', token);
+          localStorage.setItem('glassy-dash-token', token);
         } else {
-          localStorage.removeItem('glass-keep-token');
+          localStorage.removeItem('glassy-dash-token');
         }
       },
 
@@ -48,14 +48,14 @@ export const useAuthStore = create(
         const isAuthenticated = !!user;
         set({ currentUser: user, isAuthenticated });
         if (user) {
-          localStorage.setItem('glass-keep-user', JSON.stringify(user));
+          localStorage.setItem('glassy-dash-user', JSON.stringify(user));
         } else {
-          localStorage.removeItem('glass-keep-user');
+          localStorage.removeItem('glassy-dash-user');
         }
       }
     }),
     {
-      name: 'glass-keep-auth'
+      name: 'glassy-dash-auth'
     }
   )
 );

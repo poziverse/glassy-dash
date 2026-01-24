@@ -200,7 +200,7 @@ export const useNotesStore = create(
       setIsOnline: online => set({ isOnline: online }),
     }),
     {
-      name: 'glass-keep-notes',
+      name: 'glassy-dash-notes',
       partialize: state => ({
         notes: state.notes,
         tags: state.tags,

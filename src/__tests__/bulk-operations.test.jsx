@@ -260,9 +260,9 @@ describe('Bulk Operations Logic', () => {
       const selectedIds = ['note-1', 'note-2', 'note-3'];
       const timestamp = Date.now();
       
-      const filename = `glass-keep-notes-${selectedIds.length}-${timestamp}.json`;
+      const filename = `glassy-dash-notes-${selectedIds.length}-${timestamp}.json`;
       
-      expect(filename).toMatch(/glass-keep-notes-3-\d+\.json/);
+      expect(filename).toMatch(/glassy-dash-notes-3-\d+\.json/);
     });
 
     it('should filter selected notes for download', () => {

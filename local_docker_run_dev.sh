@@ -15,15 +15,15 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}🧹 Removing existing glass-keep-dev container (if exists)...${NC}"
-docker rm -f glass-keep-dev 2>/dev/null || true
+echo -e "${BLUE}🧹 Removing existing glassy-dash-dev container (if exists)...${NC}"
+docker rm -f glassy-dash-dev 2>/dev/null || true
 
 echo -e "${YELLOW}🏗️  Building development Docker image...${NC}"
-docker build -f Dockerfile.dev -t glass-keep:dev .
+docker build -f Dockerfile.dev -t glassy-dash:dev .
 
 echo -e "${GREEN}🚀 Starting development container...${NC}"
 docker run -d \
-  --name glass-keep-dev \
+  --name glassy-dash-dev \
   --restart unless-stopped \
   -p 5173:5173 \
   -p 3001:8080 \
@@ -33,8 +33,8 @@ docker run -d \
   -e DB_FILE=/app/data/notes.db \
   -e ADMIN_EMAILS=admin \
   -v "$SCRIPT_DIR:/app" \
-  -v "$HOME/.glass-keep:/app/data" \
-  glass-keep:dev
+  -v "$HOME/.glassy-dash:/app/data" \
+  glassy-dash:dev
 
 echo -e "${GREEN}✅ Development container started!${NC}"
 echo ""
@@ -44,10 +44,10 @@ echo -e "   API (Express Server):        ${GREEN}http://localhost:8080${NC}"
 echo -e "   Health Check:               ${GREEN}http://localhost:8080/api/health${NC}"
 echo ""
 echo -e "${BLUE}📝 Useful Commands:${NC}"
-echo -e "   View logs:     ${YELLOW}docker logs -f glass-keep-dev${NC}"
-echo -e "   Stop container: ${YELLOW}docker stop glass-keep-dev${NC}"
-echo -e "   Start shell:    ${YELLOW}docker exec -it glass-keep-dev bash${NC}"
-echo -e "   Restart:        ${YELLOW}docker restart glass-keep-dev${NC}"
+echo -e "   View logs:     ${YELLOW}docker logs -f glassy-dash-dev${NC}"
+echo -e "   Stop container: ${YELLOW}docker stop glassy-dash-dev${NC}"
+echo -e "   Start shell:    ${YELLOW}docker exec -it glassy-dash-dev bash${NC}"
+echo -e "   Restart:        ${YELLOW}docker restart glassy-dash-dev${NC}"
 echo ""
 echo -e "${BLUE}💡 Note: Changes to source code are automatically reflected (hot reload)${NC}"
-echo -e "${BLUE}💡 Note: Data persists in $HOME/.glass-keep${NC}"
+echo -e "${BLUE}💡 Note: Data persists in $HOME/.glassy-dash${NC}"

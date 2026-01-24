@@ -7,7 +7,7 @@
 
 ## Overview
 
-GlassKeep is built on a modern, modular architecture leveraging **TanStack Query** for robust server state management, **React Context API** for service orchestration, and **Zustand** for local UI state. The backend uses Express.js and SQLite with real-time synchronization via Server-Sent Events (SSE).
+GlassyDash is built on a modern, modular architecture leveraging **TanStack Query** for robust server state management, **React Context API** for service orchestration, and **Zustand** for local UI state. The backend uses Express.js and SQLite with real-time synchronization via Server-Sent Events (SSE).
 
 ---
 
@@ -822,7 +822,7 @@ SQLite Database
 
 ## Conclusion
 
-GlassKeep's architecture is designed for:
+GlassyDash's architecture is designed for:
 
 **Modularity** - Clean separation of concerns
 **Security** - Multi-layer protection

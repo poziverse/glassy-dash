@@ -176,7 +176,7 @@ export const useSettingsStore = create(
       },
     }),
     {
-      name: 'glass-keep-settings',
+      name: 'glassy-dash-settings',
     }
   )
 )

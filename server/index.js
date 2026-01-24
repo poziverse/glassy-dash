@@ -1108,7 +1108,7 @@ app.get('/api/notes/archived', auth, async (req, res) => {
 app.get('/api/notes/export', auth, async (req, res) => {
   const rows = await listNotes.all(req.user.id)
   res.json({
-    app: 'glass-keep',
+    app: 'glassy-dash',
     version: 1,
     user: req.user.email,
     exportedAt: nowISO(),

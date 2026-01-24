@@ -313,7 +313,7 @@ GLASSYDASH_uptime_seconds ${process.uptime()}
  */
 router.get('/info', (req, res) => {
   res.json({
-    name: 'GlassKeep',
+    name: 'GlassyDash',
     version: process.env.npm_package_version || '1.0.2',
     description: 'Secure, real-time note-taking application',
     environment: process.env.NODE_ENV || 'development',

@@ -100,12 +100,12 @@ export default function Sidebar({
       {/* Brand */}
       <div className="relative h-16 flex items-center px-4 border-b border-white/[0.06]">
         <div className="flex items-center gap-3 text-white min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--color-accent)] via-[var(--color-accent)] to-purple-600 flex items-center justify-center shadow-lg shadow-[var(--color-accent)]/25 flex-shrink-0">
-            <Layers size={18} className="text-white" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--color-accent)]/20 to-purple-600/20 flex items-center justify-center flex-shrink-0 overflow-hidden border border-white/10 shadow-lg">
+            <img src="/favicon.png" alt="Logo" className="w-full h-full object-cover" />
           </div>
           {!collapsed && (
             <span className="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-gray-400 truncate">
-              GlassKeep
+              GlassyDash
             </span>
           )}
         </div>

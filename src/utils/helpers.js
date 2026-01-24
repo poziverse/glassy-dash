@@ -7,7 +7,7 @@ import logger from './logger'
 
 /** ---------- API Helpers ---------- */
 export const API_BASE = '/api'
-export const AUTH_KEY = 'glass-keep-auth'
+export const AUTH_KEY = 'glassy-dash-auth'
 
 /** ---------- Color & Transparency Constants ---------- */
 export const LIGHT_COLORS = {

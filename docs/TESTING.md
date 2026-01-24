@@ -7,7 +7,7 @@
 
 ## Overview
 
-This guide covers testing strategies, tools, and best practices for GlassKeep.
+This guide covers testing strategies, tools, and best practices for GlassyDash.
 
 ---
 
@@ -190,7 +190,7 @@ Located in `tests/api/api_health.test.js`, these tests verify the core stability
 
 ```bash
 # Run API health integration tests
-docker exec glass-keep-dev npx vitest run -c vitest.api.config.js tests/api/api_health.test.js
+docker exec glassy-dash-dev npx vitest run -c vitest.api.config.js tests/api/api_health.test.js
 ```
 
 **Coverage:**

@@ -7,7 +7,7 @@
 
 ## Overview
 
-This guide covers common issues and their solutions for GlassKeep development and deployment.
+This guide covers common issues and their solutions for GlassyDash development and deployment.
 
 ---
 
@@ -526,6 +526,38 @@ const NoteCard = React.memo(({ note, onClick }) => {
 
 ## Deployment Issues
 
+### 502 Bad Gateway (Cloudflare Tunnel)
+
+**Symptom:** Accessing the domain returns a "502 Bad Gateway" error from Cloudflare.
+
+**Cause:** The Cloudflare tunnel cannot reach the application port.
+
+**Solution:**
+
+1. **Check Application Port**: Verify the app is listening on the mapped port (usually `3001`).
+   ```bash
+   # On the VM
+   ss -tulpn | grep 3001
+   ```
+2. **Verify Tunnel Target**: Ensure the Cloudflare Tunnel configuration points to the correct IP/Port.
+   - If `cloudflared` is in the VM: `http://localhost:3001`
+   - If `cloudflared` is on a Jump Host: `http://192.168.122.45:3001`
+3. **Traefik Conflict**: Ensure you are NOT using port `8080` for the external mapping, as Traefik already occupies it. Use `3001`.
+
+---
+
+### Port Mismatch (Internal vs External)
+
+**Symptom:** App works locally or via IP but fails via the tunnel or domain.
+
+**Solution:**
+
+1. Check `docker-compose.prod.yml` mapping. It should be `3001:8080`.
+2. Ensure `API_PORT` inside the container remains `8080`.
+3. Verify health check path in `docker-compose`: `http://localhost:8080/api/monitoring/health`.
+
+---
+
 ### Application Won't Start
 
 **Error:**
@@ -632,7 +664,7 @@ npm run dev
 
 When reporting issues, include:
 
-1. GlassKeep version
+1. GlassyDash version
 2. Node.js version (`node --version`)
 3. Browser name and version
 4. Full error message

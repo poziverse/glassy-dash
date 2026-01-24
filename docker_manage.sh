@@ -130,13 +130,13 @@ case "${1:-help}" in
         ;;
     dev-compose)
         stop_all
-        echo -e "${GREEN}🚀 Starting development mode (docker-compose)...${NC}"
-        docker-compose up --build
+        echo -e "${GREEN}🚀 Starting development mode (docker compose)...${NC}"
+        docker compose up --build
         ;;
     prod-compose)
         stop_all
-        echo -e "${GREEN}🚀 Starting production mode (docker-compose)...${NC}"
-        docker-compose -f docker-compose.prod.yml up --build -d
+        echo -e "${GREEN}🚀 Starting production mode (docker compose)...${NC}"
+        docker compose -f docker-compose.prod.yml up -d
         ;;
     stop)
         stop_all

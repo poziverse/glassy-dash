@@ -30,9 +30,9 @@ Then SSH directly: `ssh glassy-vm`
 
 ## Deployment Procedure
 
-### 1. Build & Transport
+### 1. Build & Transport (Local Machine)
 
-Since the VM has limited bandwidth or connectivity, we build locally and push the image.
+Since the VM has limited direct connectivity, build the image locally and transport it via the jump host.
 
 ```bash
 # 1. Build locally
@@ -41,53 +41,50 @@ docker build -t glassy-dash:latest .
 # 2. Save image to tarball
 docker save glassy-dash:latest -o glassy-dash.tar
 
-# 3. Transfer to Jump Host -> VM (Using SCP with ProxyJump)
-scp -o ProxyJump=glassy-jump glassy-dash.tar glassy-vm:~/
+# 3. Transfer to Jump Host
+scp glassy-dash.tar glassy-jump:~/
 ```
 
-### 2. Install on VM
-
-SSH into the VM (`ssh glassy-vm`) and run:
+### 2. Transport to VM (From Local Machine)
 
 ```bash
-# 1. Load image (This is disk intensive, take patience)
-sudo docker load -i glassy-dash.tar
+# Transfer from Jump Host to VM
+ssh -t glassy-jump "scp ~/glassy-dash.tar pozi@192.168.122.45:~/"
+```
 
-# 2. Stop existing container
-sudo docker rm -f GLASSYDASH || true
+### 3. Install & Start on VM
 
-# 3. Run Container
-# NOTE: We run on Port 3001 because Port 8080 is taken by Traefik
-sudo docker run -d \
-  --name GLASSYDASH \
-  --restart unless-stopped \
-  -p 3001:8080 \
-  -e NODE_ENV=production \
-  -e API_PORT=8080 \
-  -e JWT_SECRET="your-secure-secret" \
-  -e DB_FILE="/app/data/notes.db" \
-  -e ADMIN_EMAILS="admin" \
-  -e ALLOW_REGISTRATION=true \
-  -v ~/.GLASSYDASH:/app/data \
-  glassy-dash:latest
+```bash
+# 1. Load image onto VM
+ssh -t glassy-jump "ssh -t pozi@192.168.122.45 'sudo docker load -i ~/glassy-dash.tar'"
 
-# 4. Cleanup
-rm glassy-dash.tar
+# 2. Start Application
+# Use the management script to handle port mapping (3001:8080) and composition
+ssh -t glassy-jump "ssh -t pozi@192.168.122.45 'sudo ./docker_manage.sh prod-compose'"
 ```
 
 ## Maintenance & Troubleshooting
 
-### Disk Space Warning
+### 502 Bad Gateway
 
-The VM has ~97GB of storage which fills up quickly with Docker images.
-**Routine Maintenance**: Run this periodically to free space:
+If you encounter a 502 error via the Cloudflare URL:
+
+1. **Check Tunnel Target**: If the Cloudflare tunnel (`cloudflared`) is running **inside the VM**, ensure its target is set to `http://localhost:3001`.
+2. **Port Mismatch**: Ensure no other service (like Traefik) is blocking port `3001`.
+3. **Health Check**: Verify the container is healthy via `docker ps`. The health check endpoint is `/api/monitoring/health`.
+
+### Disk Space
+
+The VM has limited storage (~97GB). Periodically prune old images:
 
 ```bash
 sudo docker system prune -a --volumes -f
 ```
 
-### Port Conflicts
+### Management Script
 
-- **Traefik** runs on Port `8080` and `80`.
-- **GlassyDash** must avoid these. We use **Port 3001**.
-- **Cloudflare Tunnel**: Ensure the tunnel points to `http://192.168.122.45:3001`.
+Use `./docker_manage.sh` for all container operations. It automatically handles:
+
+- Stopping conflicting containers.
+- Switching between `dev` and `prod`.
+- Mapping the correct external ports (3001 for prod).

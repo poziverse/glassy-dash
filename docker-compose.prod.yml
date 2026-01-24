@@ -2,10 +2,7 @@ version: '3.8'
 
 services:
   GLASSYDASH:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: glassy-dash-prod
+    image: glassy-dash:latest
     container_name: glassy-dash-prod
     restart: unless-stopped
     ports:

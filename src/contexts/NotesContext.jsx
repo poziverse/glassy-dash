@@ -135,10 +135,10 @@ export function NotesProvider({ children }) {
   // Cache/Persistence helpers (Legacy)
   const invalidateNotesCache = useCallback(() => {
     const keys = [
-      `glass-keep-notes-${userId || 'anon'}`,
-      `glass-keep-archived-notes-${userId || 'anon'}`,
-      `glass-keep-trash-notes-${userId || 'anon'}`,
-      'glass-keep-notes-cache-timestamp',
+      `glassy-dash-notes-${userId || 'anon'}`,
+      `glassy-dash-archived-notes-${userId || 'anon'}`,
+      `glassy-dash-trash-notes-${userId || 'anon'}`,
+      'glassy-dash-notes-cache-timestamp',
     ]
     keys.forEach(k => {
       try {
@@ -298,7 +298,7 @@ export function NotesProvider({ children }) {
     if (!selectedIds.size) return
     const selectedNotesArr = notes.filter(n => selectedIds.has(String(n.id)))
     const json = JSON.stringify(selectedNotesArr, null, 2)
-    const fname = `glass-keep-notes-${selectedIds.size}-${Date.now()}.json`
+    const fname = `glassy-dash-notes-${selectedIds.size}-${Date.now()}.json`
     downloadText(fname, json)
     logger.info('bulk_download', { count: selectedIds.size })
   }, [selectedIds, notes])

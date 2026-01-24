@@ -8,7 +8,7 @@ import { useAuthStore } from '../stores/authStore'
 
 // Base API configuration
 const API_BASE = '/api'
-const API_KEY = 'glass-keep-auth'
+const API_KEY = 'glassy-dash-auth'
 
 /**
  * Enhanced API fetch wrapper

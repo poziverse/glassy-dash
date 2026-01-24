@@ -1,4 +1,4 @@
-# GLASSYDASH
+# GlassyDash
 
 A sleek notes application with Markdown, checklists, images, tag chips, color themes, dark mode, drag-and-drop reordering, import/export, authentication, real-time collaboration, and a glassy UI — built with Vite + React and a Express + SQLite API.
 
@@ -157,8 +157,8 @@ npm run dev
 ```
 
 - Frontend (Vite): http://localhost:5173
-- Docker: http://localhost:8080  
-  _(Vite dev server proxies `/api` → `http://localhost:8080`.)_
+- Docker: http://localhost:3001  
+  _(Vite dev server proxies `/api` → `http://localhost:8080` internally, but production maps to `3001`.)_
 
 **Promote an existing user to admin (optional):**
 
@@ -185,7 +185,7 @@ docker rm -f GLASSYDASH 2>/dev/null || true
 docker run -d \
   --name GLASSYDASH \
   --restart unless-stopped \
-  -p 8080:8080 \
+  -p 3001:8080 \
   -e NODE_ENV=production \
   -e API_PORT=8080 \
   -e JWT_SECRET=dev-please-change \
@@ -225,7 +225,7 @@ docker rm -f GLASSYDASH 2>/dev/null || true
 docker run -d \
   --name GLASSYDASH \
   --restart unless-stopped \
-  -p 8080:8080 \
+  -p 3001:8080 \
   -e NODE_ENV=production \
   -e API_PORT=8080 \
   -e JWT_SECRET="replace-with-a-long-random-string" \
@@ -236,8 +236,8 @@ docker run -d \
   GLASSYDASH:latest
 ```
 
-- App & API: http://localhost:8080
-- **Admin Panel (Docker/prod):** http://localhost:8080/#/admin  
+- App & API: http://localhost:3001
+- **Admin Panel (Docker/prod):** http://localhost:3001/#/admin  
   _(Make sure `ADMIN_EMAILS` matches username exactly when creating admin account)_
 
 ### docker-compose.yml
@@ -257,7 +257,7 @@ services:
       ADMIN_EMAILS: your-admin-username
       ALLOW_REGISTRATION: 'false'
     ports:
-      - '8080:8080'
+      - '3001:8080'
     volumes:
       - /home/YOURUSER/.GLASSYDASH:/app/data
 ```
@@ -277,7 +277,7 @@ docker compose up -d
 
 - **Where**
   - Dev: http://localhost:5173/#/admin
-  - Docker/Prod: http://localhost:8080/#/admin
+  - Docker/Prod: http://localhost:3001/#/admin
 - **Who can access**: Users with `is_admin = 1`.
   - Auto-promote by setting `ADMIN_EMAILS="your-admin-username"` before starting server/container, **or**
   - Run a one-off SQL update:

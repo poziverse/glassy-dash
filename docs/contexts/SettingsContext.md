@@ -7,7 +7,7 @@
 
 ## Overview
 
-`SettingsContext` is a React Context API implementation that manages user preferences and application settings throughout GlassKeep. Provides centralized state management for appearance, layout, and feature preferences with automatic localStorage persistence.
+`SettingsContext` is a React Context API implementation that manages user preferences and application settings throughout GlassyDash. Provides centralized state management for appearance, layout, and feature preferences with automatic localStorage persistence.
 
 ---
 
@@ -116,7 +116,7 @@ SettingsContext
 - **Type:** `boolean`
 - **Default:** `false` (or system preference)
 - **Purpose:** Dark mode state
-- **Persistence:** `glass-keep-dark-mode`
+- **Persistence:** `glassy-dash-dark-mode`
 - **System Preference:** Checks `prefers-color-scheme: dark` if not set
 - **CSS Class:** Applied to `document.documentElement` as `dark`
 
@@ -363,7 +363,7 @@ const { toggleListView } = useSettings()
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `glass-keep-dark-mode` | boolean | Dark mode enabled |
+| `glassy-dash-dark-mode` | boolean | Dark mode enabled |
 | `glass_keep_bg` | string | Background image ID |
 | `glass_keep_bg_overlay` | boolean | Background overlay enabled |
 | `glass_keep_overlay_opacity` | number | Overlay opacity (0-1) |
