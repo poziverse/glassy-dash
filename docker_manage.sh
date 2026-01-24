@@ -39,10 +39,10 @@ show_usage() {
 
 # Function to check which mode is running
 check_running_mode() {
-    if docker ps | grep -q GLASSYDASH-dev; then
+    if docker ps | grep -q glassy-dash-dev; then
         echo "Development mode"
         return 0
-    elif docker ps | grep -q GLASSYDASH-prod; then
+    elif docker ps | grep -q glassy-dash-prod; then
         echo "Production mode"
         return 0
     else
@@ -54,8 +54,8 @@ check_running_mode() {
 # Function to stop all containers
 stop_all() {
     echo -e "${YELLOW}🛑 Stopping all GLASSYDASH containers...${NC}"
-    docker stop GLASSYDASH-dev 2>/dev/null || true
-    docker stop GLASSYDASH-prod 2>/dev/null || true
+    docker stop glassy-dash-dev 2>/dev/null || true
+    docker stop glassy-dash-prod 2>/dev/null || true
     echo -e "${GREEN}✅ All containers stopped${NC}"
 }
 
@@ -69,11 +69,11 @@ show_status() {
     echo ""
     
     echo "Development Container:"
-    docker ps -a --filter "name=GLASSYDASH-dev" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+    docker ps -a --filter "name=glassy-dash-dev" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
     
     echo ""
     echo "Production Container:"
-    docker ps -a --filter "name=GLASSYDASH-prod" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+    docker ps -a --filter "name=glassy-dash-prod" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
     
     echo ""
     echo -e "${BLUE}💾 Data Volume: $HOME/.GLASSYDASH${NC}"
@@ -84,9 +84,9 @@ show_logs() {
     CURRENT=$(check_running_mode) || { echo -e "${RED}❌ No container running${NC}"; exit 1; }
     
     if [ "$CURRENT" = "Development mode" ]; then
-        docker logs -f GLASSYDASH-dev
+        docker logs -f glassy-dash-dev
     elif [ "$CURRENT" = "Production mode" ]; then
-        docker logs -f GLASSYDASH-prod
+        docker logs -f glassy-dash-prod
     fi
 }
 
@@ -95,19 +95,19 @@ open_shell() {
     CURRENT=$(check_running_mode) || { echo -e "${RED}❌ No container running${NC}"; exit 1; }
     
     if [ "$CURRENT" = "Development mode" ]; then
-        docker exec -it GLASSYDASH-dev bash
+        docker exec -it glassy-dash-dev bash
     elif [ "$CURRENT" = "Production mode" ]; then
-        docker exec -it GLASSYDASH-prod bash
+        docker exec -it glassy-dash-prod bash
     fi
 }
 
 # Function to clean everything
 clean_all() {
     echo -e "${YELLOW}🧹 Removing all GLASSYDASH containers...${NC}"
-    docker stop GLASSYDASH-dev 2>/dev/null || true
-    docker stop GLASSYDASH-prod 2>/dev/null || true
-    docker rm GLASSYDASH-dev 2>/dev/null || true
-    docker rm GLASSYDASH-prod 2>/dev/null || true
+    docker stop glassy-dash-dev 2>/dev/null || true
+    docker stop glassy-dash-prod 2>/dev/null || true
+    docker rm glassy-dash-dev 2>/dev/null || true
+    docker rm glassy-dash-prod 2>/dev/null || true
     
     echo -e "${YELLOW}🗑️  Removing GLASSYDASH images...${NC}"
     docker rmi GLASSYDASH:dev 2>/dev/null || true

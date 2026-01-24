@@ -20,7 +20,7 @@ echo "🚀 Starting glass-keep container..."
 docker run -d \
   --name glass-keep \
   --restart unless-stopped \
-  -p 8080:8080 \
+  -p 3001:8080 \
   -e NODE_ENV=production \
   -e API_PORT=8080 \
   -e JWT_SECRET=dev-please-change \

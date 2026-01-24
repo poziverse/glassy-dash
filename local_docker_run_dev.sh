@@ -26,7 +26,7 @@ docker run -d \
   --name glass-keep-dev \
   --restart unless-stopped \
   -p 5173:5173 \
-  -p 8080:8080 \
+  -p 3001:8080 \
   -e NODE_ENV=development \
   -e API_PORT=8080 \
   -e JWT_SECRET=dev-please-change-in-production \

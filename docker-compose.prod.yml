@@ -5,11 +5,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: GLASSYDASH-prod
-    container_name: GLASSYDASH-prod
+    image: glassy-dash-prod
+    container_name: glassy-dash-prod
     restart: unless-stopped
     ports:
-      - '8080:8080'
+      - '3001:8080'
     environment:
       - NODE_ENV=production
       - API_PORT=8080
@@ -19,7 +19,7 @@ services:
     volumes:
       - ./data:/app/data
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:8080/api/health']
+      test: ['CMD', 'curl', '-f', 'http://localhost:8080/api/monitoring/health']
       interval: 30s
       timeout: 10s
       retries: 3
