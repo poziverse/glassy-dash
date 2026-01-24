@@ -204,7 +204,9 @@ docker run -d \
 > - **Username:** `admin`
 > - **Password:** `admin`
 
-## 🐳 Docker Deploy to Server (single image: API + built frontend)
+## 🐳 Docker Deploy to Server
+
+> **Specific Environment Guide**: See [DEPLOYMENT.md](./DEPLOYMENT.md) for details on the `poziverse` nested VM infrastructure.
 
 ### Dockerfile
 

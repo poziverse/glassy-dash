@@ -11,6 +11,14 @@ This manual serves as the definitive guide for Antigravity, the AI agent respons
 - **Backend**: `server/` (Node.js + Express)
 - **Tests**: `tests/` (Integration/E2E) and `src/__tests__` (Unit)
 - **Docs**: `docs/`
+- **Deployment**: `DEPLOYMENT.md` (Production Infrastructure)
+
+## Infrastructure "Poziverse"
+
+- **Jump Host**: `104.225.217.232`
+- **Nested VM**: `192.168.122.45`
+- **Prod Port**: `3001` (due to Traefik conflict on 8080)
+- **Constraint**: VM disk fills up; extensive use of `docker system prune` required.
 
 ## Key Commands
 

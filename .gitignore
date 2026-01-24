@@ -42,3 +42,4 @@ server/*.sqlite
 server/*.sqlite-wal
 server/*.sqlite-shm
 server/*.sqlite-journal
+*.tar
