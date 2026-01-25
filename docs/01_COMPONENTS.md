@@ -21,6 +21,11 @@ App (Root)
 ├── DashboardLayout
 │   ├── Sidebar
 │   ├── NotesView
+│   ├── DocsView (New)
+│   │   └── GlassyEditor
+│   ├── VoiceView (New)
+│   │   └── VisualizerCanvas
+│   ├── NoteCard
 │   │   ├── NoteCard
 │   │   └── Bulk Operations UI
 │   ├── SearchBar
@@ -106,6 +111,16 @@ App (Root)
 ---
 
 ### 4. Note Display Components
+
+#### DocsView
+
+**Purpose**: Main container for the GlassyDocs document editor.
+**File**: `GLASSYDASH/src/components/DocsView.jsx`
+
+#### VoiceView
+
+**Purpose**: Voice recording and Gemini AI transcription interface.
+**File**: `GLASSYDASH/src/components/VoiceView.jsx`
 
 #### NotesView
 

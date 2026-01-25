@@ -1,6 +1,6 @@
 # GLASSYDASH Documentation
 
-**Last Updated:** January 23, 2026  
+**Last Updated:** January 25, 2026  
 **Version:** 1.0
 
 ---
@@ -34,7 +34,9 @@ docs/
 │   ├── Popover.md
 │   ├── SearchBar.md
 │   ├── SettingsPanel.md
-│   └── Sidebar.md
+│   ├── Sidebar.md
+│   ├── DocsView.md
+│   └── VoiceView.md
 ├── contexts/                          # Context documentation (6 files)
 │   ├── AuthContext.md
 │   ├── ComposerContext.md

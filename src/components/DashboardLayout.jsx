@@ -16,7 +16,8 @@ export default function DashboardLayout({
   onSignOut,
 }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
+  // Sidebar: OPEN for all sections except main notes dashboard
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(activeSection === 'notes')
 
   return (
     <div className="flex h-screen overflow-hidden bg-transparent text-gray-100 font-sans selection:bg-accent/30">

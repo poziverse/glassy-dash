@@ -11,6 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  FileText,
+  Mic,
 } from 'lucide-react'
 
 const SidebarItem = ({ icon: Icon, label, active, onClick, collapsed, badge }) => {
@@ -141,6 +143,20 @@ export default function Sidebar({
             safeOnNavigate('overview')
             safeOnTagSelect(null)
           }}
+          collapsed={collapsed}
+        />
+        <SidebarItem
+          icon={FileText}
+          label="Documents"
+          active={activeSection === 'docs'}
+          onClick={() => safeOnNavigate('docs')}
+          collapsed={collapsed}
+        />
+        <SidebarItem
+          icon={Mic}
+          label="Voice Studio"
+          active={activeSection === 'voice'}
+          onClick={() => safeOnNavigate('voice')}
           collapsed={collapsed}
         />
         <SidebarItem

@@ -1,6 +1,10 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react'
-import { useAuth, useNotes, useSettings, useUI, useModal } from '../contexts'
+import { useNotesCompat } from '../hooks/useNotesCompat'
 import { useAdmin } from '../hooks'
+import { useAuthStore } from '../stores/authStore'
+import { useSettingsStore } from '../stores/settingsStore'
+import { useUIStore } from '../stores/uiStore'
+import { useModalStore } from '../stores/modalStore'
 import { BACKGROUNDS } from '../backgrounds'
 import { LIGHT_COLORS, COLOR_ORDER } from '../themes'
 import { NoteCard } from './NoteCard'
@@ -15,10 +19,11 @@ import { ALL_IMAGES } from '../utils/helpers'
 
 export default function NotesView() {
   // --- Context Consumption ---
-  const { currentUser, signOut } = useAuth()
+  const { currentUser, signOut } = useNotesCompat()
   const {
     pinned,
     others,
+    archivedNotes,
     setSearch,
     tagFilter,
     setTagFilter,
@@ -43,27 +48,23 @@ export default function NotesView() {
     onBulkDownloadZip,
     updateChecklistItem,
     isOnline,
-  } = useNotes()
+  } = useNotesCompat()
 
-  const {
-    dark,
-    backgroundImage,
-    backgroundOverlay,
-    cardTransparency,
-    listView,
-    localAiEnabled,
-    overlayOpacity,
-  } = useSettings()
+  const dark = useSettingsStore(state => state.dark)
+  const backgroundImage = useSettingsStore(state => state.backgroundImage)
+  const backgroundOverlay = useSettingsStore(state => state.backgroundOverlay)
+  const cardTransparency = useSettingsStore(state => state.cardTransparency)
+  const listView = useSettingsStore(state => state.listView)
+  const localAiEnabled = useSettingsStore(state => state.localAiEnabled)
+  const overlayOpacity = useSettingsStore(state => state.overlayOpacity)
 
-  const {
-    headerMenuOpen,
-    setHeaderMenuOpen,
-    aiResponse,
-    setAiResponse,
-    isAiLoading,
-    aiLoadingProgress,
-    onAiSearch,
-  } = useUI()
+  const headerMenuOpen = useUIStore(state => state.headerMenuOpen)
+  const setHeaderMenuOpen = useUIStore(state => state.setHeaderMenuOpen)
+  const aiResponse = useUIStore(state => state.aiResponse)
+  const setAiResponse = useUIStore(state => state.setAiResponse)
+  const isAiLoading = useUIStore(state => state.isAiLoading)
+  const aiLoadingProgress = useUIStore(state => state.aiLoadingProgress)
+  const onAiSearch = useUIStore(state => state.onAiSearch)
 
   // Admin hooks logic moved to AdminView, but we might pass some status here if needed
   // For now, we only need to know if user is admin, which is on currentUser
@@ -346,64 +347,93 @@ export default function NotesView() {
 
               {/* Notes Lists */}
               <main className="px-4 sm:px-6 md:px-8 lg:px-12 pb-12 mt-8">
-                {pinned.length > 0 && (
-                  <section className="mb-10">
+                {/* ARCHIVED VIEW */}
+                {tagFilter === 'ARCHIVED' && (
+                  <section>
                     <h2 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-3 ml-1 max-w-2xl mx-auto">
-                      Pinned
+                      Archived
                     </h2>
                     <div className={listView ? 'max-w-2xl mx-auto space-y-6' : 'masonry-grid'}>
-                      {pinned.map(n => (
-                        <NoteCard
-                          key={n.id}
-                          n={n}
-                          multiMode={multiMode}
-                          selected={selectedIds.has(String(n.id))}
-                          onToggleSelect={onToggleSelect}
-                          disablePin={
-                            'ontouchstart' in window ||
-                            navigator.maxTouchPoints > 0 ||
-                            tagFilter === 'ARCHIVED'
-                          }
-                          onDragStart={onDragStart}
-                          onDragOver={onDragOver}
-                          onDragLeave={onDragLeave}
-                          onDrop={onDrop}
-                          onDragEnd={onDragEnd}
-                        />
-                      ))}
+                      {archivedNotes.length === 0 ? (
+                        <p className="text-center text-gray-400 mt-8 col-span-full">
+                          No archived notes.
+                        </p>
+                      ) : (
+                        archivedNotes.map(n => (
+                          <NoteCard
+                            key={n.id}
+                            n={n}
+                            multiMode={multiMode}
+                            selected={selectedIds.has(String(n.id))}
+                            onToggleSelect={onToggleSelect}
+                            disablePin={true}
+                            onDragStart={onDragStart}
+                            onDragOver={onDragOver}
+                            onDragLeave={onDragLeave}
+                            onDrop={onDrop}
+                            onDragEnd={onDragEnd}
+                          />
+                        ))
+                      )}
                     </div>
                   </section>
                 )}
 
-                {(others.length > 0 || pinned.length > 0) && others.length > 0 && (
-                  <section>
+                {/* STANDARD VIEW (Pinned + Others) - Only show if NOT archived */}
+                {tagFilter !== 'ARCHIVED' && (
+                  <>
                     {pinned.length > 0 && (
-                      <h2 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-3 ml-1 max-w-2xl mx-auto">
-                        Others
-                      </h2>
+                      <section className="mb-10">
+                        <h2 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-3 ml-1 max-w-2xl mx-auto">
+                          Pinned
+                        </h2>
+                        <div className={listView ? 'max-w-2xl mx-auto space-y-6' : 'masonry-grid'}>
+                          {pinned.map(n => (
+                            <NoteCard
+                              key={n.id}
+                              n={n}
+                              multiMode={multiMode}
+                              selected={selectedIds.has(String(n.id))}
+                              onToggleSelect={onToggleSelect}
+                              disablePin={'ontouchstart' in window || navigator.maxTouchPoints > 0}
+                              onDragStart={onDragStart}
+                              onDragOver={onDragOver}
+                              onDragLeave={onDragLeave}
+                              onDrop={onDrop}
+                              onDragEnd={onDragEnd}
+                            />
+                          ))}
+                        </div>
+                      </section>
                     )}
-                    <div className={listView ? 'max-w-2xl mx-auto space-y-6' : 'masonry-grid'}>
-                      {others.map(n => (
-                        <NoteCard
-                          key={n.id}
-                          n={n}
-                          multiMode={multiMode}
-                          selected={selectedIds.has(String(n.id))}
-                          onToggleSelect={onToggleSelect}
-                          disablePin={
-                            'ontouchstart' in window ||
-                            navigator.maxTouchPoints > 0 ||
-                            tagFilter === 'ARCHIVED'
-                          }
-                          onDragStart={onDragStart}
-                          onDragOver={onDragOver}
-                          onDragLeave={onDragLeave}
-                          onDrop={onDrop}
-                          onDragEnd={onDragEnd}
-                        />
-                      ))}
-                    </div>
-                  </section>
+
+                    {(others.length > 0 || pinned.length > 0) && others.length > 0 && (
+                      <section>
+                        {pinned.length > 0 && (
+                          <h2 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-3 ml-1 max-w-2xl mx-auto">
+                            Others
+                          </h2>
+                        )}
+                        <div className={listView ? 'max-w-2xl mx-auto space-y-6' : 'masonry-grid'}>
+                          {others.map(n => (
+                            <NoteCard
+                              key={n.id}
+                              n={n}
+                              multiMode={multiMode}
+                              selected={selectedIds.has(String(n.id))}
+                              onToggleSelect={onToggleSelect}
+                              disablePin={'ontouchstart' in window || navigator.maxTouchPoints > 0}
+                              onDragStart={onDragStart}
+                              onDragOver={onDragOver}
+                              onDragLeave={onDragLeave}
+                              onDrop={onDrop}
+                              onDragEnd={onDragEnd}
+                            />
+                          ))}
+                        </div>
+                      </section>
+                    )}
+                  </>
                 )}
 
                 {notesLoading && pinned.length + others.length === 0 && (

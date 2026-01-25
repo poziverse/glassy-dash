@@ -409,6 +409,7 @@ export function NotesProvider({ children }) {
     pinned,
     others,
     trashNotes,
+    archivedNotes,
     setTrashNotes,
     isLoading,
     search,

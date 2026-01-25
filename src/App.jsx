@@ -17,6 +17,8 @@ import Modal from './components/ModalWrapper'
 import { LoginView, RegisterView, SecretLoginView } from './components/AuthViews'
 import { SettingsPanel } from './components/SettingsPanel'
 import { TrashView } from './components/TrashView'
+import DocsView from './components/DocsView'
+import VoiceWorkspace from './components/voice/VoiceWorkspace'
 
 export default function App() {
   const { currentUser } = useAuthStore()
@@ -156,6 +158,10 @@ export default function App() {
       currentView = <AlertsView />
     } else if (route === '#/trash') {
       currentView = <TrashView />
+    } else if (route === '#/docs') {
+      currentView = <DocsView />
+    } else if (route === '#/voice') {
+      currentView = <VoiceWorkspace />
     } else {
       // Default to Notes
       currentView = <NotesView />
