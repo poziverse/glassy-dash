@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useVoiceStore } from '../../stores/voiceStore'
-import { Mic, Square, Pause, Play, ChevronDown, ChevronUp, Clock, Sparkles, Save, X } from 'lucide-react'
+import { transcribeAudio } from '../../utils/gemini'
+import { Mic, Square, Pause, Play, ChevronDown, ChevronUp, Clock, Sparkles, Save, X, Loader2 } from 'lucide-react'
 
 export default function RecordingStudio() {
   const {
@@ -84,13 +85,30 @@ export default function RecordingStudio() {
         stopVisualizer()
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
         
-        // Convert to base64 for storage
-        const reader = new FileReader()
-        reader.readAsDataURL(audioBlob)
-        reader.onloadend = () => {
-          const base64String = reader.result.split(',')[1]
-          // Trigger transcription (this would call Gemini API)
-          processTranscription(base64String)
+        // Set processing state
+        setError(null)
+        
+        try {
+          // Convert to base64 for transcription
+          const reader = new FileReader()
+          reader.readAsDataURL(audioBlob)
+          reader.onloadend = async () => {
+            const base64String = reader.result.split(',')[1]
+            
+            // Set audio data in store
+            setAudioData(base64String)
+            
+            // Trigger transcription via Gemini API
+            await processTranscription(base64String)
+          }
+          reader.onerror = () => {
+            setError('Failed to process audio. Please try again.')
+            stopRecording()
+          }
+        } catch (err) {
+          console.error('Error processing audio:', err)
+          setError('Failed to process audio. Please try again.')
+          stopRecording()
         }
       }
 
@@ -110,16 +128,22 @@ export default function RecordingStudio() {
     }
   }
 
-  // Transcription (placeholder - would call Gemini API)
-  const processTranscription = async (audioData) => {
-    // This is where you'd call your Gemini API
-    // For now, we'll simulate with a timeout
-    setTimeout(() => {
-      const sampleTranscript = "This is a sample transcription. In production, this would be the actual transcribed text from Gemini API."
-      const sampleSummary = "Sample recording with audio content."
-      setTranscript(sampleTranscript)
-      setSummary(sampleSummary)
-    }, 1000)
+  // Transcription via Gemini API
+  const processTranscription = async base64Audio => {
+    try {
+      setError(null)
+      const result = await transcribeAudio(base64Audio)
+      
+      if (result && result.transcript) {
+        setTranscript(result.transcript)
+        setSummary(result.summary || 'No summary available')
+      } else {
+        setError('Transcription failed. Please try again.')
+      }
+    } catch (err) {
+      console.error('Transcription error:', err)
+      setError('Failed to transcribe audio. Please try again.')
+    }
   }
 
   // Visualizer
@@ -200,6 +224,55 @@ export default function RecordingStudio() {
     }
   }
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ignore if in input field
+      if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') {
+        return
+      }
+
+      // Space to toggle recording (if idle or recording)
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault()
+        if (recordingState === 'idle') {
+          handleStartRecording()
+        } else if (recordingState === 'recording') {
+          pauseRecording()
+        } else if (recordingState === 'paused') {
+          resumeRecording()
+        }
+      }
+
+      // Escape to stop recording
+      if (e.code === 'Escape' && (recordingState === 'recording' || recordingState === 'paused')) {
+        e.preventDefault()
+        handleStopRecording()
+      }
+
+      // S to save (if reviewing)
+      if (e.code === 'KeyS' && recordingState === 'reviewing') {
+        e.preventDefault()
+        handleSaveToNotes()
+      }
+
+      // G to save to gallery (if reviewing)
+      if (e.code === 'KeyG' && recordingState === 'reviewing') {
+        e.preventDefault()
+        handleSaveToGallery()
+      }
+
+      // C to collapse/expand
+      if (e.code === 'KeyC') {
+        e.preventDefault()
+        setStudioCollapsed(!studioCollapsed)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [recordingState, studioCollapsed])
+
   // Cleanup
   useEffect(() => {
     return () => stopVisualizer()
@@ -277,10 +350,11 @@ export default function RecordingStudio() {
             )}
 
             {recordingState === 'processing' && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="flex items-center gap-2 text-indigo-400">
-                  <Sparkles size={24} className="animate-spin" />
-                  <span>Transcribing...</span>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 size={32} className="text-indigo-400 animate-spin" />
+                  <span className="text-indigo-400 font-medium">Transcribing with AI...</span>
+                  <span className="text-xs text-gray-400">This may take a few seconds</span>
                 </div>
               </div>
             )}
