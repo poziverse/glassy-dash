@@ -30,37 +30,59 @@ Then SSH directly: `ssh glassy-vm`
 
 ## Deployment Procedure
 
-### 1. Build & Transport (Local Machine)
+### 1. Build & Package (Local Machine)
 
-Since the VM has limited direct connectivity, build the image locally and transport it via the jump host.
+We build the image locally to leverage local resources and avoid compiling heavy dependencies on the VM.
 
 ```bash
-# 1. Build locally
-docker build -t glassy-dash:latest .
+# 1. Build the production image
+# Ensure you are in the project root
+docker build -t glassy-dash:prod .
 
-# 2. Save image to tarball
-docker save glassy-dash:latest -o glassy-dash.tar
-
-# 3. Transfer to Jump Host
-scp glassy-dash.tar glassy-jump:~/
+# 2. Save and Compress the image
+# Compressing with gzip significantly reduces transfer time (~1GB -> ~300MB)
+docker save glassy-dash:prod | gzip > glassy-dash.tar.gz
 ```
 
-### 2. Transport to VM (From Local Machine)
+### 2. Transport to VM (Via Jump Host)
+
+Since we cannot SSH directly to the VM, we proxy through the Jump Host.
 
 ```bash
-# Transfer from Jump Host to VM
-ssh -t glassy-jump "scp ~/glassy-dash.tar pozi@192.168.122.45:~/"
+# 1. Copy to Jump Host
+scp glassy-dash.tar.gz glassy-jump:~/
+
+# 2. Copy from Jump Host to VM
+ssh -t glassy-jump "scp ~/glassy-dash.tar.gz pozi@192.168.122.45:~/"
 ```
 
 ### 3. Install & Start on VM
 
 ```bash
-# 1. Load image onto VM
-ssh -t glassy-jump "ssh -t pozi@192.168.122.45 'sudo docker load -i ~/glassy-dash.tar'"
+# Connect to VM (via Jump Host)
+ssh -J glassy-jump glassy-vm
 
-# 2. Start Application
-# Use the management script to handle port mapping (3001:8080) and composition
-ssh -t glassy-jump "ssh -t pozi@192.168.122.45 'sudo ./docker_manage.sh prod-compose'"
+# 1. Load the image
+# This imports the image from the tarball into the VM's Docker registry
+gunzip -c glassy-dash.tar.gz | sudo docker load
+
+# 2. Stop existing container
+sudo docker rm -f GLASSYDASH 2>/dev/null || true
+
+# 3. Start the Application
+# -p 3001:8080 maps VM port 3001 to container port 8080
+sudo docker run -d \
+  --name GLASSYDASH \
+  --restart unless-stopped \
+  -p 3001:8080 \
+  -e NODE_ENV=production \
+  -e API_PORT=8080 \
+  -e JWT_SECRET="replace-this-with-random-secret" \
+  -e DB_FILE="/app/data/notes.db" \
+  -e ADMIN_EMAILS="admin" \
+  -e ALLOW_REGISTRATION=false \
+  -v ~/.GLASSYDASH:/app/data \
+  glassy-dash:prod
 ```
 
 ## Maintenance & Troubleshooting

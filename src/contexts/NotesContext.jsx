@@ -148,13 +148,15 @@ export function NotesProvider({ children }) {
   }, [userId])
 
   // SSE
+  const handleNotesUpdated = useCallback(() => {
+    // Invalidate all notes queries to trigger refetch
+    queryClient.invalidateQueries({ queryKey: notesKeys.all })
+  }, [queryClient])
+
   const { sseConnected, isOnline } = useCollaboration({
     token,
     tagFilter,
-    onNotesUpdated: () => {
-      // Invalidate all notes queries to trigger refetch
-      queryClient.invalidateQueries({ queryKey: notesKeys.all })
-    },
+    onNotesUpdated: handleNotesUpdated,
   })
 
   // Operations

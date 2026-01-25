@@ -10,6 +10,7 @@ import {
   Hash,
   ChevronLeft,
   ChevronRight,
+  LogOut,
 } from 'lucide-react'
 
 const SidebarItem = ({ icon: Icon, label, active, onClick, collapsed, badge }) => {
@@ -73,6 +74,7 @@ export default function Sidebar({
   isAdmin = false,
   collapsed = false,
   onToggleCollapse = () => {},
+  onSignOut = () => {},
 }) {
   // Defensive: ensure tags is always an array
   const safeTags = Array.isArray(tags) ? tags : []
@@ -212,6 +214,25 @@ export default function Sidebar({
           onClick={() => safeOnNavigate('settings')}
           collapsed={collapsed}
         />
+
+        {/* Sign Out Button */}
+        <div className="pt-2 mt-2 border-t border-white/[0.06]">
+          <button
+            onClick={onSignOut}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative overflow-hidden text-red-400 hover:text-white hover:bg-red-500/10 border border-transparent`}
+            title={collapsed ? 'Sign Out' : undefined}
+          >
+            <LogOut
+              size={20}
+              className="relative z-10 transition-colors flex-shrink-0 text-red-400 group-hover:text-red-300"
+            />
+            {!collapsed && (
+              <span className="relative z-10 text-sm font-medium tracking-wide flex-1 text-left truncate">
+                Sign Out
+              </span>
+            )}
+          </button>
+        </div>
       </div>
     </aside>
   )

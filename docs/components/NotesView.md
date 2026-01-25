@@ -1,6 +1,6 @@
 # NotesView Component
-**Last Updated:** January 21, 2026  
-**Version:** 1.0  
+**Last Updated:** January 24, 2026  
+**Version:** 1.1  
 **Status:** ✅ Production Ready
 
 ---
@@ -32,6 +32,7 @@ Provide the primary user interface for:
 - Render unpinned notes in main section
 - Support list and masonry view modes
 - Show empty states appropriately
+- **Manage note content overflow with proper CSS (v1.1+)**
 
 ### 2. Bulk Operations
 - Multi-select mode for notes
@@ -190,8 +191,36 @@ NotesView
 │           └── Notes Lists
 │               ├── Pinned Section (when pinned.length > 0)
 │               └── Others Section (when others.length > 0)
-└── Settings Panel (global)
+└── CSS Styles (v1.1+)
+    └── .note-content overflow handling
 ```
+
+### CSS for Content Overflow (v1.1+)
+
+```css
+/* Note content overflow handling */
+.note-content {
+  overflow-y: auto;
+}
+
+/* Dark mode max-height */
+.dark .note-content {
+  max-height: 300px;
+}
+
+/* Light mode max-height */
+.light .note-content {
+  max-height: 300px;
+}
+```
+
+**Purpose:** Ensure note content is scrollable within cards without being truncated.
+
+**Benefits:**
+- Proper scrolling for long content
+- Consistent behavior across dark/light modes
+- No artificial line clamping
+- Better UX for viewing full note content
 
 ---
 

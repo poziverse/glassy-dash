@@ -161,10 +161,6 @@ export function ModalProvider({ children }) {
     [openNoteStore, token, setAddModalCollaborators]
   )
 
-  const closeModal = useCallback(() => {
-    closeNoteStore()
-  }, [closeNoteStore])
-
   const saveModal = useCallback(async () => {
     if (!activeId || isSaving) return
     const base = {
@@ -186,7 +182,7 @@ export function ModalProvider({ children }) {
     try {
       setIsSaving(true)
       await updateNote(activeId, payload)
-      closeModal()
+      closeNoteStore() // Force close after successful save
     } catch (e) {
       showToast('Could not save your changes. Please try again.', 'error')
     } finally {
@@ -206,10 +202,20 @@ export function ModalProvider({ children }) {
     mItems,
     mDrawingData,
     updateNote,
-    closeModal,
+    closeNoteStore,
     showToast,
     setIsSaving,
   ])
+
+  const closeModal = useCallback(() => {
+    // Autosave on close if there are changes
+    const { modalHasChanges } = useModalStore.getState()
+    if (modalHasChanges && !isSaving) {
+      saveModal()
+    } else {
+      closeNoteStore()
+    }
+  }, [closeNoteStore, isSaving, saveModal])
 
   const deleteModal = useCallback(async () => {
     if (!activeId) return

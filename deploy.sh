@@ -17,9 +17,7 @@ set -euo pipefail
 # --- Configuration ---
 IMAGE="glassy-dash:latest"
 TARBALL="glassy-dash.tar"
-JUMP="glassy-jump"
-VM_USER="pozi"
-VM_IP="192.168.122.45"
+VM_HOST="glassy-vm" # Uses ~/.ssh/config alias
 HEALTH_URL="http://localhost:3001/api/monitoring/health"
 
 # --- Colors ---
@@ -58,24 +56,21 @@ else
   fi
 fi
 
-# --- Step 2: Transfer to Jump Host ---
-log "🚀 Transferring tarball to jump host ($JUMP)..."
-scp "$TARBALL" "$JUMP:~/" || error "Failed to transfer to jump host"
-success "Tarball uploaded to jump host"
-
-# --- Step 3: Transfer to VM ---
-log "🚀 Transferring tarball from jump host to VM ($VM_IP)..."
-ssh "$JUMP" "scp ~/$TARBALL $VM_USER@$VM_IP:~/" || error "Failed to transfer to VM"
+# --- Step 2: Transfer to VM ---
+log "🚀 Transferring tarball to VM ($VM_HOST)..."
+scp "$TARBALL" "$VM_HOST:~/" || error "Failed to transfer to VM"
 success "Tarball uploaded to VM"
 
-# --- Step 4: Load Image and Restart ---
+# --- Step 3: Load Image and Restart ---
 log "🐳 Loading image and restarting container on VM..."
-ssh "$JUMP" "ssh $VM_USER@$VM_IP 'sudo docker load -i ~/$TARBALL && sudo ./docker_manage.sh prod-compose'" || error "Failed to load/restart on VM"
+ssh "$VM_HOST" "sudo docker load -i ~/$TARBALL" || error "Failed to load image on VM"
+ssh "$VM_HOST" "sudo ./docker_manage.sh prod-compose" || error "Failed to restart container on VM"
 success "Container restarted on VM"
 
-# --- Step 5: Health Check ---
+# --- Step 4: Health Check ---
 log "🩺 Verifying health endpoint..."
-HEALTH_RESULT=$(ssh "$JUMP" "ssh $VM_USER@$VM_IP 'curl -sf $HEALTH_URL'" 2>/dev/null || echo "FAILED")
+# We run curl on the VM to check localhost:3001
+HEALTH_RESULT=$(ssh "$VM_HOST" "curl -sf $HEALTH_URL" 2>/dev/null || echo "FAILED")
 
 if [[ "$HEALTH_RESULT" == *"ok"* ]] || [[ "$HEALTH_RESULT" == *"healthy"* ]]; then
   success "Health check passed!"

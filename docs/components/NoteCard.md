@@ -1,6 +1,6 @@
 # NoteCard Component
-**Last Updated:** January 21, 2026  
-**Version:** 1.0  
+**Last Updated:** January 24, 2026  
+**Version:** 1.1  
 **Status:** ✅ Production Ready
 
 ---
@@ -242,26 +242,16 @@ NoteCard (draggable container)
 
 ### 5. Click Handler
 
-```javascript
-onClick={e => {
-  if (multiMode) {
-    e.stopPropagation()
-    onToggleSelect?.(n.id, !selected)
-  } else {
-    if (typeof openNote === 'function') {
-      openNote(n)
-    } else {
-      console.error('[NoteCard] openNote is not a function!', openNote)
-    }
-  }
-}}
-```
+The click handler has been updated to properly open notes in the composer modal. The click event is now handled on the content wrapper instead of the outer card container to ensure proper event propagation.
 
 **Behavior:**
 - Multi-mode: Toggle selection
-- Normal mode: Open note for editing
-- Validates `openNote` is a function
+- Normal mode: Open note for editing in composer
+- Validates `openNote` is a function from ModalContext
 - Logs error if not function
+- Proper event propagation handling
+
+**Note:** As of v1.1, the click handler is attached to the content wrapper to prevent conflicts with drag-and-drop and ensure reliable note opening.
 
 ---
 
@@ -270,7 +260,7 @@ onClick={e => {
 #### Text Notes
 ```javascript
 {!isChecklist && !isDraw ? (
-  <div className="text-sm break-words whitespace-pre-wrap line-clamp-6">
+  <div className="text-sm break-words whitespace-pre-wrap">
     {displayText}
   </div>
 ) : /* other types */}
@@ -280,8 +270,10 @@ onClick={e => {
 - Markdown to plain text conversion
 - Character limit (600 chars)
 - Truncation with ellipsis
-- Line clamping (6 lines max)
+- **Full content display (no line clamping as of v1.1)**
 - Word wrapping
+
+**Note:** As of v1.1, the `line-clamp-6` class has been removed to allow full content display within the card boundaries. Content is now managed by overflow handling in the parent NotesView component.
 
 ---
 
@@ -712,12 +704,14 @@ test('Note interactions', async ({ page }) => {
 - `openNote` not a function
 - Click event not propagated
 - Multi-mode interfering
+- Click handler attached to wrong element
 
 **Solutions:**
-1. Verify `openNote` from modal context
-2. Check event stopPropagation
+1. Verify `openNote` from modal context is a function
+2. Check event propagation in content wrapper
 3. Verify multi-mode state
 4. Check console for errors
+5. Ensure click handler is on content wrapper (v1.1+)
 
 ---
 
@@ -766,18 +760,22 @@ test('Note interactions', async ({ page }) => {
 
 ---
 
-### Issue: Content preview too long
+### Issue: Content preview too long or overflowing
 
 **Possible Causes:**
 - Truncation not working
 - MAX_CHARS too high
 - Markdown conversion failing
+- Overflow CSS not properly configured
 
 **Solutions:**
-1. Verify MAX_CHARS constant
+1. Verify MAX_CHARS constant (should be 600)
 2. Check slice logic
 3. Test mdToPlain function
 4. Verify text wrapping CSS
+5. Check parent NotesView overflow handling (v1.1+)
+
+**Note:** As of v1.1, content overflow is managed by the NotesView component through proper CSS overflow handling on the `.note-content` class. The NoteCard no longer applies line clamping.
 
 ---
 
@@ -811,8 +809,9 @@ test('Note interactions', async ({ page }) => {
 7. **Maintain consistent spacing**
 8. **Optimize for accessibility**
 
+
 ---
 
-**Component Version:** 1.0  
-**Last Updated:** January 21, 2026  
+**Component Version:** 1.1  
+**Last Updated:** January 24, 2026  
 **Status:** ✅ Production Ready

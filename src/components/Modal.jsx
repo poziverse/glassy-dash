@@ -1,4 +1,5 @@
 import React from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import DrawingCanvas from '../DrawingCanvas'
 import { ChecklistRow } from './ChecklistRow'
@@ -181,6 +182,16 @@ const Modal = ({
     return () => clearTimeout(timer)
   }, [collaboratorUsername, searchUsers])
 
+  // Auto-resize textarea when entering edit mode or content changes
+  React.useEffect(() => {
+    if (open && viewMode === 'edit' && mType === 'text') {
+      // Small timeout to ensure DOM is rendered
+      requestAnimationFrame(() => {
+        resizeModalTextarea()
+      })
+    }
+  }, [open, viewMode, mType, mBody, resizeModalTextarea])
+
   if (!open) return null
 
   // Values derived from state
@@ -203,7 +214,11 @@ const Modal = ({
           scrimClickStartRef.current = false
         }}
       >
-        <div
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 10 }}
+          transition={{ type: 'spring', duration: 0.5, bounce: 0.3 }}
           className="glass-card rounded-xl shadow-2xl w-full h-full max-w-none rounded-none sm:w-11/12 sm:max-w-2xl sm:h-[95vh] sm:rounded-xl flex flex-col relative overflow-hidden"
           style={{ backgroundColor: modalBgFor(mColor, dark) }}
           onMouseDown={e => e.stopPropagation()}
@@ -855,7 +870,7 @@ const Modal = ({
               </div>
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
     </>
   )

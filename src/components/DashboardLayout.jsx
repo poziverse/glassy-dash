@@ -31,6 +31,7 @@ export default function DashboardLayout({
         isAdmin={isAdmin}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onSignOut={onSignOut}
       />
 
       {/* Main Content Area */}

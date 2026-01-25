@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react'
+import { motion } from 'framer-motion'
 import { PinFilled, PinOutline } from './Icons'
 import { DrawingPreview } from './DrawingPreview'
 import { ChecklistRow } from './ChecklistRow'
@@ -84,7 +85,15 @@ export function NoteCard({
   const group = n.pinned ? 'pinned' : 'others'
 
   return (
-    <div
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{
+        scale: 1.02,
+        transition: { type: 'spring', stiffness: 400, damping: 17 },
+      }}
+      whileTap={{ scale: 0.98 }}
       draggable={!multiMode}
       onDragStart={e => {
         if (!multiMode) onDragStart(n.id, e)
@@ -106,6 +115,11 @@ export function NoteCard({
           e.stopPropagation()
           onToggleSelect?.(n.id, !selected)
         } else {
+          // Don't open note if clicking interactive elements inside the card
+          const interactive = e.target.closest('button, input, a, .cursor-pointer, [role="button"]')
+          if (interactive && interactive !== e.currentTarget) {
+            return
+          }
           if (typeof openNote === 'function') {
             openNote(n)
           } else {
@@ -113,7 +127,7 @@ export function NoteCard({
           }
         }
       }}
-      className={`note-card glass-card rounded-xl p-4 cursor-pointer transform hover:scale-[1.02] transition-transform duration-200 relative min-h-[54px] group ${
+      className={`note-card glass-card rounded-xl p-4 cursor-pointer relative min-h-[54px] group ${
         multiMode && selected ? 'ring-2 ring-accent ring-offset-2 ring-offset-transparent' : ''
       }`}
       style={{
@@ -220,7 +234,7 @@ export function NoteCard({
       {/* Content preview */}
       {!isChecklist && !isDraw && !isYouTube && !isMusic ? (
         <div
-          className="note-content text-sm break-words whitespace-pre-wrap line-clamp-6"
+          className="note-content text-sm break-words whitespace-pre-wrap"
           dangerouslySetInnerHTML={{
             __html: safeUserMarkdown(n.content || '').replace(
               /<img/g,
@@ -276,6 +290,6 @@ export function NoteCard({
           )}
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }

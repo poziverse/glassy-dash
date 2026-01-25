@@ -70,6 +70,7 @@ A sleek notes application with Markdown, checklists, images, tag chips, color th
   - View / Edit toggle button
   - Pin, more (⋮) menu (Download .md), Close
   - Footer: tags chip editor, color palette, image add, Delete (confirm dialog), Save
+  - **Automatic save on close**: Closing the modal automatically saves your changes.
   - Click edit button in body to switch to edit mode
   - Dense list rendering in view mode (minimal spacing)
 

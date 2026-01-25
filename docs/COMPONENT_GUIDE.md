@@ -1,7 +1,7 @@
 # Component Guide
 
-**Version:** ALPHA 1.0  
-**Last Updated:** January 19, 2026
+**Version:** 1.1  
+**Last Updated:** January 24, 2026
 
 ---
 
@@ -40,7 +40,7 @@ import { LoginView, RegisterView } from './components/AuthViews';
 
 ### NotesView
 
-Main dashboard view for displaying and managing notes.
+Main dashboard view for displaying and managing notes with proper content overflow handling.
 
 **Usage:**
 
@@ -55,6 +55,14 @@ import { NotesView } from './components/NotesView'
 - Search and filter
 - Multi-select support
 - Drag-and-drop reordering
+- **CSS overflow handling for note content (v1.1+)**
+- **Scrollable note cards without artificial truncation (v1.1+)**
+
+**Recent Updates (v1.1):**
+- Added proper CSS overflow handling for `.note-content` class
+- Configured max-height constraints for dark/light modes
+- Ensures scrollable content within note cards
+- Removed reliance on line-clamp from child components
 
 ---
 
@@ -135,7 +143,7 @@ import { SearchBar } from './components/SearchBar'
 
 ### NoteCard
 
-Individual note display component.
+Individual note display component with proper click handling and content overflow management.
 
 **Props:**
 
@@ -151,6 +159,12 @@ interface NoteCardProps {
   onToggleSelect?: (noteId: number) => void
 }
 ```
+
+**Recent Updates (v1.1):**
+- Fixed click handler to properly open notes in composer
+- Removed line-clamp-6 restriction for full content display
+- Content overflow now managed by parent NotesView component
+- Improved event propagation handling for better UX
 
 **Usage:**
 

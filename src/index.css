@@ -80,20 +80,30 @@ body {
 }
 
 .glass-card {
-  /* Background handled by inline styles for dynamic transparency */
+  /* Dynamic Background with gradient hint */
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
   backdrop-filter: blur(var(--glass-blur, 16px));
   -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s,
-    background-color 0.2s;
+
+  /* Organic Border */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+
+  /* Liquid Shadow */
+  box-shadow:
+    0 4px 24px -1px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+
+  /* transition handled by framer-motion */
 }
 
 .glass-card:hover {
-  background: rgba(40, 40, 45, 0.4);
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow:
+    0 10px 40px -10px rgba(0, 0, 0, 0.5),
+    0 0 20px -5px var(--color-accent-glow, rgba(99, 102, 241, 0.2));
 }
 
 /* CSS Grid Layout - Fix for Left-to-Right Ordering */
@@ -164,4 +174,62 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Note content styling for cards and modals */
+.note-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Dense mode for modal view (no line clamping) */
+.note-content--dense {
+  line-height: 1.6;
+  /* Ensure no max-height or overflow restrictions */
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Card preview - limit height with ellipsis */
+.note-card .note-content {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 12;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Modal content should NOT have line clamping */
+.modal-scrim .note-content--dense {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+/* Ensure text is fully visible in modal */
+.note-content--dense p,
+.note-content--dense h1,
+.note-content--dense h2,
+.note-content--dense h3,
+.note-content--dense h4,
+.note-content--dense h5,
+.note-content--dense h6,
+.note-content--dense ul,
+.note-content--dense ol,
+.note-content--dense pre,
+.note-content--dense code,
+.note-content--dense blockquote {
+  margin-bottom: 1rem;
+}
+
+.note-content--dense p:last-child,
+.note-content--dense h1:last-child,
+.note-content--dense h2:last-child,
+.note-content--dense h3:last-child,
+.note-content--dense h4:last-child,
+.note-content--dense h5:last-child,
+.note-content--dense h6:last-child,
+.note-content--dense ul:last-child,
+.note-content--dense ol:last-child {
+  margin-bottom: 0;
 }
