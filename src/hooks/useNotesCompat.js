@@ -27,6 +27,7 @@ export function useNotesCompat() {
   const notes = useNotesStore(state => state.notes)
   const pinned = useNotesStore(state => state.pinned)
   const others = useNotesStore(state => state.others)
+  const archivedNotes = useNotesStore(state => state.archivedNotes)
   const trashNotes = useNotesStore(state => state.trashNotes)
   const tags = useNotesStore(state => state.tags)
   const notesLoading = useNotesStore(state => state.notesLoading)
@@ -531,14 +532,21 @@ export function useNotesCompat() {
   // Computed values
   const tagsWithCounts = tags
 
+  // Derived state for empty conditions
+  const filteredEmptyWithSearch = search && pinned.length === 0 && others.length === 0 && archivedNotes.length === 0
+  const allEmpty = pinned.length === 0 && others.length === 0 && archivedNotes.length === 0
+
   return {
     // State
     notes,
     pinned,
     others,
+    archivedNotes,
     trashNotes,
     tags,
     tagsWithCounts,
+    filteredEmptyWithSearch,
+    allEmpty,
     notesLoading,
     trashLoading,
     search,
