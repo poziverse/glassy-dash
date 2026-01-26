@@ -13,6 +13,7 @@ import {
   LogOut,
   FileText,
   Mic,
+  Trash2,
 } from 'lucide-react'
 
 const SidebarItem = ({ icon: Icon, label, active, onClick, collapsed, badge }) => {
@@ -157,6 +158,13 @@ export default function Sidebar({
           label="Voice Studio"
           active={activeSection === 'voice'}
           onClick={() => safeOnNavigate('voice')}
+          collapsed={collapsed}
+        />
+        <SidebarItem
+          icon={Trash2}
+          label="Trash"
+          active={activeSection === 'trash'}
+          onClick={() => safeOnNavigate('trash')}
           collapsed={collapsed}
         />
         <SidebarItem

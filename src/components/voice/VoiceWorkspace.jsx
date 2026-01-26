@@ -13,7 +13,7 @@ export default function VoiceWorkspace() {
   return (
     <DashboardLayout
       activeSection="voice"
-      onNavigate={page => (window.location.hash = `#/${page}`)}
+      onNavigate={page => (window.location.hash = page === 'overview' ? '#/notes' : `#/${page}`)}
       user={currentUser}
       title="Voice Studio"
       onSignOut={signOut}

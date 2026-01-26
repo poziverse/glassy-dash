@@ -87,11 +87,6 @@ export default function NotesView() {
       ? tagLabel || 'All Notes'
       : activeSection.charAt(0).toUpperCase() + activeSection.slice(1).replace('-', ' ')
 
-  const currentBg = useMemo(
-    () => BACKGROUNDS.find(b => b.id === backgroundImage),
-    [backgroundImage]
-  )
-
   // --- Effects ---
   // Close header menu when scrolling
   useEffect(() => {
@@ -122,80 +117,10 @@ export default function NotesView() {
   // --- Render ---
   return (
     <>
-      {/* Golden Gradient Background */}
-      {backgroundImage === 'golden_gradient' && (
-        <div
-          className="fixed inset-0 z-[-1] pointer-events-none animate-in fade-in duration-700"
-          style={{
-            background: `
-              radial-gradient(circle at 15% 50%, rgba(251, 191, 36, 0.2), transparent 30%),
-              radial-gradient(circle at 85% 30%, rgba(253, 224, 71, 0.15), transparent 30%),
-              linear-gradient(to bottom, #FFFBEB, #FEF3C7, #FDE68A)
-            `,
-          }}
-        >
-          {backgroundOverlay && (
-            <div
-              className="absolute inset-0 transition-opacity duration-700"
-              style={{
-                background: dark
-                  ? `radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.2), transparent 40%), linear-gradient(to bottom, #000000, #1a1a1a)` // Darker overlay for contrast
-                  : `rgba(255, 255, 255, 0.2)`,
-                overflow: 'hidden',
-                opacity: overlayOpacity,
-              }}
-            />
-          )}
-        </div>
-      )}
-
-      {backgroundImage?.startsWith('custom:') ? (
-        <CustomBackgroundRenderer
-          id={backgroundImage.split(':')[1]}
-          dark={dark}
-          backgroundOverlay={backgroundOverlay}
-          overlayOpacity={overlayOpacity}
-        />
-      ) : (
-        currentBg &&
-        currentBg.paths?.desktop && (
-          <div className="fixed inset-0 z-[-1] pointer-events-none">
-            <img
-              src={currentBg.paths.desktop}
-              srcSet={
-                currentBg.paths.mobile && currentBg.paths.xl
-                  ? `${currentBg.paths.mobile} 800w, ${currentBg.paths.desktop} 1920w, ${currentBg.paths.xl} 3840w`
-                  : undefined
-              }
-              sizes="100vw"
-              alt="Background"
-              className="w-full h-full object-cover animate-in fade-in duration-700"
-            />
-            {backgroundOverlay && (
-              <div
-                className="absolute inset-0 transition-opacity duration-700"
-                style={{
-                  background: dark
-                    ? `radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.2), transparent 40%), 
-                      radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.15), transparent 40%),
-                      linear-gradient(to bottom, #050505, #121212, #0a0a0a)`
-                    : `radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%), 
-                      radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.1), transparent 25%),
-                      linear-gradient(to bottom, #0f0c29, #302b63, #24243e)`,
-                  overflow: 'hidden',
-                  opacity: overlayOpacity,
-                }}
-              />
-            )}
-            {dark && !backgroundOverlay && <div className="absolute inset-0 bg-black/40" />}
-          </div>
-        )
-      )}
-
       <DashboardLayout
         activeSection={activeSection}
         onNavigate={section => {
-          if (['health', 'alerts', 'admin'].includes(section)) {
+          if (['health', 'alerts', 'admin', 'docs', 'voice', 'trash'].includes(section)) {
             window.location.hash = `#/${section}`
           } else {
             setActiveSection(section)
@@ -470,55 +395,8 @@ export default function NotesView() {
               </button>
             </div>
           )}
-
-          {activeSection === 'settings' && <SettingsPanel inline={true} />}
         </div>
       </DashboardLayout>
     </>
-  )
-}
-
-function CustomBackgroundRenderer({ id, dark, backgroundOverlay, overlayOpacity }) {
-  const [url, setUrl] = React.useState(null)
-
-  React.useEffect(() => {
-    let active = true
-    import('../utils/userStorage').then(({ getCustomBackground }) => {
-      getCustomBackground(id).then(blob => {
-        if (active && blob) {
-          setUrl(URL.createObjectURL(blob))
-        }
-      })
-    })
-    return () => (active = false)
-  }, [id])
-
-  if (!url) return <div className="fixed inset-0 z-[-1] bg-black/90" />
-
-  return (
-    <div className="fixed inset-0 z-[-1] pointer-events-none">
-      <img
-        src={url}
-        alt="Custom Background"
-        className="w-full h-full object-cover animate-in fade-in duration-700"
-      />
-      {backgroundOverlay && (
-        <div
-          className="absolute inset-0 transition-opacity duration-700"
-          style={{
-            background: dark
-              ? `radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.2), transparent 40%), 
-                  radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.15), transparent 40%),
-                  linear-gradient(to bottom, #050505, #121212, #0a0a0a)`
-              : `radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%), 
-                  radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.1), transparent 25%),
-                  linear-gradient(to bottom, #0f0c29, #302b63, #24243e)`,
-            overflow: 'hidden',
-            opacity: overlayOpacity,
-          }}
-        />
-      )}
-      {dark && !backgroundOverlay && <div className="absolute inset-0 bg-black/40" />}
-    </div>
   )
 }

@@ -7,10 +7,14 @@ export const useVoiceStore = create(
       // Data
       recordings: [],
       activeRecordingId: null,
+      tags: [], // Available tags: { id, name, color, count }
+      archivedRecordings: [], // Archived recordings
 
       // UI State
       studioCollapsed: false,
+      galleryViewMode: 'grid', // grid, list, timeline
       recordingState: 'idle', // idle, recording, paused, processing, reviewing
+      selectedIds: [], // For bulk operations
 
       // Recording Data
       currentTranscript: '',
@@ -170,15 +174,467 @@ export const useVoiceStore = create(
 
       setStudioCollapsed: (collapsed) => set({ studioCollapsed: collapsed }),
 
-      // Utility actions
-      searchRecordings: (query) => {
+      // View Mode
+      setGalleryViewMode: (mode) => set({ galleryViewMode: mode }),
+
+      // Tag Management
+      addTag: (name, color = 'indigo') => set(state => {
+        const existingTag = state.tags.find(t => t.name.toLowerCase() === name.toLowerCase())
+        if (existingTag) return state
+        
+        return {
+          tags: [...state.tags, {
+            id: crypto.randomUUID(),
+            name,
+            color,
+            count: 0
+          }]
+        }
+      }),
+
+      deleteTag: (tagId) => set(state => ({
+        tags: state.tags.filter(t => t.id !== tagId),
+        // Remove tag from all recordings
+        recordings: state.recordings.map(r => ({
+          ...r,
+          tags: (r.tags || []).filter(t => t !== tagId)
+        }))
+      })),
+
+      updateRecordingTags: (id, tags) => set(state => {
+        const recording = state.recordings.find(r => r.id === id)
+        if (!recording) return state
+        
+        const oldTags = recording.tags || []
+        const newTags = tags
+        
+        // Update tag counts
+        const tagUpdates = state.tags.map(tag => {
+          const wasInOld = oldTags.includes(tag.id)
+          const isInNew = newTags.includes(tag.id)
+          if (wasInOld && !isInNew) return { ...tag, count: Math.max(0, tag.count - 1) }
+          if (!wasInOld && isInNew) return { ...tag, count: tag.count + 1 }
+          return tag
+        })
+        
+        return {
+          tags: tagUpdates,
+          recordings: state.recordings.map(r =>
+            r.id === id 
+              ? { ...r, tags: newTags, updatedAt: new Date().toISOString() } 
+              : r
+          )
+        }
+      }),
+
+      // Bulk Operations
+      setSelectedIds: (ids) => set({ selectedIds: ids }),
+      clearSelectedIds: () => set({ selectedIds: [] }),
+
+      bulkDelete: (ids) => set(state => {
+        // Decrease tag counts
+        const recordingsToDelete = state.recordings.filter(r => ids.includes(r.id))
+        const tagUpdates = state.tags.map(tag => {
+          const countDecrease = recordingsToDelete.filter(r => 
+            (r.tags || []).includes(tag.id)
+          ).length
+          return { ...tag, count: Math.max(0, tag.count - countDecrease) }
+        })
+        
+        return {
+          tags: tagUpdates,
+          recordings: state.recordings.filter(r => !ids.includes(r.id)),
+          selectedIds: []
+        }
+      }),
+
+      bulkMove: (ids, targetType) => set(state => ({
+        recordings: state.recordings.map(r =>
+          ids.includes(r.id) 
+            ? { ...r, type: targetType, updatedAt: new Date().toISOString() } 
+            : r
+        ),
+        selectedIds: []
+      })),
+
+      bulkAddTags: (ids, tagIds) => set(state => {
+        // Update tag counts
+        const recordingsToUpdate = state.recordings.filter(r => ids.includes(r.id))
+        const tagUpdates = state.tags.map(tag => {
+          if (tagIds.includes(tag.id)) {
+            const countIncrease = recordingsToUpdate.filter(r => 
+              !(r.tags || []).includes(tag.id)
+            ).length
+            return { ...tag, count: tag.count + countIncrease }
+          }
+          return tag
+        })
+        
+        return {
+          tags: tagUpdates,
+          recordings: state.recordings.map(r =>
+            ids.includes(r.id)
+              ? { ...r, tags: [...new Set([...(r.tags || []), ...tagIds])] }
+              : r
+          ),
+          selectedIds: []
+        }
+      }),
+
+      bulkRemoveTags: (ids, tagIds) => set(state => {
+        // Update tag counts
+        const recordingsToUpdate = state.recordings.filter(r => ids.includes(r.id))
+        const tagUpdates = state.tags.map(tag => {
+          if (tagIds.includes(tag.id)) {
+            const countDecrease = recordingsToUpdate.filter(r => 
+              (r.tags || []).includes(tag.id)
+            ).length
+            return { ...tag, count: Math.max(0, tag.count - countDecrease) }
+          }
+          return tag
+        })
+        
+        return {
+          tags: tagUpdates,
+          recordings: state.recordings.map(r =>
+            ids.includes(r.id)
+              ? { ...r, tags: (r.tags || []).filter(t => !tagIds.includes(t)) }
+              : r
+          ),
+          selectedIds: []
+        }
+      }),
+
+      // Archive Operations
+      archiveRecordings: (ids) => set(state => {
+        const recordingsToArchive = state.recordings.filter(r => ids.includes(r.id))
+        
+        return {
+          archivedRecordings: [
+            ...recordingsToArchive.map(r => ({
+              ...r,
+              archivedAt: new Date().toISOString()
+            })),
+            ...state.archivedRecordings
+          ],
+          recordings: state.recordings.filter(r => !ids.includes(r.id)),
+          selectedIds: []
+        }
+      }),
+
+      unarchiveRecording: (id) => set(state => {
+        const archivedRecording = state.archivedRecordings.find(r => r.id === id)
+        if (!archivedRecording) return state
+        
+        return {
+          recordings: [
+            { 
+              ...archivedRecording, 
+              updatedAt: new Date().toISOString(),
+              // Remove archivedAt property
+              archivedAt: undefined 
+            },
+            ...state.recordings
+          ],
+          archivedRecordings: state.archivedRecordings.filter(r => r.id !== id)
+        }
+      }),
+
+      bulkUnarchive: (ids) => set(state => {
+        const recordingsToUnarchive = state.archivedRecordings.filter(r => ids.includes(r.id))
+        
+        return {
+          recordings: [
+            ...recordingsToUnarchive.map(r => ({
+              ...r,
+              updatedAt: new Date().toISOString(),
+              archivedAt: undefined
+            })),
+            ...state.recordings
+          ],
+          archivedRecordings: state.archivedRecordings.filter(r => !ids.includes(r.id))
+        }
+      }),
+
+      deleteArchived: (id) => set(state => ({
+        archivedRecordings: state.archivedRecordings.filter(r => r.id !== id)
+      })),
+
+      bulkDeleteArchived: (ids) => set(state => ({
+        archivedRecordings: state.archivedRecordings.filter(r => !ids.includes(r.id))
+      })),
+
+      // Advanced Search with Filters
+      searchRecordings: (query, filters = {}) => {
         const { recordings } = get()
         const lowerQuery = query.toLowerCase()
-        return recordings.filter(r =>
-          r.title.toLowerCase().includes(lowerQuery) ||
-          r.transcript.toLowerCase().includes(lowerQuery) ||
-          r.summary.toLowerCase().includes(lowerQuery)
-        )
+        
+        return recordings.filter(r => {
+          // Text search
+          const matchesQuery = !query || 
+            r.title.toLowerCase().includes(lowerQuery) ||
+            r.transcript.toLowerCase().includes(lowerQuery) ||
+            r.summary.toLowerCase().includes(lowerQuery)
+          
+          if (!matchesQuery) return false
+          
+          // Date range filter
+          if (filters.dateRange) {
+            const recordingDate = new Date(r.createdAt)
+            const { start, end } = filters.dateRange
+            if (start && recordingDate < start) return false
+            if (end && recordingDate > end) return false
+          }
+          
+          // Duration filter
+          if (filters.duration) {
+            const { min, max } = filters.duration
+            if (min && r.duration < min) return false
+            if (max && r.duration > max) return false
+          }
+          
+          // Type filter
+          if (filters.type && r.type !== filters.type) {
+            return false
+          }
+          
+          // Tag filter (must match ALL tags)
+          if (filters.tags && filters.tags.length > 0) {
+            const hasAllTags = filters.tags.every(tag => 
+              (r.tags || []).includes(tag)
+            )
+            if (!hasAllTags) return false
+          }
+          
+          return true
+        })
+      },
+
+      // Sort Recordings
+      sortRecordings: (sortBy, sortOrder = 'desc') => {
+        const { recordings } = get()
+        return [...recordings].sort((a, b) => {
+          let comparison = 0
+          
+          switch (sortBy) {
+            case 'date':
+              comparison = new Date(b.createdAt) - new Date(a.createdAt)
+              break
+            case 'duration':
+              comparison = b.duration - a.duration
+              break
+            case 'title':
+              comparison = a.title.localeCompare(b.title)
+              break
+            case 'size':
+              comparison = (b.audioData?.length || 0) - (a.audioData?.length || 0)
+              break
+            default:
+              comparison = 0
+          }
+          
+          return sortOrder === 'asc' ? -comparison : comparison
+        })
+      },
+
+      // Phase 5: Advanced Features Actions
+      
+      // Speaker Diarization
+      setSpeakerSegments: (recordingId, segments) => {
+        set(state => ({
+          recordings: state.recordings.map(r =>
+            r.id === recordingId 
+              ? { ...r, speakerSegments: segments, updatedAt: new Date().toISOString() } 
+              : r
+          )
+        }))
+      },
+
+      setSpeakerName: (recordingId, speakerId, customName) => {
+        set(state => {
+          const recording = state.recordings.find(r => r.id === recordingId)
+          if (!recording) return state
+          
+          const updatedSegments = (recording.speakerSegments || []).map(segment =>
+            segment.speaker === speakerId 
+              ? { ...segment, speakerName: customName } 
+              : segment
+          )
+          
+          return {
+            recordings: state.recordings.map(r =>
+              r.id === recordingId 
+                ? { ...r, speakerSegments: updatedSegments, updatedAt: new Date().toISOString() } 
+                : r
+            )
+          }
+        })
+      },
+
+      // Cross-Feature Integration: Link to Documents
+      linkToDocument: (voiceId, documentId) => set(state => ({
+        recordings: state.recordings.map(r =>
+          r.id === voiceId
+            ? { 
+                ...r, 
+                linkedDocuments: [...new Set([...(r.linkedDocuments || []), documentId])],
+                updatedAt: new Date().toISOString() 
+              }
+            : r
+        ),
+      })),
+
+      unlinkFromDocument: (voiceId, documentId) => set(state => ({
+        recordings: state.recordings.map(r =>
+          r.id === voiceId
+            ? { 
+                ...r, 
+                linkedDocuments: (r.linkedDocuments || []).filter(id => id !== documentId),
+                updatedAt: new Date().toISOString() 
+              }
+            : r
+        ),
+      })),
+
+      // Audio Editing
+      updateAudioData: (recordingId, newAudioData, edits = []) => {
+        set(state => ({
+          recordings: state.recordings.map(r =>
+            r.id === recordingId 
+              ? { 
+                  ...r, 
+                  audioData: newAudioData,
+                  edits: [...(r.edits || []), ...edits],
+                  updatedAt: new Date().toISOString() 
+                } 
+              : r
+          )
+        }))
+      },
+
+      // AI Enhancements
+      applyEnhancements: (recordingId, enhancementTypes) => {
+        set(state => ({
+          recordings: state.recordings.map(r =>
+            r.id === recordingId 
+              ? { 
+                  ...r, 
+                  enhancements: [...new Set([...(r.enhancements || []), ...enhancementTypes])],
+                  updatedAt: new Date().toISOString() 
+                } 
+              : r
+          )
+        }))
+      },
+
+      removeEnhancement: (recordingId, enhancementType) => {
+        set(state => ({
+          recordings: state.recordings.map(r =>
+            r.id === recordingId 
+              ? { 
+                  ...r, 
+                  enhancements: (r.enhancements || []).filter(e => e !== enhancementType),
+                  updatedAt: new Date().toISOString() 
+                } 
+              : r
+          )
+        }))
+      },
+
+      // Analytics Helpers
+      getRecordingStats: (recordingId) => {
+        const { recordings } = get()
+        const recording = recordings.find(r => r.id === recordingId)
+        if (!recording) return null
+        
+        const transcript = recording.transcript || ''
+        const wordCount = transcript.split(/\s+/).filter(w => w.length > 0).length
+        const characterCount = transcript.length
+        
+        return {
+          wordCount,
+          characterCount,
+          duration: recording.duration || 0,
+          speakingRate: wordCount / (recording.duration || 1) * 60,
+          readingTime: Math.ceil(wordCount / 200 * 60), // 200 words per minute
+          hasTranscript: transcript.length > 0,
+          hasSpeakerSegments: (recording.speakerSegments || []).length > 0,
+          linkedDocumentsCount: (recording.linkedDocuments || []).length,
+          editCount: (recording.edits || []).length,
+          enhancementCount: (recording.enhancements || []).length
+        }
+      },
+
+      // Get all analytics data
+      getAllAnalytics: () => {
+        const { recordings } = get()
+        
+        if (recordings.length === 0) return null
+        
+        const totalDuration = recordings.reduce((sum, r) => sum + (r.duration || 0), 0)
+        const totalWords = recordings.reduce((sum, r) => {
+          const transcript = r.transcript || ''
+          return sum + transcript.split(/\s+/).filter(w => w.length > 0).length
+        }, 0)
+        
+        const notesCount = recordings.filter(r => r.type === 'notes').length
+        const galleryCount = recordings.filter(r => r.type === 'gallery').length
+        
+        // Word frequency
+        const wordFrequency = {}
+        recordings.forEach(r => {
+          const words = (r.transcript || '').toLowerCase().match(/\b\w+\b/g) || []
+          words.forEach(word => {
+            if (word.length > 3) {
+              wordFrequency[word] = (wordFrequency[word] || 0) + 1
+            }
+          })
+        })
+        
+        const mostUsedWords = Object.entries(wordFrequency)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([word, count]) => ({ word, count }))
+        
+        // Recordings by day
+        const byDay = {}
+        recordings.forEach(r => {
+          const date = new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          byDay[date] = (byDay[date] || 0) + 1
+        })
+        
+        const recordingsByDay = Object.entries(byDay)
+          .map(([date, count]) => ({ date, count }))
+          .slice(-7) // Last 7 days
+        
+        // Tag usage
+        const tagUsage = {}
+        recordings.forEach(r => {
+          (r.tags || []).forEach(tag => {
+            if (typeof tag === 'string') {
+              tagUsage[tag] = (tagUsage[tag] || 0) + 1
+            }
+          })
+        })
+        
+        const mostUsedTags = Object.entries(tagUsage)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([tag, count]) => ({ tag, count }))
+        
+        return {
+          totalRecordings: recordings.length,
+          totalDuration,
+          avgDuration: totalDuration / recordings.length,
+          totalWords,
+          avgWords: totalWords / recordings.length,
+          notesCount,
+          galleryCount,
+          recordingsByDay,
+          mostUsedWords,
+          mostUsedTags,
+          avgSpeakingRate: totalWords / totalDuration * 60
+        }
       },
     }),
     {

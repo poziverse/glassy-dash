@@ -13,10 +13,12 @@ export const useDocsStore = create(
           title: 'Untitled Document',
           content: '',
           updatedAt: new Date().toISOString(),
+          deletedAt: null, // Track deletion status
         }
         set(state => ({
           docs: [newDoc, ...state.docs],
-          activeDocId: newDoc.id,
+          // Don't auto-open - stay in grid view (UX fix)
+          activeDocId: state.activeDocId,
         }))
         return newDoc.id
       },
@@ -29,10 +31,40 @@ export const useDocsStore = create(
         }))
       },
 
+      // Soft-delete - moves to trash instead of permanent deletion
       deleteDoc: id => {
         set(state => ({
-          docs: state.docs.filter(doc => doc.id !== id),
+          docs: state.docs.map(doc =>
+            doc.id === id 
+              ? { ...doc, deletedAt: new Date().toISOString() }
+              : doc
+          ),
           activeDocId: state.activeDocId === id ? null : state.activeDocId,
+        }))
+      },
+
+      // Restore from trash
+      restoreDoc: id => {
+        set(state => ({
+          docs: state.docs.map(doc =>
+            doc.id === id 
+              ? { ...doc, deletedAt: null, updatedAt: new Date().toISOString() }
+              : doc
+          ),
+        }))
+      },
+
+      // Permanently delete (irreversible)
+      permanentDeleteDoc: id => {
+        set(state => ({
+          docs: state.docs.filter(doc => doc.id !== id),
+        }))
+      },
+
+      // Clear all trash
+      clearTrash: () => {
+        set(state => ({
+          docs: state.docs.filter(doc => !doc.deletedAt),
         }))
       },
 

@@ -210,7 +210,13 @@ export default function VoiceView() {
   return (
     <DashboardLayout
       activeSection="voice"
-      onNavigate={page => (window.location.hash = `#/${page}`)}
+      onNavigate={section => {
+        if (['health', 'alerts', 'admin', 'trash', 'docs', 'voice'].includes(section)) {
+          window.location.hash = `#/${section}`
+        } else if (section === 'overview') {
+          window.location.hash = '#/notes'
+        }
+      }}
       user={currentUser}
       title="Voice Studio"
       onSignOut={signOut}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import Sidebar from './Sidebar'
+import DashboardLayout from './DashboardLayout'
 import {
   Activity,
   Server,
@@ -16,12 +16,15 @@ import {
   Save,
 } from 'lucide-react'
 import { useSettings } from '../contexts/SettingsContext'
+import { useAuthStore } from '../stores/authStore'
 
 export default function HealthView() {
   const [metrics, setMetrics] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const { backgroundImage, dark } = useSettings()
+  const { dark } = useSettings()
+  const currentUser = useAuthStore(state => state.currentUser)
+  const signOut = useAuthStore(state => state.signOut)
 
   const fetchMetrics = () => {
     fetch('/api/monitoring/metrics')
@@ -61,50 +64,39 @@ export default function HealthView() {
     Math.min(100, Math.round((memUsedMB / (memTotalMB || 1)) * 100))
 
   return (
-    <div
-      className={`flex h-screen w-full overflow-hidden transition-colors duration-500 ${dark ? 'text-white' : 'text-gray-800'}`}
+    <DashboardLayout
+      activeSection="health"
+      onNavigate={section => {
+        if (['health', 'alerts', 'admin', 'trash', 'docs', 'voice'].includes(section)) {
+          window.location.hash = `#/${section}`
+        } else if (section === 'overview') {
+          window.location.hash = '#/notes'
+        }
+      }}
+      user={currentUser}
+      title="Mission Control"
+      onSignOut={signOut}
     >
-      {/* Background */}
-      <div className="fixed inset-0 z-[-1]">
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-black" />
-        {backgroundImage && !backgroundImage.startsWith('custom:') && (
-          <img
-            src={`/backgrounds/${backgroundImage}.jpg`}
-            className="w-full h-full object-cover opacity-30"
-            alt="background"
-          />
-        )}
-      </div>
-
-      <Sidebar
-        activeSection="health"
-        onNavigate={section => {
-          if (section === 'overview') window.location.hash = '#/notes'
-          else if (['alerts', 'admin'].includes(section)) window.location.hash = `#/${section}`
-        }}
-      />
-
-      <main className="flex-1 relative overflow-y-auto custom-scrollbar">
-        <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8">
-          <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold flex items-center gap-3">
-                <Activity className="text-emerald-400" />
-                Mission Control
-              </h1>
-              <p className="text-white/60 mt-2">
-                Real-time system telemetry and performance analysis.
-              </p>
+      <div className="pb-20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-3">
+              <Activity className="text-emerald-400" />
+              Mission Control
+            </h1>
+            <p className="text-white/60 mt-2">
+              Real-time system telemetry and performance analysis.
+            </p>
+          </div>
+          {metrics?.uptime && (
+            <div className="glass-card px-4 py-2 rounded-full flex items-center gap-2 text-sm font-mono border border-emerald-500/20 bg-emerald-500/5">
+              <Clock className="w-4 h-4 text-emerald-400" />
+              <span className="text-emerald-300">
+                UPTIME: {Math.floor(metrics.uptime / 60)}m {Math.floor(metrics.uptime % 60)}s
+              </span>
             </div>
-            {metrics?.uptime && (
-              <div className="glass-card px-4 py-2 rounded-full flex items-center gap-2 text-sm font-mono border border-emerald-500/20 bg-emerald-500/5">
-                <Clock className="w-4 h-4 text-emerald-400" />
-                <span className="text-emerald-300">
-                  UPTIME: {Math.floor(metrics.uptime / 60)}m {Math.floor(metrics.uptime % 60)}s
-                </span>
-              </div>
-            )}
-          </header>
+          )}
+        </div>
 
           {loading && !metrics && (
             <div className="text-white/60 animate-pulse flex items-center gap-2">
@@ -280,8 +272,7 @@ export default function HealthView() {
             </div>
           )}
         </div>
-      </main>
-    </div>
+    </DashboardLayout>
   )
 }
 

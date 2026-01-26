@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import Sidebar from './Sidebar'
+import ThemedBackground from './ThemedBackground'
 import { Settings, Shield, LogOut, Search } from 'lucide-react'
 
 export default function DashboardLayout({
@@ -17,10 +18,11 @@ export default function DashboardLayout({
 }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   // Sidebar: OPEN for all sections except main notes dashboard
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(activeSection === 'notes')
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(activeSection === 'overview')
 
   return (
     <div className="flex h-screen overflow-hidden bg-transparent text-gray-100 font-sans selection:bg-accent/30">
+      <ThemedBackground />
       {/* Sidebar */}
       <Sidebar
         activeSection={activeSection}

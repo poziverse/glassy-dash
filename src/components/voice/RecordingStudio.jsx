@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useVoiceStore } from '../../stores/voiceStore'
-import { transcribeAudio } from '../../utils/gemini'
+import { transcribeAudio, transcribeAudioStream } from '../../utils/gemini'
 import AudioQualityIndicator from './AudioQualityIndicator'
-import { Mic, Square, Pause, Play, ChevronDown, ChevronUp, Clock, Sparkles, Save, X, Loader2, Undo, Redo } from 'lucide-react'
+import PlaybackControls from './PlaybackControls'
+import FormatToolbar from './FormatToolbar'
+import ExportButton from './ExportButton'
+import { Mic, Square, Pause, Play, ChevronDown, ChevronUp, Clock, Sparkles, Save, X, Loader2, Undo, Redo, Edit2, Download, CheckCircle } from 'lucide-react'
 
 export default function RecordingStudio() {
   const {
@@ -10,10 +13,13 @@ export default function RecordingStudio() {
     recordingState,
     currentTranscript,
     currentSummary,
+    currentAudio,
     recordingDuration,
     error,
     transcriptHistory,
     historyIndex,
+    recordings,
+    activeRecordingId,
     setStudioCollapsed,
     startRecording,
     stopRecording,
@@ -34,6 +40,9 @@ export default function RecordingStudio() {
   const [timer, setTimer] = useState('00:00')
   const [localTranscript, setLocalTranscript] = useState(currentTranscript)
   const [localDuration, setLocalDuration] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [playbackRate, setPlaybackRate] = useState(1.0)
+  const audioRef = useRef(null)
 
   // Refs
   const mediaRecorderRef = useRef(null)
@@ -44,6 +53,7 @@ export default function RecordingStudio() {
   const animationFrameRef = useRef(null)
   const timerIntervalRef = useRef(null)
   const streamRef = useRef(null)
+  const audioElementRef = useRef(null)
 
   // Sync transcript from store
   useEffect(() => {
@@ -143,18 +153,38 @@ export default function RecordingStudio() {
     }
   }
 
-  // Transcription via Gemini API
+  // Transcription via Gemini API (with streaming support)
   const processTranscription = async base64Audio => {
     try {
       setError(null)
-      const result = await transcribeAudio(base64Audio)
       
-      if (result && result.transcript) {
-        setTranscript(result.transcript)
-        setSummary(result.summary || 'No summary available')
-      } else {
-        setError('Transcription failed. Please try again.')
-      }
+      // Use streaming transcription for better UX
+      await transcribeAudioStream(
+        base64Audio,
+        // onChunk - partial results
+        (chunk) => {
+          if (chunk.transcript) {
+            setTranscript(chunk.transcript)
+            if (chunk.summary) {
+              setSummary(chunk.summary)
+            }
+          }
+        },
+        // onComplete - final results
+        (result) => {
+          if (result && result.transcript) {
+            setTranscript(result.transcript)
+            setSummary(result.summary || 'No summary available')
+          } else {
+            setError('Transcription failed. Please try again.')
+          }
+        },
+        // onError - error handling
+        (err) => {
+          console.error('Streaming transcription error:', err)
+          setError('Failed to transcribe audio. Please try again.')
+        }
+      )
     } catch (err) {
       console.error('Transcription error:', err)
       setError('Failed to transcribe audio. Please try again.')
@@ -281,16 +311,16 @@ export default function RecordingStudio() {
         handleStopRecording()
       }
 
-      // S to save (if reviewing)
+      // S to save to notes (if reviewing)
       if (e.code === 'KeyS' && recordingState === 'reviewing') {
         e.preventDefault()
-        handleSaveToNotes()
+        handleSave('notes')
       }
 
       // G to save to gallery (if reviewing)
       if (e.code === 'KeyG' && recordingState === 'reviewing') {
         e.preventDefault()
-        handleSaveToGallery()
+        handleSave('gallery')
       }
 
       // C to collapse/expand
@@ -319,20 +349,36 @@ export default function RecordingStudio() {
   }, [])
 
   // Save handlers
-  const handleSaveToNotes = () => {
-    saveRecording('notes', { 
-      title: `Voice Note ${new Date().toLocaleDateString()}`,
-      duration: localDuration
-    })
-    clearActiveRecording()
-    setLocalDuration(0)
+  const [saveMessage, setSaveMessage] = useState(null)
+  const [saveToBoth, setSaveToBoth] = useState(false)
+
+  // Get recording being edited
+  const editingRecording = recordings.find(r => r.id === activeRecordingId)
+
+  const showSaveMessage = (message) => {
+    setSaveMessage(message)
+    setTimeout(() => setSaveMessage(null), 3000)
   }
 
-  const handleSaveToGallery = () => {
-    saveRecording('gallery', { 
-      title: `Recording ${new Date().toLocaleDateString()}`,
+  const handleSave = (destination) => {
+    saveRecording(destination, { 
+      title: destination === 'notes' 
+        ? `Voice Note ${new Date().toLocaleDateString()}`
+        : `Recording ${new Date().toLocaleDateString()}`,
       duration: localDuration
     })
+    
+    if (saveToBoth) {
+      // Save to other location too
+      saveRecording(destination === 'notes' ? 'gallery' : 'notes', {
+        title: `Recording ${new Date().toLocaleDateString()}`,
+        duration: localDuration
+      })
+      showSaveMessage('Saved to Notes & Gallery')
+    } else {
+      showSaveMessage(destination === 'notes' ? 'Saved to Notes' : 'Saved to Gallery')
+    }
+    
     clearActiveRecording()
     setLocalDuration(0)
   }
@@ -374,6 +420,35 @@ export default function RecordingStudio() {
 
       {!studioCollapsed && (
         <div className="p-6 space-y-6">
+          {/* Export Button (in review mode) */}
+          {recordingState === 'reviewing' && currentAudio && (
+            <ExportButton 
+              recording={{
+                title: `Voice Note ${new Date().toLocaleDateString()}`,
+                transcript: currentTranscript,
+                summary: currentSummary,
+                duration: localDuration,
+                createdAt: new Date().toISOString(),
+                audioData: currentAudio
+              }}
+              className="w-full"
+            />
+          )}
+
+          {/* Edit Confirmation Banner */}
+          {editingRecording && (
+            <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm flex items-center gap-2">
+              <Edit2 size={16} />
+              <span>Editing: <strong>{editingRecording.title}</strong></span>
+              <button
+                onClick={() => clearActiveRecording()}
+                className="ml-auto px-3 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-xs transition-colors"
+              >
+                Cancel Edit
+              </button>
+            </div>
+          )}
+
           {/* Error Message */}
           {error && (
             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
@@ -461,14 +536,14 @@ export default function RecordingStudio() {
             ) : (
               <div className="flex items-center gap-3">
                 <button
-                  onClick={handleSaveToNotes}
+                  onClick={() => handleSave('notes')}
                   className="flex items-center gap-2 px-6 py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors"
                 >
                   <Save size={18} />
                   Save to Notes
                 </button>
                 <button
-                  onClick={handleSaveToGallery}
+                  onClick={() => handleSave('gallery')}
                   className="flex items-center gap-2 px-6 py-3 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-medium transition-colors"
                 >
                   <Save size={18} />
@@ -478,7 +553,34 @@ export default function RecordingStudio() {
             )}
           </div>
 
-          {/* Transcript Preview */}
+          {/* Audio Player in Review Mode */}
+          {(currentAudio || recordingState === 'reviewing') && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-400">Audio Playback</label>
+              <PlaybackControls 
+                audioUrl={`data:audio/webm;base64,${currentAudio}`}
+                onEnded={() => setIsPlaying(false)}
+              />
+            </div>
+          )}
+
+          {/* Save Options */}
+          {recordingState === 'reviewing' && (
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              <input
+                type="checkbox"
+                id="saveToBoth"
+                checked={saveToBoth}
+                onChange={(e) => setSaveToBoth(e.target.checked)}
+                className="w-4 h-4 rounded border-white/20 bg-white/5 focus:ring-indigo-500"
+              />
+              <label htmlFor="saveToBoth" className="cursor-pointer hover:text-white transition-colors">
+                Save to both Notes & Gallery
+              </label>
+            </div>
+          )}
+
+          {/* Transcript Preview with Formatting Toolbar */}
           {(currentTranscript || recordingState === 'processing') && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -502,6 +604,17 @@ export default function RecordingStudio() {
                   </button>
                 </div>
               </div>
+              
+              {/* Format Toolbar */}
+              <FormatToolbar 
+                value={localTranscript}
+                onChange={(newValue) => {
+                  setLocalTranscript(newValue)
+                  setTranscript(newValue)
+                }}
+                className="mb-2"
+              />
+              
               <textarea
                 value={localTranscript}
                 onChange={(e) => {
@@ -526,6 +639,14 @@ export default function RecordingStudio() {
               />
             </div>
           )}
+        </div>
+      )}
+
+      {/* Save Confirmation Toast */}
+      {saveMessage && (
+        <div className="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-in slide-in-from-right-4 fade-in duration-300 z-50">
+          <CheckCircle size={20} />
+          <span className="font-medium">{saveMessage}</span>
         </div>
       )}
     </div>

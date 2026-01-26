@@ -72,7 +72,7 @@ export default function AdminView() {
     <DashboardLayout
       activeSection="admin"
       onNavigate={section => {
-        if (['health', 'alerts', 'admin'].includes(section)) {
+        if (['health', 'alerts', 'admin', 'trash', 'docs', 'voice'].includes(section)) {
           window.location.hash = `#/${section}`
         } else if (section === 'overview') {
           window.location.hash = '#/notes'
