@@ -24,7 +24,8 @@ describe('useDocsStore', () => {
 
     expect(result.current.docs.length).toBe(1)
     expect(result.current.docs[0].id).toBe(newId)
-    expect(result.current.activeDocId).toBe(newId)
+    // Create no longer auto-opens document (UX fix)
+    expect(result.current.activeDocId).toBeNull()
   })
 
   it('should update a document', () => {
@@ -43,7 +44,7 @@ describe('useDocsStore', () => {
     expect(result.current.docs[0].content).toBe('New Content')
   })
 
-  it('should delete a document', () => {
+  it('should soft-delete a document', () => {
     const { result } = renderHook(() => useDocsStore())
 
     let id
@@ -55,7 +56,46 @@ describe('useDocsStore', () => {
       result.current.deleteDoc(id)
     })
 
+    // Soft-delete doesn't remove from docs array, just marks as deleted
+    expect(result.current.docs.length).toBe(1)
+    expect(result.current.docs[0].deletedAt).not.toBeNull()
+    expect(result.current.activeDocId).toBeNull()
+  })
+
+  it('should permanently delete a document', () => {
+    const { result } = renderHook(() => useDocsStore())
+
+    let id
+    act(() => {
+      id = result.current.createDoc()
+    })
+
+    act(() => {
+      result.current.permanentDeleteDoc(id)
+    })
+
     expect(result.current.docs.length).toBe(0)
     expect(result.current.activeDocId).toBeNull()
+  })
+
+  it('should restore a soft-deleted document', () => {
+    const { result } = renderHook(() => useDocsStore())
+
+    let id
+    act(() => {
+      id = result.current.createDoc()
+    })
+
+    act(() => {
+      result.current.deleteDoc(id)
+    })
+
+    expect(result.current.docs[0].deletedAt).not.toBeNull()
+
+    act(() => {
+      result.current.restoreDoc(id)
+    })
+
+    expect(result.current.docs[0].deletedAt).toBeNull()
   })
 })
