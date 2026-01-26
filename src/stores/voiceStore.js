@@ -20,6 +20,10 @@ export const useVoiceStore = create(
       recordingDuration: 0, // in seconds
       error: null,
 
+      // Undo/Redo History for Transcript Editing
+      transcriptHistory: [], // Stack of transcript states
+      historyIndex: -1, // Current position in history
+
       // Actions
       startRecording: () => {
         set({
@@ -47,7 +51,45 @@ export const useVoiceStore = create(
         set({ recordingState: 'recording' })
       },
 
-      setTranscript: (transcript) => set({ currentTranscript: transcript }),
+      setTranscript: (transcript) => set(state => {
+        // Push to history if not at the end
+        const newHistory = state.transcriptHistory.slice(0, state.historyIndex + 1)
+        newHistory.push(transcript)
+        
+        // Limit history to 50 states
+        if (newHistory.length > 50) {
+          newHistory.shift()
+        }
+        
+        return {
+          currentTranscript: transcript,
+          transcriptHistory: newHistory,
+          historyIndex: newHistory.length - 1
+        }
+      }),
+
+      // Undo/Redo Actions
+      undoTranscript: () => set(state => {
+        if (state.historyIndex > 0) {
+          return {
+            historyIndex: state.historyIndex - 1,
+            currentTranscript: state.transcriptHistory[state.historyIndex - 1]
+          }
+        }
+        return state
+      }),
+
+      redoTranscript: () => set(state => {
+        if (state.historyIndex < state.transcriptHistory.length - 1) {
+          return {
+            historyIndex: state.historyIndex + 1,
+            currentTranscript: state.transcriptHistory[state.historyIndex + 1]
+          }
+        }
+        return state
+      }),
+
+      clearTranscriptHistory: () => set({ transcriptHistory: [], historyIndex: -1 }),
 
       setSummary: (summary) => set({ currentSummary: summary }),
 
@@ -81,6 +123,8 @@ export const useVoiceStore = create(
           currentAudio: null,
           recordingStartTime: null,
           recordingDuration: 0,
+          transcriptHistory: [],
+          historyIndex: -1,
         }))
 
         return newRecording

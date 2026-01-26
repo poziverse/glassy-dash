@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useVoiceStore } from '../../stores/voiceStore'
 import { transcribeAudio } from '../../utils/gemini'
-import { Mic, Square, Pause, Play, ChevronDown, ChevronUp, Clock, Sparkles, Save, X, Loader2 } from 'lucide-react'
+import AudioQualityIndicator from './AudioQualityIndicator'
+import { Mic, Square, Pause, Play, ChevronDown, ChevronUp, Clock, Sparkles, Save, X, Loader2, Undo, Redo } from 'lucide-react'
 
 export default function RecordingStudio() {
   const {
@@ -11,21 +12,28 @@ export default function RecordingStudio() {
     currentSummary,
     recordingDuration,
     error,
+    transcriptHistory,
+    historyIndex,
     setStudioCollapsed,
     startRecording,
     stopRecording,
     pauseRecording,
     resumeRecording,
     setTranscript,
+    undoTranscript,
+    redoTranscript,
     setSummary,
     saveRecording,
     clearActiveRecording,
     setError,
+    setAudioData,
+    setRecordingDuration,
   } = useVoiceStore()
 
   // Local state
   const [timer, setTimer] = useState('00:00')
   const [localTranscript, setLocalTranscript] = useState(currentTranscript)
+  const [localDuration, setLocalDuration] = useState(0)
 
   // Refs
   const mediaRecorderRef = useRef(null)
@@ -35,24 +43,28 @@ export default function RecordingStudio() {
   const canvasRef = useRef(null)
   const animationFrameRef = useRef(null)
   const timerIntervalRef = useRef(null)
+  const streamRef = useRef(null)
 
   // Sync transcript from store
   useEffect(() => {
     setLocalTranscript(currentTranscript)
   }, [currentTranscript])
 
-  // Timer effect
+  // Duration tracking effect
   useEffect(() => {
+    let interval
     if (recordingState === 'recording') {
-      timerIntervalRef.current = setInterval(() => {
-        setTimer(formatTime(recordingDuration))
+      interval = setInterval(() => {
+        setLocalDuration(prev => prev + 1)
       }, 1000)
-    } else {
-      clearInterval(timerIntervalRef.current)
     }
+    return () => clearInterval(interval)
+  }, [recordingState])
 
-    return () => clearInterval(timerIntervalRef.current)
-  }, [recordingState, recordingDuration])
+  // Timer display effect
+  useEffect(() => {
+    setTimer(formatTime(localDuration))
+  }, [localDuration])
 
   // Format time helper
   const formatTime = (seconds) => {
@@ -66,6 +78,7 @@ export default function RecordingStudio() {
     try {
       setError(null)
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = stream
 
       // Start visualizer
       startVisualizer(stream)
@@ -124,6 +137,8 @@ export default function RecordingStudio() {
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && recordingState === 'recording') {
       mediaRecorderRef.current.stop()
+      // Update store with final duration
+      setRecordingDuration(localDuration)
       stopRecording()
     }
   }
@@ -224,10 +239,26 @@ export default function RecordingStudio() {
     }
   }
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts for transcript editing
   useEffect(() => {
+    const handleTranscriptKeyDown = (e) => {
+      // Only handle Ctrl+Z and Ctrl+Y in transcript textarea
+      if (e.target.tagName === 'TEXTAREA') {
+        if (e.ctrlKey || e.metaKey) {
+          if (e.key === 'z' && !e.shiftKey) {
+            e.preventDefault()
+            undoTranscript()
+          } else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
+            e.preventDefault()
+            redoTranscript()
+          }
+        }
+      }
+    }
+
+    // Keyboard shortcuts for controls
     const handleKeyDown = (e) => {
-      // Ignore if in input field
+      // Ignore if in input field (except for Ctrl+Z/Y which are handled separately)
       if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') {
         return
       }
@@ -269,24 +300,41 @@ export default function RecordingStudio() {
       }
     }
 
+    window.addEventListener('keydown', handleTranscriptKeyDown)
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [recordingState, studioCollapsed])
+    return () => {
+      window.removeEventListener('keydown', handleTranscriptKeyDown)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [recordingState, studioCollapsed, historyIndex, transcriptHistory])
 
   // Cleanup
   useEffect(() => {
-    return () => stopVisualizer()
+    return () => {
+      stopVisualizer()
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop())
+      }
+    }
   }, [])
 
   // Save handlers
   const handleSaveToNotes = () => {
-    saveRecording('notes', { title: `Voice Note ${new Date().toLocaleDateString()}` })
+    saveRecording('notes', { 
+      title: `Voice Note ${new Date().toLocaleDateString()}`,
+      duration: localDuration
+    })
     clearActiveRecording()
+    setLocalDuration(0)
   }
 
   const handleSaveToGallery = () => {
-    saveRecording('gallery', { title: `Recording ${new Date().toLocaleDateString()}` })
+    saveRecording('gallery', { 
+      title: `Recording ${new Date().toLocaleDateString()}`,
+      duration: localDuration
+    })
     clearActiveRecording()
+    setLocalDuration(0)
   }
 
   return (
@@ -334,8 +382,15 @@ export default function RecordingStudio() {
             </div>
           )}
 
-          {/* Visualizer */}
-          <div className="relative w-full h-32 bg-black/20 rounded-xl overflow-hidden border border-white/5">
+          {/* Visualizer & Quality Indicator */}
+          <div className="flex gap-4">
+            {/* Audio Quality Indicator */}
+            {recordingState === 'recording' && (
+              <AudioQualityIndicator stream={streamRef.current} isRecording={recordingState === 'recording'} />
+            )}
+
+            {/* Visualizer */}
+            <div className="flex-1 h-32 bg-black/20 rounded-xl overflow-hidden border border-white/5">
             <canvas
               ref={canvasRef}
               width={600}
@@ -343,21 +398,22 @@ export default function RecordingStudio() {
               className="w-full h-full object-cover"
             />
             
-            {recordingState === 'idle' && (
-              <div className="absolute inset-0 flex items-center justify-center text-gray-500">
-                <Mic size={32} className="opacity-30" />
-              </div>
-            )}
-
-            {recordingState === 'processing' && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                <div className="flex flex-col items-center gap-3">
-                  <Loader2 size={32} className="text-indigo-400 animate-spin" />
-                  <span className="text-indigo-400 font-medium">Transcribing with AI...</span>
-                  <span className="text-xs text-gray-400">This may take a few seconds</span>
+              {recordingState === 'idle' && (
+                <div className="absolute inset-0 flex items-center justify-center text-gray-500">
+                  <Mic size={32} className="opacity-30" />
                 </div>
-              </div>
-            )}
+              )}
+
+              {recordingState === 'processing' && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 size={32} className="text-indigo-400 animate-spin" />
+                    <span className="text-indigo-400 font-medium">Transcribing with AI...</span>
+                    <span className="text-xs text-gray-400">This may take a few seconds</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Controls */}
@@ -425,7 +481,27 @@ export default function RecordingStudio() {
           {/* Transcript Preview */}
           {(currentTranscript || recordingState === 'processing') && (
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-400">Transcript</label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-400">Transcript</label>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={undoTranscript}
+                    disabled={historyIndex <= 0}
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Undo (Ctrl+Z)"
+                  >
+                    <Undo size={16} className="text-gray-400" />
+                  </button>
+                  <button
+                    onClick={redoTranscript}
+                    disabled={historyIndex >= transcriptHistory.length - 1}
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Redo (Ctrl+Y)"
+                  >
+                    <Redo size={16} className="text-gray-400" />
+                  </button>
+                </div>
+              </div>
               <textarea
                 value={localTranscript}
                 onChange={(e) => {
