@@ -28,6 +28,45 @@ Host glassy-vm
 
 Then SSH directly: `ssh glassy-vm`
 
+## Pre-Deployment Verification
+
+Before deploying, always verify the production build is current and working:
+
+```bash
+# Navigate to project directory
+cd glassy-dash/GLASSYDASH
+
+# Check for uncommitted changes
+git status
+
+# Rebuild the site with latest code
+npm run build
+
+# Verify build artifacts exist
+ls -lh dist/
+
+# Expected output:
+# index.html (~0.61 kB)
+# assets/index-B*.css (~109 kB)
+# assets/CDWEKZTF-*.js (~226 kB)
+# assets/index-*.js (~2.1 MB)
+
+# Preview the production build locally
+npm run preview
+
+# Test at http://localhost:4173/ to ensure:
+# - All features work correctly
+# - No console errors
+# - All recent changes are present
+# - Styles and assets load properly
+```
+
+**Critical:**
+- Always rebuild after committing changes
+- Verify the build includes all recent modifications
+- Test locally before packaging for deployment
+- The `dist/` directory contains production assets that will be deployed
+
 ## Deployment Procedure
 
 ### 1. Build & Package (Local Machine)

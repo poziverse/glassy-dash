@@ -450,7 +450,49 @@ chore: update dependencies to latest versions
 
 ---
 
-## Common Tasks
+## Build Verification
+
+### Confirming the Site is Fully Built Locally
+
+Before deploying or verifying changes, always confirm the production build is up-to-date:
+
+```bash
+# Navigate to project directory
+cd glassy-dash/GLASSYDASH
+
+# Check for uncommitted changes
+git status
+
+# Rebuild the site with latest code
+npm run build
+
+# The build will create/update the dist/ directory with:
+# - index.html (0.61 kB)
+# - assets/index-B*.css (~109 kB)
+# - assets/CDWEKZTF-*.js (~226 kB)
+# - assets/index-*.js (~2.1 MB)
+
+# Verify build artifacts exist
+ls -lh dist/
+
+# Preview the production build locally
+npm run preview
+
+# The preview server runs at http://localhost:4173/
+# Access it to verify the build contains latest changes
+
+# Note: Always rebuild after committing changes to ensure
+# the dist/ directory reflects the current working tree
+```
+
+**Important:**
+- The `dist/` directory contains the production build artifacts
+- Always run `npm run build` after making code changes
+- Use `npm run preview` to test the production build locally
+- Build artifacts include: HTML, CSS bundles, and JavaScript bundles
+- Large chunks (>500 kB) are normal due to the comprehensive feature set
+
+### Common Tasks
 
 ### Add New API Endpoint
 
