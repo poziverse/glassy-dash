@@ -43,26 +43,8 @@ class ProviderRouter {
    * @returns {Promise<void>}
    */
   async initialize() {
-    // Default provider configurations (will be loaded from .env or user settings)
-    this.defaultProviders.set('gemini', {
-      providerClass: null, // Will be loaded dynamically
-      config: {
-        capabilities: {
-          ...ProviderCapabilities,
-          STREAMING: true,
-          STRUCTURED_OUTPUT: true,
-          SYSTEM_INSTRUCTIONS: true,
-          TOOLS: true,
-          MULTIMODAL: true,
-          EMBEDDINGS: true,
-          AUDIO: true,
-          IMAGES: true
-        }
-      }
-    })
-    
-    // Note: Zai and Ollama will be added when their providers are created
-    // For now, we're setting up the framework
+    // Note: Provider classes are registered via registerProvider() call during init.js
+    // This method sets up the framework but providers are registered separately
     
     console.log('[Provider Router] Initialized with default provider: Gemini')
   }
@@ -94,9 +76,14 @@ class ProviderRouter {
     const { type, apiKey, baseUrl, model, options, isActive = true } = providerConfig
     
     // Validate provider exists
-    const { providerClass, config: defaultConfig } = this.registry.get(type)
-    if (!providerClass) {
+    const registration = this.registry.get(type)
+    if (!registration) {
       throw new Error(`Unsupported provider type: ${type}`)
+    }
+    
+    const { providerClass, config: defaultConfig } = registration
+    if (!providerClass) {
+      throw new Error(`Provider class not found for type: ${type}`)
     }
     
     // Merge default config with user config
@@ -110,8 +97,7 @@ class ProviderRouter {
     }
     
     // Create provider instance
-    const ProviderClass = require(`./${type}`)
-    const provider = new ProviderClass(mergedConfig)
+    const provider = new providerClass(mergedConfig)
     
     // Store user's provider configuration
     this.userProviders.set(type, mergedConfig)
