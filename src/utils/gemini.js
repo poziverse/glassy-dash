@@ -373,7 +373,8 @@ export const GeminiClient = {
   askQuestion,
   transformText,
   generateImage,
-  transcribeAudio
+  transcribeAudio,
+  transcribeAudioStream: transcribeAudio // Alias for backward compatibility
 }
 
 // Named export for convenience
@@ -387,6 +388,7 @@ export default {
   transformText,
   generateImage,
   transcribeAudio,
+  transcribeAudioStream: transcribeAudio, // Alias for backward compatibility
   isStreamingAvailable,
   getProviders,
   getProviderHealth,
