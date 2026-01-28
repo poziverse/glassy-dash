@@ -512,6 +512,17 @@ class ProviderRouter {
   getTaskMapping() {
     return this.taskMapping
   }
+
+  /**
+   * Set task mapping for a specific task type
+   * @param {string} taskType - The task type
+   * @param {Array} providers - Array of provider types to use for this task
+   * @returns {void}
+   */
+  setTaskMapping(taskType, providers) {
+    this.taskMapping[taskType] = providers
+    console.log(`[Provider Router] Updated task mapping for ${taskType}: ${providers.join(', ')}`)
+  }
 }
 
 // Export singleton instance
