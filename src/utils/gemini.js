@@ -261,6 +261,11 @@ export async function transcribeAudio(audioBlob, onChunk, onComplete, onError) {
   }
 }
 
+// Alias for backward compatibility
+export async function transcribeAudioStream(audioBlob, onChunk, onComplete, onError) {
+  return transcribeAudio(audioBlob, onChunk, onComplete, onError)
+}
+
 /**
  * Helper: Check if streaming is available
  * Based on provider capabilities
