@@ -75,7 +75,7 @@ class ProviderRouter {
    * @returns {void}
    */
   registerProvider(type, ProviderClass, config) {
-    this.registry.set(type, { providerClass, config })
+    this.registry.set(type, { providerClass: ProviderClass, config })
     console.log(`[Provider Router] Registered provider: ${type}`)
   }
 
