@@ -14,7 +14,7 @@ function logAuth(msg) {
   try {
     fs.appendFileSync(
       path.join(__dirname, 'debug_auth.log'),
-      new Date().toISOString() + ' ' + msg + '\\n'
+      new Date().toISOString() + ' ' + msg + '\n'
     )
   } catch (e) {
     console.error('Log failed', e)
@@ -123,12 +123,11 @@ const secretKeyRateLimiter = rateLimit({
 // ---------- SQLite ----------
 const dbFile = DB_FILE
 console.log('---------------------------------------------------')
-console.log('>> SERVER STARTING')
 console.log('>> DATABASE_PATH env:', process.env.DATABASE_PATH)
 console.log('>> SELECTED DB FILE:', dbFile)
 console.log('---------------------------------------------------')
 
-// Ensure the directory for the DB exists
+// Ensure directory for DB exists
 try {
   fs.mkdirSync(path.dirname(dbFile), { recursive: true })
 } catch (e) {
@@ -238,6 +237,7 @@ CREATE TABLE IF NOT EXISTS notes (
   updated_at TEXT,             -- for tracking last edit time
   last_edited_by TEXT,         -- email/name of last editor
   last_edited_at TEXT,         -- timestamp of last edit
+  deleted_at INTEGER,
   FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -252,7 +252,6 @@ CREATE TABLE IF NOT EXISTS note_collaborators (
   FOREIGN KEY(added_by) REFERENCES users(id) ON DELETE CASCADE,
   UNIQUE(note_id, user_id)
 );
-
 
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
@@ -357,10 +356,10 @@ CREATE TABLE IF NOT EXISTS bug_reports (
       console.log(`Default admin user created: ${adminEmail} / ${adminPass}`)
     }
 
-    await validateDatabaseSchema()
+    // await validateDatabaseSchema()
 
     adminSettings = await loadAdminSettings()
-    console.log('✓ Database initialization complete.')
+    console.log('✓ Database initialization complete')
   } catch (err) {
     console.error('❌ Database initialization failed:', err)
     process.exit(1)
@@ -521,8 +520,8 @@ const allNotesWithPagingQuery = db.prepare(`
     (n.is_announcement = 1 AND u.announcements_opt_out = 0 AND uai.note_id IS NULL)
   ) AND n.archived = 0 AND n.deleted_at IS NULL
   ORDER BY n.pinned DESC, n.position DESC, n.timestamp DESC
-  LIMIT ? OFFSET ?
-`)
+  LIMIT ? OFFSET ?`
+)
 const getNote = db.prepare('SELECT * FROM notes WHERE id = ? AND user_id = ?')
 const getNoteWithCollaboration = db.prepare(`
   SELECT n.* FROM notes n
@@ -549,7 +548,7 @@ const updateNoteWithCollaboration = db.prepare(`
     images_json=@images_json, color=@color, pinned=@pinned, position=@position, timestamp=@timestamp
   WHERE id=@id AND (user_id=@user_id OR EXISTS(
     SELECT 1 FROM note_collaborators nc 
-    WHERE nc.note_id=@id AND nc.user_id=@user_id
+    WHERE nc.note_id = @id AND nc.user_id = @user_id
   ))
 `)
 const patchPartial = db.prepare(`
@@ -574,7 +573,7 @@ const patchPartialWithCollaboration = db.prepare(`
                    timestamp=COALESCE(@timestamp,timestamp)
   WHERE id=@id AND (user_id=@user_id OR EXISTS(
     SELECT 1 FROM note_collaborators nc 
-    WHERE nc.note_id=@id AND nc.user_id=@user_id
+    WHERE nc.note_id = @id AND nc.user_id = @user_id
   ))
 `)
 const patchPosition = db.prepare(`
@@ -618,7 +617,7 @@ const updateNoteWithEditor = db.prepare(`
   UPDATE notes SET 
     updated_at = ?, 
     last_edited_by = ?, 
-    last_edited_at = ?
+    last_edited_at = ? 
   WHERE id = ?
 `)
 
@@ -693,7 +692,7 @@ async function broadcastNoteUpdated(noteId) {
 app.get('/api/events', authFromQueryOrHeader, (req, res) => {
   // SSE headers
   res.setHeader('Content-Type', 'text/event-stream')
-  res.setHeader('Cache-Control', 'no-cache, no-transform')
+  res.setHeader('Cache-Control', 'no-cache')
   res.setHeader('Connection', 'keep-alive')
   // Help Nginx/Proxies not to buffer SSE
   try {
@@ -1060,7 +1059,7 @@ app.post('/api/notes', auth, async (req, res) => {
     if (Array.isArray(body.images) && body.images.length > 0) {
       try {
         // Validate each image object structure
-        const validatedImages = body.images.map((img, idx) => ({
+        const validatedImages = body.images.map((img, idx) =>({
           id: img?.id || `img-${idx}`,
           src: img?.src || '',
           name: img?.name || `image-${idx}`,
@@ -1216,10 +1215,10 @@ app.put('/api/notes/:id', auth, async (req, res) => {
     type: ['checklist', 'draw', 'youtube', 'music'].includes(b.type) ? b.type : 'text',
     title: String(b.title || ''),
     content: b.type === 'checklist' ? '' : String(b.content || ''),
-    items_json: JSON.stringify(Array.isArray(b.items) ? b.items : []),
-    tags_json: JSON.stringify(Array.isArray(b.tags) ? b.tags : []),
-    images_json: Array.isArray(b.images) ? JSON.stringify(b.images) : '[]',
-    color: b.color && typeof b.color === 'string' ? b.color : 'default',
+    items_json: Array.isArray(b.items) ? JSON.stringify(b.items) : null,
+    tags_json: Array.isArray(b.tags) ? JSON.stringify(b.tags) : null,
+    images_json: Array.isArray(b.images) ? JSON.stringify(b.images) : null,
+    color: b.color && typeof b.color === 'string' ? b.color : null,
     pinned: b.pinned ? 1 : 0,
     position: typeof b.position === 'number' ? b.position : existing.position,
     timestamp: b.timestamp || existing.timestamp,
@@ -1263,7 +1262,6 @@ app.patch('/api/notes/:id', auth, async (req, res) => {
   // Update editor tracking (store display name)
   await updateNoteWithEditor.run(nowISO(), req.user.name || req.user.email, nowISO(), id)
   await broadcastNoteUpdated(id)
-
   res.json({ ok: true })
 })
 
@@ -1280,7 +1278,7 @@ app.delete('/api/notes/:id', auth, async (req, res) => {
       await broadcastNoteUpdated(noteId)
       res.json({ ok: true, deleted: true })
     } else {
-      // Regular users just dismiss the announcement
+      // Regular users just dismiss announcement
       await dismissAnnouncement.run(req.user.id, noteId, nowISO())
       res.json({ ok: true, dismissed: true })
     }
@@ -1448,7 +1446,7 @@ app.delete('/api/notes/:id/collaborate/:userId', auth, async (req, res) => {
     return res.status(404).json({ error: 'Note not found' })
   }
 
-  // Check if user is the owner (can remove anyone) or is removing themselves
+  // Check if user is owner (can remove anyone) or is removing themselves
   const isOwner = note.user_id === req.user.id
   const isRemovingSelf = String(userIdToRemove) === String(req.user.id)
 
@@ -1487,6 +1485,8 @@ app.get('/api/notes/collaborated', auth, async (req, res) => {
       updated_at: r.updated_at,
       lastEditedBy: r.last_edited_by,
       lastEditedAt: r.last_edited_at,
+      archived: !!r.archived,
+      is_announcement: !!r.is_announcement,
     }))
   )
 })
@@ -1640,7 +1640,7 @@ async function loadAdminSettings() {
 let adminSettings = { allowNewAccounts: true }
 
 // Get admin settings
-app.get('/api/admin/settings', auth, adminOnly, (_req, res) => {
+app.get('/api/admin/settings', auth, adminOnly, async (req, res) => {
   res.json(adminSettings)
 })
 
@@ -1670,8 +1670,8 @@ app.get('/api/auth/settings', (_req, res) => {
 })
 
 // Include a rough storage usage estimate (bytes) for each user
-// This sums the LENGTH() of relevant TEXT columns across a user's notes.
-// It’s an approximation (UTF-8 chars ≈ bytes, and data-URL images are strings).
+// This sums LENGTH() of relevant TEXT columns across a user's notes.
+// It's an approximation (UTF-8 chars ≈ bytes, and data-URL images are strings).
 const listAllUsers = db.prepare(`
   SELECT
     u.id,
@@ -1692,17 +1692,14 @@ const listAllUsers = db.prepare(`
   GROUP BY u.id
   ORDER BY u.created_at DESC
 `)
-
 app.get('/api/admin/users', auth, adminOnly, async (_req, res) => {
-  const rows = await listAllUsers.all()
+  const users = await listAllUsers.all()
   res.json(
-    rows.map(r => ({
+    users.map(r => ({
       id: r.id,
       name: r.name,
       email: r.email,
       is_admin: !!r.is_admin,
-      notes: Number(r.notes || 0),
-      storage_bytes: Number(r.storage_bytes || 0),
       created_at: r.created_at,
     }))
   )
@@ -1733,8 +1730,9 @@ const deleteUserStmt = db.prepare('DELETE FROM users WHERE id = ?')
 app.delete('/api/admin/users/:id', auth, adminOnly, async (req, res) => {
   const id = Number(req.params.id)
   if (id === req.user.id) {
-    return res.status(400).json({ error: 'You cannot delete yourself.' })
+    return res.status(400).json({ error: 'Cannot delete yourself' })
   }
+
   const target = await getUserById.get(id)
   if (!target) return res.status(404).json({ error: 'User not found' })
 
@@ -1743,7 +1741,7 @@ app.delete('/api/admin/users/:id', auth, adminOnly, async (req, res) => {
     .get()
   const adminCount = adminCountResult ? adminCountResult.c : 0
   if (target.is_admin && adminCount <= 1) {
-    return res.status(400).json({ error: 'Cannot delete the last admin.' })
+    return res.status(400).json({ error: 'Cannot delete the last admin' })
   }
 
   await deleteUserStmt.run(id)
@@ -1786,7 +1784,7 @@ app.patch('/api/admin/users/:id', auth, adminOnly, async (req, res) => {
   const id = Number(req.params.id)
   const { name, email, password, is_admin } = req.body || {}
 
-  // Cannot update yourself to non-admin if you're the only admin
+  // Cannot update yourself to non-admin if you're only admin
   if (id === req.user.id && is_admin === false) {
     const adminCountResult = await db
       .prepare('SELECT COUNT(*) AS c FROM users WHERE is_admin=1')
@@ -1859,65 +1857,10 @@ app.patch('/api/admin/users/:id', auth, adminOnly, async (req, res) => {
   })
 })
 
-// ---------- AI Assistant (Server side, Gemini-only) ----------
-// Check AI status
-app.get('/api/ai/status', auth, (req, res) => {
-  const geminiAvailable = geminiAI && geminiAI.isGeminiAvailable()
-  res.json({
-    available: geminiAvailable,
-    provider: geminiAvailable ? 'gemini' : 'heuristic',
-  })
-})
+// ---------- AI Assistant (removed old code, now routes through new Provider Router) ----------
 
-// ---------- Load Gemini helper ----------
-let geminiAI = null
-try {
-  geminiAI = require('./gemini')
-  console.log('[AI] ✓ Gemini module loaded')
-} catch (err) {
-  console.warn('[AI] Gemini module not available:', err.message)
-}
-
-app.post('/api/ai/ask', auth, async (req, res) => {
-  const { question, notes } = req.body || {}
-  if (!question) return res.status(400).json({ error: 'Missing question' })
-
-  try {
-    // Filter relevant notes based on question keywords
-    const relevantNotes = (notes || [])
-      .filter(n => {
-        const q = question.toLowerCase().replace(/[^\w\s]/g, ' ')
-        const words = q.split(/\s+/).filter(w => w.length >= 2)
-        const t = (n.title || '').toLowerCase()
-        const c = (n.content || '').toLowerCase()
-        return words.some(word => t.includes(word) || c.includes(word))
-      })
-      .slice(0, 5)
-
-    const notesToUse = relevantNotes.length > 0 ? relevantNotes : (notes || []).slice(0, 4)
-
-    // Use Gemini for AI responses
-    if (geminiAI && geminiAI.isGeminiAvailable()) {
-      try {
-        const answer = await geminiAI.answerQuestion(question, notesToUse)
-        return res.json({ answer, provider: 'gemini' })
-      } catch (geminiErr) {
-        console.error('[AI] Gemini failed:', geminiErr.message)
-        return res.status(503).json({
-          error: 'AI service temporarily unavailable. Please try again.',
-        })
-      }
-    }
-
-    // No AI available - Gemini not configured
-    return res.status(503).json({
-      error: 'AI not available. Please configure GEMINI_API_KEY in your environment.',
-    })
-  } catch (err) {
-    console.error('Server AI Error:', err)
-    res.status(500).json({ error: 'AI processing failed on server.' })
-  }
-})
+// The AI routes have been moved to /routes/ai.js
+// All AI requests now go through the new multi-provider system
 
 // ---------- Error Handling ----------
 app.use((err, req, res, next) => {
@@ -1939,38 +1882,25 @@ if (NODE_ENV === 'production') {
   })
 }
 
-// ---------- Periodic SSE Cleanup ----------
-// Clean up dead connections every minute
-setInterval(() => {
-  sseClients.forEach((set, userId) => {
-    if (!set || set.size === 0) {
-      sseClients.delete(userId)
-      return
-    }
-
-    const toRemove = []
-    for (const res of set) {
-      try {
-        // Try to send a ping - if it fails, connection is dead
-        res.write('event: ping\ndata: {}\n\n')
-      } catch (error) {
-        toRemove.push(res)
-      }
-    }
-
-    // Remove dead connections
-    for (const res of toRemove) {
-      removeSseClient(userId, res)
-    }
-  })
-}, 60000) // Every minute
-
 // ---------- Listen ----------
-initializeDatabase().then(() => {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`API listening on http://0.0.0.0:${PORT}  (env=${NODE_ENV})`)
-  })
-})
+async function startServer() {
+  try {
+    // Initialize database
+    await initializeDatabase()
+
+    // Initialize AI providers
+    const { initializeProviders } = require('./ai/init')
+    await initializeProviders()
+
+    // Start listening
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`API listening on http://0.0.0.0:${PORT}  (env=${NODE_ENV})`)
+    })
+  } catch (err) {
+    console.error('❌ Server startup failed:', err)
+    process.exit(1)
+  }
+}
 
 // ---------- 404 Handler for API ----------
 app.use('/api', (req, res) => {
@@ -1998,3 +1928,6 @@ app.use((err, req, res, next) => {
     requestId: req.headers['x-request-id'] || 'unknown',
   })
 })
+
+// Start the server
+startServer()

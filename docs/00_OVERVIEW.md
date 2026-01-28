@@ -675,7 +675,7 @@ User Action → API Request → Database Update → SSE Broadcast → Client Upd
 - [Database Documentation](./06_DATABASE.md)
 - [Authentication Documentation](./07_AUTHENTICATION.md)
 - [Collaboration Documentation](./08_COLLABORATION.md)
-- [AI Integration Documentation](./09_AI_INTEGRATION.md)
+- [AI Integration Documentation](./AI_INTEGRATION.md)
 - [Theming Documentation](./10_THEMING.md)
 - [PWA Documentation](./11_PWA.md)
 - [Logging Documentation](./12_LOGGING.md)

@@ -231,7 +231,7 @@ If you create an admin account (first registered user is admin):
 ### Advanced Features
 
 - **Real-time Collaboration** - See [COLLABORATION.md](#) (in progress)
-- **AI Integration** - See [AI_GUIDE.md](#) (in progress)
+- **AI Integration** - See [AI_INTEGRATION.md](AI_INTEGRATION.md)
 - **Custom Themes** - See [THEMING.md](THEMING.md)
 
 ### Troubleshooting
