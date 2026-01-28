@@ -329,7 +329,7 @@ CREATE TABLE IF NOT EXISTS bug_reports (
     await ensureNoteColumns()
 
     // Run database migrations after tables are created
-    await require('./migrations').runMigrations()
+    await require('./migrations').runMigrations(db)
 
     // Promote existing users to admin on startup
     if (ADMIN_EMAILS.length) {
