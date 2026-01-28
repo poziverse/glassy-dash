@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { AudioBufferUtils } from '../audioBufferUtils'
 
 describe('AudioBufferUtils', () => {
@@ -14,7 +14,7 @@ describe('AudioBufferUtils', () => {
         .map(() => new Float32Array(length).fill(0)),
       getChannelData(channel) {
         return this.channelData[channel]
-      }
+      },
     }
     return buffer
   }
@@ -129,7 +129,7 @@ describe('AudioBufferUtils', () => {
       const buffers = [
         createMockBuffer(44100, 1, 1),
         createMockBuffer(44100, 1, 1),
-        createMockBuffer(44100, 1, 1)
+        createMockBuffer(44100, 1, 1),
       ]
 
       buffers.forEach((buffer, i) => {
@@ -175,7 +175,7 @@ describe('AudioBufferUtils', () => {
       // Note: This should ideally validate sample rates, but current implementation
       // assumes they match. This test documents expected behavior.
       const concatenated = AudioBufferUtils.concatBuffers([buffer1, buffer2])
-      
+
       // Will use sample rate from first buffer
       expect(concatenated.sampleRate).toBe(44100)
     })
@@ -371,7 +371,7 @@ describe('AudioBufferUtils', () => {
 
       const realBuffer = new AudioContext().createBuffer(1, 1000, 44100)
       const realData = realBuffer.getChannelData(0)
-      
+
       // Fill with test pattern
       for (let i = 0; i < 1000; i++) {
         realData[i] = Math.sin(i * 0.1)

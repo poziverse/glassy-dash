@@ -1,0 +1,117 @@
+/**
+ * Design Tokens for Glassy Dashboard
+ * Version: 2026.01.27
+ * 
+ * Centralized design system for consistent styling across all pages
+ */
+
+:root {
+  /* === Typography === */
+  --font-display: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Roboto Mono', monospace;
+  
+  /* Page Titles */
+  --page-title-size: 3rem;
+  --page-title-size-mobile: 2rem;
+  --page-title-weight: 700;
+  --page-title-color: #ffffff;
+  --page-title-line-height: 1.2;
+  
+  /* Subtitles */
+  --subtitle-size: 1rem;
+  --subtitle-weight: 400;
+  --subtitle-color: rgba(255, 255, 255, 0.6);
+  
+  /* === Icon Colors === */
+  --icon-blue: #60a5fa;
+  --icon-blue-400: #60a5fa;
+  --icon-purple: #a78bfa;
+  --icon-purple-400: #a78bfa;
+  --icon-emerald: #34d399;
+  --icon-emerald-400: #34d399;
+  --icon-red: #f87171;
+  --icon-red-400: #f87171;
+  --icon-gray: #9ca3af;
+  --icon-gray-400: #9ca3af;
+  --icon-orange: #fb923c;
+  --icon-orange-400: #fb923c;
+  --icon-cyan: #22d3ee;
+  --icon-cyan-400: #22d3ee;
+  --icon-pink: #f472b6;
+  --icon-pink-400: #f472b6;
+  --icon-yellow: #facc15;
+  --icon-yellow-400: #facc15;
+  
+  /* === Icon Sizes === */
+  --icon-size-header: 2rem; /* 32px */
+  --icon-size-header-mobile: 1.5rem; /* 24px */
+  --icon-size-action: 1rem; /* 16px */
+  --icon-size-large: 1.25rem; /* 20px */
+  
+  /* === Spacing === */
+  --header-margin-bottom: 2rem;
+  --subtitle-margin-top: 0.5rem;
+  --page-padding: 1.5rem;
+  --page-padding-mobile: 1rem;
+  
+  /* === Header Pattern === */
+  --header-bg: transparent;
+  --header-border-bottom: none;
+  --header-glass-blur: 0px;
+  
+  /* === Transitions === */
+  --transition-fast: 150ms ease-out;
+  --transition-normal: 250ms ease-out;
+  --transition-slow: 350ms ease-out;
+  
+  /* === Glass Effects === */
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-surface: rgba(255, 255, 255, 0.05);
+  --glass-highlight: rgba(255, 255, 255, 0.1);
+  --glass-blur: 24px;
+  
+  /* === Page-Specific Accents === */
+  --page-docs-color: var(--icon-blue);
+  --page-health-color: var(--icon-emerald);
+  --page-alerts-color: var(--icon-blue);
+  --page-trash-color: var(--icon-red);
+  --page-settings-color: var(--icon-gray);
+  --page-admin-color: var(--icon-purple);
+  --page-voice-color: var(--icon-pink);
+}
+
+/* === Mobile Responsive === */
+@media (max-width: 768px) {
+  :root {
+    --page-title-size: var(--page-title-size-mobile);
+    --icon-size-header: var(--icon-size-header-mobile);
+    --header-margin-bottom: 1.5rem;
+    --page-padding: var(--page-padding-mobile);
+  }
+}
+
+/* === Dark Mode Overrides === */
+.dark {
+  --page-title-color: #ffffff;
+  --subtitle-color: rgba(255, 255, 255, 0.6);
+}
+
+/* === Light Mode Overrides === */
+@media (prefers-color-scheme: light) {
+  :root:not(.dark) {
+    --page-title-color: #1a1a1a;
+    --subtitle-color: rgba(0, 0, 0, 0.6);
+    
+    /* Adjust icon colors for light mode */
+    --icon-blue: #3b82f6;
+    --icon-purple: #8b5cf6;
+    --icon-emerald: #10b981;
+    --icon-red: #ef4444;
+    --icon-gray: #6b7280;
+    --icon-orange: #f97316;
+    --icon-cyan: #06b6d4;
+    --icon-pink: #ec4899;
+    --icon-yellow: #eab308;
+  }
+}

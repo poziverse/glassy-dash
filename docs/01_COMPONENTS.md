@@ -1,7 +1,7 @@
 # Glass Keep Components Overview
 
-**Last Updated:** January 20, 2026  
-**Version:** 1.0  
+**Last Updated:** January 28, 2026  
+**Version:** 1.2  
 **Status:** ✅ Complete Overview
 
 ---
@@ -16,29 +16,36 @@ Glass Keep consists of 20 React components organized into a hierarchical structu
 
 ### Component Hierarchy
 
-```
+```text
 App (Root)
 ├── DashboardLayout
 │   ├── Sidebar
 │   ├── NotesView
-│   ├── DocsView (New)
+│   ├── DocsView
 │   │   └── GlassyEditor
-│   ├── VoiceView (New)
-│   │   └── VisualizerCanvas
+│   │       └── EditorToolbar (New)
+│   ├── VoiceView
+│   │   ├── VisualizerCanvas
+│   │   ├── AudioEditor (New)
+│   │   │   └── WaveformVisualizer
+│   │   └── VoiceGallery
+│   │       └── EditRecordingModal (New)
 │   ├── NoteCard
-│   │   ├── NoteCard
 │   │   └── Bulk Operations UI
 │   ├── SearchBar
+│   ├── AiAssistant (New)
+│   │   └── ImageGenerator
 │   └── Composer
 │       ├── FormatToolbar
 │       └── Type Selection
 ├── SettingsPanel
 ├── AdminView
+│   ├── AdminUserModal (New)
+│   └── AuditLogViewer (New)
 └── Modal (Dialog)
     ├── FormatToolbar
-    ├── ChecklistRow (for checklists)
-    ├── DrawingCanvas (for drawings)
-    ├── DrawingPreview (for drawings)
+    ├── ChecklistRow
+    ├── DrawingCanvas
     └── Image Gallery
 ```
 
@@ -60,6 +67,21 @@ App (Root)
 - Error boundary integration
 
 **File:** `GLASSYDASH/src/App.jsx`
+
+#### AiAssistant.jsx
+
+**Purpose:** Premium slideout AI Assistant sidebar for chat, tagging, and summaries.
+
+**Key Responsibilities (Updated January 28, 2026):**
+
+- Premium glass-styled slideout interface (⌘J to toggle)
+- RAG-based chat using current note context (Top 100 recent notes)
+- **Quick Actions**: "Format Notes", "Find Duplicates", "Organize"
+- **Virtual Tools**: Generates images, suggests titles, detects tasks, and links related notes
+- Powered exclusively by Gemini 2.5 Flash
+- Auto-scrolling chat history with glass message bubbles and tool widgets
+
+**File:** `GLASSYDASH/src/components/AiAssistant.jsx`
 
 ---
 
@@ -117,10 +139,46 @@ App (Root)
 **Purpose**: Main container for the GlassyDocs document editor.
 **File**: `GLASSYDASH/src/components/DocsView.jsx`
 
+#### GlassyEditor
+
+**Purpose**: TipTap-powered rich text editor with integrated glass-style toolbar.
+**File**: `GLASSYDASH/src/components/editor/Editor.jsx`
+
+**Key Responsibilities (Updated January 27, 2026):**
+
+- Glass-style formatting toolbar with blur effect
+- Text formatting: Bold, Italic, Underline, Strikethrough, Code
+- Heading levels: H1, H2, H3
+- Lists: Bullet and Numbered
+- Block elements: Blockquote, Horizontal Rule
+- Undo/Redo with keyboard shortcuts
+- Clear formatting utility
+- BubbleMenu for quick selection formatting
+- **Inline AI Menu**: "Magic Wand" for grammar, summary, and custom transformations
+
+#### AiImageCard (New)
+
+**Purpose**: Displays AI-generated images with save capabilities.
+**File**: `GLASSYDASH/src/components/AiImageCard.jsx`
+
 #### VoiceView
 
 **Purpose**: Voice recording and Gemini AI transcription interface.
 **File**: `GLASSYDASH/src/components/VoiceView.jsx`
+
+#### EditRecordingModal (New)
+
+**Purpose**: Modal for editing voice recordings, transcripts, and metadata.
+
+**Key Responsibilities:**
+
+- **Transcript Editor**: Full text or segment-based editing
+- **Type Selection**: Toggle between "Voice Note" and "Voice Gallery"
+- **Playback**: Minimal audio player integration
+- **Export**: Save options to standard notes or download
+- **Tags**: Integrated tag management
+
+**File**: `GLASSYDASH/src/components/voice/EditRecordingModal.jsx`
 
 #### NotesView
 
@@ -274,15 +332,15 @@ App (Root)
 
 #### SettingsPanel
 
-**Purpose:** Settings interface for user preferences (Tabbed Layout).
+**Purpose:** Settings interface for user preferences (Vertical Sidebar Layout).
 
-**Key Responsibilities:**
+**Key Responsibilities (Updated January 28, 2026):**
 
-- **Navigation**: Tabbed interface (Appearance, Integrations, Data, General)
-- **Appearance**: Theme selection, Backgrounds, Accent Color, Transparency
-- **Integrations**: Music Player configuration
-- **Data**: Import/Export, Secret Key management
-- **General**: View modes, Sidebar behavior, Local AI toggle
+- **Navigation**: Vertical icon-only sidebar with tooltips (Appearance, Integrations, Data, General)
+- **Appearance**: Theme selection, Custom Backgrounds (IndexedDB), Accent Color, Transparency Presets
+- **Integrations**: Music Player configuration with robust server URL validation (Navidrome/Jellyfin/Subsonic)
+- **Data**: Markdown Import/Export, Secret Key management, Backup statuses
+- **General**: View modes, Sidebar wide-mode behavior
 
 **File:** `GLASSYDASH/src/components/SettingsPanel.jsx`
 
@@ -304,6 +362,19 @@ App (Root)
 - Registration toggle
 
 **File:** `GLASSYDASH/src/components/AdminView.jsx`
+
+#### BugReportViewer (New)
+
+**Purpose:** Admin table for viewing and managing bug reports.
+
+**Key Responsibilities:**
+
+- List all reports
+- Display metadata (User Agent, Screen Size)
+- Status management (Resolve/Reopen)
+- Deletion
+
+**File:** `GLASSYDASH/src/components/admin/BugReportViewer.jsx`
 
 ---
 
@@ -371,6 +442,19 @@ App (Root)
 - Error type styling
 
 **File:** `GLASSYDASH/src/components/ErrorMessage.tsx`
+
+#### BugReportWidget (New)
+
+**Purpose:** Floating widget for user bug reporting.
+
+**Key Responsibilities:**
+
+- Captures user input (Description, Email)
+- Automatically captures metadata (URL, User Agent)
+- Submits to API
+- Global availability (rendered in App.jsx)
+
+**File:** `GLASSYDASH/src/components/BugReportWidget.jsx`
 
 ---
 
@@ -448,7 +532,7 @@ App (Root)
 
 ### 1. Note Viewing Pattern
 
-```
+```text
 User Action → NotesView → NoteCard
               ↓
          (Click on card)
@@ -462,7 +546,7 @@ User Action → NotesView → NoteCard
 
 ### 2. Note Creation Pattern
 
-```
+```text
 User Action → Composer
               ↓
        (Select Type)
@@ -476,7 +560,7 @@ User Action → Composer
 
 ### 3. Collaboration Pattern
 
-```
+```text
 User Action → Modal → Add Collaborator
               ↓
          API Request
@@ -488,7 +572,7 @@ User Action → Modal → Add Collaborator
 
 ### 4. Bulk Operations Pattern
 
-```
+```text
 User Action → NotesView → Select Multiple Notes
               ↓
          Bulk Action Menu
@@ -533,6 +617,7 @@ User Action → NotesView → Select Multiple Notes
 | SettingsPanel   | ❌          | ❌           | ❌           | ✅              | ❌              | ✅        |
 | AdminView       | ✅          | ❌           | ❌           | ❌              | ❌              | ✅        |
 | Sidebar         | ❌          | ✅           | ❌           | ❌              | ❌              | ✅        |
+| AiAssistant     | ❌          | ✅           | ❌           | ✅              | ❌              | ✅        |
 
 ---
 
@@ -689,6 +774,6 @@ Components should include appropriate ARIA attributes:
 
 ---
 
-**Component Count:** 21
-**Documented Components:** 21 (100% overview)  
-**Last Updated:** January 23, 2026
+**Component Count:** 22  
+**Documented Components:** 22 (100% overview)  
+**Last Updated:** January 28, 2026

@@ -10,7 +10,7 @@ The application is deployed on a nested virtual machine requiring a "Jump Host" 
 
 ## Access
 
-To access the target VM, you can use an SSH ProxyJump:
+To access the target VM for **GlassyDash** maintenance, you can use an SSH ProxyJump:
 
 ```bash
 # ~/.ssh/config
@@ -62,6 +62,7 @@ npm run preview
 ```
 
 **Critical:**
+
 - Always rebuild after committing changes
 - Verify the build includes all recent modifications
 - Test locally before packaging for deployment
@@ -87,42 +88,59 @@ docker save glassy-dash:prod | gzip > glassy-dash.tar.gz
 
 Since we cannot SSH directly to the VM, we proxy through the Jump Host.
 
+**Note:** You will be prompted for the SSH key passphrase (`Maplewood2025`) multiple times during this process.
+
 ```bash
 # 1. Copy to Jump Host
+# This will ask for the passphrase for the local key if not cached
 scp glassy-dash.tar.gz glassy-jump:~/
 
 # 2. Copy from Jump Host to VM
+# Connect to jump host to execute scp to VM
 ssh -t glassy-jump "scp ~/glassy-dash.tar.gz pozi@192.168.122.45:~/"
+# Prompts for:
+# 1. Jump host SSH key passphrase (Maplewood2025)
+# 2. VM user (pozi) password (pozi)
 ```
 
 ### 3. Install & Start on VM
 
 ```bash
 # Connect to VM (via Jump Host)
-ssh -J glassy-jump glassy-vm
+# Prompts for Jump host passphrase (Maplewood2025) then VM password (pozi)
+ssh -t glassy-jump "ssh -t pozi@192.168.122.45"
+
+# --- Run the following ON THE VM ---
 
 # 1. Load the image
 # This imports the image from the tarball into the VM's Docker registry
 gunzip -c glassy-dash.tar.gz | sudo docker load
 
-# 2. Stop existing container
-sudo docker rm -f GLASSYDASH 2>/dev/null || true
+# 2. Stop existing container (if running)
+sudo docker rm -f glassy-dash-prod 2>/dev/null || true
 
-# 3. Start the Application
-# -p 3001:8080 maps VM port 3001 to container port 8080
-sudo docker run -d \
-  --name GLASSYDASH \
-  --restart unless-stopped \
-  -p 3001:8080 \
-  -e NODE_ENV=production \
-  -e API_PORT=8080 \
-  -e JWT_SECRET="replace-this-with-random-secret" \
-  -e DB_FILE="/app/data/notes.db" \
-  -e ADMIN_EMAILS="admin" \
-  -e ALLOW_REGISTRATION=false \
-  -v ~/.GLASSYDASH:/app/data \
-  glassy-dash:prod
+# 3. Start the Application using the management script (Recommended)
+# This handles networks, volumes, and ports automatically
+chmod +x ~/docker_manage.sh
+sudo ./docker_manage.sh prod-compose
+
+# OR Start manually:
+# sudo docker run -d \
+#   --name glassy-dash-prod \
+#   --restart unless-stopped \
+#   -p 3001:8080 \
+#   -e NODE_ENV=production \
+#   -e API_PORT=8080 \
+#   -v ~/.GLASSYDASH:/app/data \
+#   glassy-dash:prod
 ```
+
+### Credentials Reference
+
+- **SSH Key Passphrase**: `Maplewood2025`
+- **VM User**: `pozi`
+- **VM Password**: `pozi`
+- **Service URL**: `http://192.168.122.45:3001`
 
 ## Maintenance & Troubleshooting
 

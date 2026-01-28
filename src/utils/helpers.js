@@ -4,92 +4,38 @@
  */
 
 import logger from './logger'
+import { marked } from 'marked'
 
 /** ---------- API Helpers ---------- */
 export const API_BASE = '/api'
 export const AUTH_KEY = 'glassy-dash-auth'
 
-/** ---------- Color & Transparency Constants ---------- */
-export const LIGHT_COLORS = {
-  default: 'rgba(255, 255, 255, 0.6)',
-  red: 'rgba(252, 165, 165, 0.6)',
-  yellow: 'rgba(253, 224, 71, 0.6)',
-  green: 'rgba(134, 239, 172, 0.6)',
-  blue: 'rgba(147, 197, 253, 0.6)',
-  purple: 'rgba(196, 181, 253, 0.6)',
-  peach: 'rgba(255, 183, 178, 0.6)',
-  sage: 'rgba(197, 219, 199, 0.6)',
-  mint: 'rgba(183, 234, 211, 0.6)',
-  sky: 'rgba(189, 224, 254, 0.6)',
-  sand: 'rgba(240, 219, 182, 0.6)',
-  mauve: 'rgba(220, 198, 224, 0.6)',
-}
+import {
+  LIGHT_COLORS,
+  DARK_COLORS,
+  COLOR_ORDER,
+  TRANSPARENCY_PRESETS,
+  bgFor,
+  modalBgFor,
+  applyOpacity,
+  getOpacity,
+  solid,
+  mixWithWhite,
+  parseRGBA,
+} from '../themes'
 
-export const DARK_COLORS = {
-  default: 'rgba(40, 40, 40, 0.6)',
-  red: 'rgba(153, 27, 27, 0.6)',
-  yellow: 'rgba(154, 117, 21, 0.6)',
-  green: 'rgba(22, 101, 52, 0.6)',
-  blue: 'rgba(30, 64, 175, 0.6)',
-  purple: 'rgba(76, 29, 149, 0.6)',
-  peach: 'rgba(191, 90, 71, 0.6)',
-  sage: 'rgba(54, 83, 64, 0.6)',
-  mint: 'rgba(32, 102, 77, 0.6)',
-  sky: 'rgba(30, 91, 150, 0.6)',
-  sand: 'rgba(140, 108, 66, 0.6)',
-  mauve: 'rgba(88, 59, 104, 0.6)',
-}
-
-export const COLOR_ORDER = [
-  'default',
-  'red',
-  'yellow',
-  'green',
-  'blue',
-  'purple',
-  'peach',
-  'sage',
-  'mint',
-  'sky',
-  'sand',
-  'mauve',
-]
-
-export const TRANSPARENCY_PRESETS = [
-  { id: 'solid', name: 'Solid', opacity: 0.95 },
-  { id: 'subtle', name: 'Subtle Glass', opacity: 0.75 },
-  { id: 'medium', name: 'Medium Glass', opacity: 0.5 },
-  { id: 'frosted', name: 'Frosted', opacity: 0.3 },
-  { id: 'airy', name: 'Airy', opacity: 0.12 },
-]
-
-/**
- * Get background color for a note
- * @param {string} colorName - Color name key
- * @param {boolean} dark - Whether dark mode is active
- * @param {string} transparencyId - Transparency preset ID
- * @returns {string} RGBA color string
- */
-export const bgFor = (colorName, dark, transparencyId) => {
-  const base = dark
-    ? DARK_COLORS[colorName] || DARK_COLORS.default
-    : LIGHT_COLORS[colorName] || LIGHT_COLORS.default
-  if (!transparencyId) return base
-  const opacity = getOpacity(transparencyId, TRANSPARENCY_PRESETS)
-  return applyOpacity(base, opacity)
-}
-
-/**
- * Get background color for modal (boosted lightness/darkness)
- * @param {string} colorName - Color name key
- * @param {boolean} dark - Whether dark mode is active
- * @returns {string} RGBA color string
- */
-export const modalBgFor = (colorName, dark) => {
-  const base = dark
-    ? DARK_COLORS[colorName] || DARK_COLORS.default
-    : LIGHT_COLORS[colorName] || LIGHT_COLORS.default
-  return dark ? applyOpacity(base, 0.95) : mixWithWhite(base, 0.8, 0.92)
+export {
+  LIGHT_COLORS,
+  DARK_COLORS,
+  COLOR_ORDER,
+  TRANSPARENCY_PRESETS,
+  bgFor,
+  modalBgFor,
+  applyOpacity,
+  getOpacity,
+  solid,
+  mixWithWhite,
+  parseRGBA,
 }
 
 /**
@@ -104,7 +50,7 @@ export const mdToPlain = md => {
     tmp.innerHTML = html
     const text = tmp.textContent || tmp.innerText || ''
     return text.replace(/\n{3,}/g, '\n\n')
-  } catch (e) {
+  } catch {
     return md || ''
   }
 }
@@ -140,7 +86,7 @@ export async function api(path, { method = 'GET', body, token } = {}) {
     let data = null
     try {
       data = await res.json()
-    } catch (e) {
+    } catch {
       data = null
     }
 
@@ -148,9 +94,9 @@ export async function api(path, { method = 'GET', body, token } = {}) {
     if (res.status === 401) {
       try {
         localStorage.removeItem(AUTH_KEY)
-      } catch (e) {
-        logger.error('auth_clear_failed', { requestId }, e)
-        console.error('Error clearing auth:', e)
+      } catch (_err) {
+        logger.error('auth_clear_failed', { requestId }, _err)
+        console.error('Error clearing auth:', _err)
       }
 
       logger.warn('auth_required', {
@@ -268,7 +214,7 @@ export const sanitizeFilename = (name, fallback = 'note') =>
   (name || fallback)
     .toString()
     .trim()
-    .replace(/[\/\\?%*:|"<>]/g, '-')
+    .replace(/[/?%*:|"<>]/g, '-')
     .slice(0, 64)
 
 /**
@@ -656,7 +602,9 @@ export function runFormat(getter, setter, ref, type) {
       el.focus()
       try {
         el.setSelectionRange(snippet.length, snippet.length)
-      } catch (e) {}
+      } catch (_e) {
+        // Selection range may fail on some input types, safe to ignore
+      }
     })
     return
   }
@@ -670,7 +618,9 @@ export function runFormat(getter, setter, ref, type) {
       el.focus()
       try {
         el.setSelectionRange(start + snippet.length, start + snippet.length)
-      } catch (e) {}
+      } catch (_e) {
+        // Selection range may fail on some input types, safe to ignore
+      }
     })
     return
   }
@@ -721,7 +671,9 @@ export function runFormat(getter, setter, ref, type) {
     el.focus()
     try {
       el.setSelectionRange(result.range[0], result.range[1])
-    } catch (e) {}
+    } catch (_e) {
+      // Selection range may fail on some input types, safe to ignore
+    }
   })
 }
 
@@ -761,61 +713,6 @@ export function scrollSelectionIntoView(textarea, scrollEl) {
   } catch (e) {
     console.error('Failed to scroll selection into view:', e)
   }
-}
-
-/**
- * Parse RGBA string to components
- * @param {string} str - RGBA string
- * @returns {object} { r: number, g: number, b: number, a: number }
- */
-export function parseRGBA(str) {
-  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?\)/.exec(str || '')
-  if (!m) return { r: 255, g: 255, b: 255, a: 0.85 }
-  return { r: +m[1], g: +m[2], b: +m[3], a: m[4] ? +m[4] : 1 }
-}
-
-/**
- * Mix color with white for modal light boost
- * @param {string} rgbaStr - RGBA color string
- * @param {number} whiteRatio - White mix ratio (0-1)
- * @param {number} outAlpha - Output alpha
- * @returns {string} Mixed RGBA color
- */
-export function mixWithWhite(rgbaStr, whiteRatio = 0.8, outAlpha = 0.92) {
-  const { r, g, b } = parseRGBA(rgbaStr)
-  const rr = Math.round(255 * whiteRatio + r * (1 - whiteRatio))
-  const gg = Math.round(255 * whiteRatio + g * (1 - whiteRatio))
-  const bb = Math.round(255 * whiteRatio + b * (1 - whiteRatio))
-  return `rgba(${rr}, ${gg}, ${bb}, ${outAlpha})`
-}
-
-/**
- * Remove opacity from rgba color string
- * @param {string} rgba - RGBA color string
- * @returns {string} Solid color (rgba replaced with 1)
- */
-export const solid = rgba => (typeof rgba === 'string' ? rgba.replace(/0\.[0-9]+\)$/, '1)') : rgba)
-
-/**
- * Get opacity value from transparency preset ID
- * @param {string} transparencyId - Transparency preset ID
- * @param {Array} presets - Transparency presets array
- * @returns {number} Opacity value (0-1)
- */
-export const getOpacity = (transparencyId, presets) => {
-  const preset = presets.find(p => p.id === transparencyId)
-  return preset ? preset.opacity : 0.6 // default to medium
-}
-
-/**
- * Apply custom opacity to a color string
- * @param {string} rgbaStr - RGBA color string
- * @param {number} opacity - Opacity value (0-1)
- * @returns {string} Color string with updated opacity
- */
-export const applyOpacity = (rgbaStr, opacity) => {
-  if (!rgbaStr || typeof rgbaStr !== 'string') return rgbaStr
-  return rgbaStr.replace(/[0-9.]+\)$/, `${opacity})`)
 }
 
 /**

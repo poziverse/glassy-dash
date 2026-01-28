@@ -1,5 +1,5 @@
 import React from 'react'
-import { useSettings, useUI } from '../../contexts'
+import { useSettings, useUI, useAuth } from '../../contexts'
 import { BACKGROUNDS } from '../../backgrounds'
 import { ACCENT_COLORS, THEME_PRESETS, TRANSPARENCY_PRESETS } from '../../themes'
 import { saveCustomBackground, deleteCustomBackground } from '../../utils/userStorage'
@@ -7,9 +7,6 @@ import { Plus, Trash2, X } from 'lucide-react'
 
 export function AppearanceSettings() {
   const {
-    dark,
-    setDark,
-    toggleDark,
     backgroundImage,
     setBackgroundImage,
     backgroundOverlay,
@@ -28,9 +25,40 @@ export function AppearanceSettings() {
   } = useSettings()
 
   const { showToast } = useUI()
+  const { currentUser, updateUserSettings } = useAuth()
+
+  const handleAnnouncementsToggle = async () => {
+    if (!currentUser) return
+    const newValue = !currentUser.announcements_opt_out
+    const result = await updateUserSettings({ announcements_opt_out: newValue })
+    if (result.ok) {
+      showToast(newValue ? 'Announcements hidden' : 'Announcements enabled', 'success')
+    } else {
+      showToast('Failed to update settings', 'error')
+    }
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+      {/* Announcements */}
+      <div>
+        <h4 className="text-lg font-bold mb-4">Announcements</h4>
+        <div className="flex items-center justify-between bg-black/5 dark:bg-white/5 p-3 rounded-lg">
+          <span className="text-sm font-medium">Show Admin Announcements</span>
+          <button
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+              !currentUser?.announcements_opt_out ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'
+            }`}
+            onClick={handleAnnouncementsToggle}
+          >
+            <span
+              className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                !currentUser?.announcements_opt_out ? 'translate-x-5' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+      </div>
       {/* Theme Presets */}
       <div>
         <h4 className="text-lg font-bold mb-4">Theme Presets</h4>
@@ -138,8 +166,10 @@ export function AppearanceSettings() {
                   setBackgroundImage(`custom:${id}`)
                   showToast('Background uploaded successfully', 'success')
                 } catch (err) {
-                  console.error(err)
-                  showToast(err.message, 'error')
+                  console.error('Background upload error:', err)
+                  showToast(err.message || 'Failed to upload background', 'error')
+                } finally {
+                  e.target.value = '' // Reset input
                 }
               }}
             />
@@ -167,7 +197,7 @@ export function AppearanceSettings() {
                     await deleteCustomBackground(bg.id)
                     removeCustomBackground(bg.id)
                     showToast('Background removed', 'success')
-                  } catch (err) {
+                  } catch (_err) {
                     showToast('Failed to remove background', 'error')
                   }
                 }}

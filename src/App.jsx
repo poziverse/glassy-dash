@@ -19,6 +19,8 @@ import { SettingsPanel } from './components/SettingsPanel'
 import { TrashView } from './components/TrashView'
 import DocsView from './components/DocsView'
 import VoiceWorkspace from './components/voice/VoiceWorkspace'
+import SettingsView from './components/SettingsView'
+import { BugReportWidget } from './components/BugReportWidget'
 
 export default function App() {
   const { currentUser } = useAuthStore()
@@ -162,6 +164,8 @@ export default function App() {
       currentView = <DocsView />
     } else if (route === '#/voice') {
       currentView = <VoiceWorkspace />
+    } else if (route === '#/settings') {
+      currentView = <SettingsView />
     } else {
       // Default to Notes
       currentView = <NotesView />
@@ -287,6 +291,8 @@ export default function App() {
           ))}
         </div>
       )}
+      {/* Bug Report Widget */}
+      <BugReportWidget />
     </>
   )
 }

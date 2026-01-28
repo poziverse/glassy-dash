@@ -10,7 +10,7 @@ import { useNotes } from '../contexts/NotesContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useSettings } from '../contexts/SettingsContext'
 import { useUI } from '../contexts/UIContext'
-import { bgFor } from '../utils/helpers'
+import { bgFor } from '../themes'
 import { safeUserMarkdown } from '../utils/safe-markdown'
 
 /**
@@ -55,16 +55,10 @@ export function NoteCard({
   const { togglePin, updateChecklistItem } = useNotes()
   const { currentUser } = useAuth()
   const { dark, cardTransparency } = useSettings()
-  const { isOnline } = useUI()
   const isChecklist = n.type === 'checklist'
   const isDraw = n.type === 'draw'
   const isYouTube = n.type === 'youtube'
   const isMusic = n.type === 'music'
-  const previewText = useMemo(() => mdToPlain(n.content || ''), [n.content])
-  const MAX_CHARS = 600
-  const isLong = previewText.length > MAX_CHARS
-  const displayText = isLong ? previewText.slice(0, MAX_CHARS).trimEnd() + '…' : previewText
-
   const total = (n.items || []).length
   const done = (n.items || []).filter(i => i.done).length
   const sortedItems = (n.items || []).sort((a, b) => {
@@ -131,11 +125,26 @@ export function NoteCard({
         multiMode && selected ? 'ring-2 ring-accent ring-offset-2 ring-offset-transparent' : ''
       }`}
       style={{
-        backgroundColor: bgFor(n.color || 'default', dark, cardTransparency),
+        backgroundColor: bgFor(n.color || 'default', dark, n.transparency || cardTransparency),
+        borderColor: n.is_announcement ? 'rgba(234, 179, 8, 0.5)' : undefined,
       }}
       data-id={n.id}
       data-group={group}
     >
+      {/* Announcement Indicator */}
+      {n.is_announcement && (
+        <div className="absolute -top-3 -left-3 z-20 bg-yellow-500 text-white p-1.5 rounded-full shadow-lg border-2 border-white dark:border-gray-800">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"
+            />
+          </svg>
+        </div>
+      )}
+
       {/* Multi-select checkbox */}
       {multiMode && (
         <div className="absolute top-3 right-3 flex items-center gap-2">
@@ -193,7 +202,11 @@ export function NoteCard({
           <div
             className="absolute inset-0 rounded-full"
             style={{
-              backgroundColor: bgFor(n.color || 'default', dark, cardTransparency),
+              backgroundColor: bgFor(
+                n.color || 'default',
+                dark,
+                n.transparency || cardTransparency
+              ),
             }}
           />
           <button

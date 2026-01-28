@@ -391,7 +391,11 @@ export function useNotesCompat() {
     try {
       for (const id of idsArray) {
         try {
-          await api(`/notes/${id}/archive`, { method: 'POST', token })
+          await api(`/notes/${id}/archive`, {
+            method: 'POST',
+            token,
+            body: { archived: archiving },
+          })
         } catch (err) {
           failedIds.push(id)
           logger.error('bulk_archive_item_failed', { id }, err)
@@ -533,10 +537,15 @@ export function useNotesCompat() {
   const tagsWithCounts = tags
 
   // Derived state for empty conditions
-  const filteredEmptyWithSearch = search && pinned.length === 0 && others.length === 0 && archivedNotes.length === 0
+  const filteredEmptyWithSearch =
+    search && pinned.length === 0 && others.length === 0 && archivedNotes.length === 0
   const allEmpty = pinned.length === 0 && others.length === 0 && archivedNotes.length === 0
 
   return {
+    // Auth
+    currentUser,
+    signOut: authStore.logout,
+
     // State
     notes,
     pinned,

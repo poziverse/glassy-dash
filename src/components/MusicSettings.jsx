@@ -32,9 +32,16 @@ export function MusicSettings() {
   const handleSave = async () => {
     setLoading(true)
     try {
+      const cleanUrl = serverUrl.trim().replace(/\/$/, '') // Remove trailing slash and whitespace
+
+      // Basic URL validation
+      if (cleanUrl && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+        throw new Error('Server URL must start with http:// or https://')
+      }
+
       const newSettings = {
         service,
-        serverUrl: serverUrl.replace(/\/$/, ''), // Remove trailing slash
+        serverUrl: cleanUrl,
         username,
         password,
         apiKey,
@@ -102,53 +109,61 @@ export function MusicSettings() {
   return (
     <div className="space-y-4 border border-[var(--border-light)] rounded-lg p-4 bg-gray-50/50 dark:bg-white/5">
       <div>
-        <label className="block text-sm font-medium mb-1">Music Service</label>
-        <select
-          value={service}
-          onChange={e => setService(e.target.value)}
-          className="w-full bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-[var(--border-light)] rounded-lg p-2 focus:border-accent outline-none"
-        >
-          <option value="">Select a service...</option>
-          {services.map(s => (
-            <option key={s.id} value={s.id}>
-              {s.icon} {s.name}
-            </option>
-          ))}
-        </select>
+        <label className="block text-sm font-medium mb-1">
+          Music Service
+          <select
+            value={service}
+            onChange={e => setService(e.target.value)}
+            className="w-full bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-[var(--border-light)] rounded-lg p-2 mt-1 focus:border-accent outline-none font-normal"
+          >
+            <option value="">Select a service...</option>
+            {services.map(s => (
+              <option key={s.id} value={s.id}>
+                {s.icon} {s.name}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {service && (
         <>
           <div>
-            <label className="block text-sm font-medium mb-1">Server URL</label>
-            <input
-              type="url"
-              value={serverUrl}
-              onChange={e => setServerUrl(e.target.value)}
-              placeholder="http://your-server:4533"
-              className="w-full bg-transparent border border-[var(--border-light)] rounded-lg p-2 focus:border-accent outline-none"
-            />
+            <label className="block text-sm font-medium mb-1">
+              Server URL
+              <input
+                type="url"
+                value={serverUrl}
+                onChange={e => setServerUrl(e.target.value)}
+                placeholder="http://your-server:4533"
+                className="w-full bg-transparent border border-[var(--border-light)] rounded-lg p-2 mt-1 focus:border-accent outline-none font-normal"
+              />
+            </label>
           </div>
 
           {selectedService?.authType === 'subsonic' && (
             <>
               <div>
-                <label className="block text-sm font-medium mb-1">Username</label>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={e => setUsername(e.target.value)}
-                  className="w-full bg-transparent border border-[var(--border-light)] rounded-lg p-2 focus:border-accent outline-none"
-                />
+                <label className="block text-sm font-medium mb-1">
+                  Username
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    className="w-full bg-transparent border border-[var(--border-light)] rounded-lg p-2 mt-1 focus:border-accent outline-none font-normal"
+                  />
+                </label>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full bg-transparent border border-[var(--border-light)] rounded-lg p-2 focus:border-accent outline-none"
-                />
+                <label className="block text-sm font-medium mb-1">
+                  Password
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="w-full bg-transparent border border-[var(--border-light)] rounded-lg p-2 mt-1 focus:border-accent outline-none font-normal"
+                  />
+                </label>
                 <p className="text-xs text-gray-500 mt-1">
                   Used to generate a secure token. Password is stored locally.
                 </p>
@@ -159,24 +174,28 @@ export function MusicSettings() {
           {selectedService?.authType === 'apikey' && (
             <>
               <div>
-                <label className="block text-sm font-medium mb-1">API Key / Token</label>
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={e => setApiKey(e.target.value)}
-                  className="w-full bg-transparent border border-[var(--border-light)] rounded-lg p-2 focus:border-accent outline-none"
-                />
+                <label className="block text-sm font-medium mb-1">
+                  API Key / Token
+                  <input
+                    type="password"
+                    value={apiKey}
+                    onChange={e => setApiKey(e.target.value)}
+                    className="w-full bg-transparent border border-[var(--border-light)] rounded-lg p-2 mt-1 focus:border-accent outline-none font-normal"
+                  />
+                </label>
               </div>
               {service === 'jellyfin' && (
                 <div>
-                  <label className="block text-sm font-medium mb-1">User ID</label>
-                  <input
-                    type="text"
-                    value={userId}
-                    onChange={e => setUserId(e.target.value)}
-                    placeholder="Jellyfin User ID (GUID)"
-                    className="w-full bg-transparent border border-[var(--border-light)] rounded-lg p-2 focus:border-accent outline-none"
-                  />
+                  <label className="block text-sm font-medium mb-1">
+                    User ID
+                    <input
+                      type="text"
+                      value={userId}
+                      onChange={e => setUserId(e.target.value)}
+                      placeholder="Jellyfin User ID (GUID)"
+                      className="w-full bg-transparent border border-[var(--border-light)] rounded-lg p-2 mt-1 focus:border-accent outline-none font-normal"
+                    />
+                  </label>
                 </div>
               )}
             </>

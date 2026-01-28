@@ -1,5 +1,5 @@
 services:
-  GLASSYDASH:
+  glassy-dash:
     build:
       context: .
       dockerfile: Dockerfile.dev

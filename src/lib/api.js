@@ -1,14 +1,93 @@
 /**
  * API Abstraction Layer
  * Single source of truth for all API calls in Glass Keep
- * Handles authentication, errors, timeouts, and logging
+ * Handles authentication, errors, timeouts, retries, and logging
  */
 
 import { useAuthStore } from '../stores/authStore'
+import { retryOperation } from '../utils/retryOperation'
+import logger from '../utils/logger'
 
 // Base API configuration
 const API_BASE = '/api'
 const API_KEY = 'glassy-dash-auth'
+
+// Validation constants
+const MAX_REQUEST_SIZE = 50 * 1024 * 1024 // 50MB
+const MAX_TITLE_LENGTH = 1000
+const MAX_CONTENT_LENGTH = 100000
+const MAX_IMAGES = 50
+const MAX_ITEMS = 500
+const MAX_TAGS = 50
+const MAX_IMAGE_SIZE = 50 * 1024 * 1024 // 50MB
+
+// Valid note types
+const VALID_NOTE_TYPES = ['text', 'checklist', 'draw', 'youtube', 'music']
+
+/**
+ * Validate note data before sending to API
+ * @param {Object} data - Note data to validate
+ * @returns {Array<string>} Array of error messages (empty if valid)
+ */
+function validateNoteData(data) {
+  const errors = []
+  
+  // Validate note type
+  if (!data.type || typeof data.type !== 'string') {
+    errors.push('Note type is required')
+  } else if (!VALID_NOTE_TYPES.includes(data.type)) {
+    errors.push(`Invalid note type. Must be one of: ${VALID_NOTE_TYPES.join(', ')}`)
+  }
+  
+  // Validate title
+  if (data.title && typeof data.title === 'string' && data.title.length > MAX_TITLE_LENGTH) {
+    errors.push(`Title too long (max ${MAX_TITLE_LENGTH} characters)`)
+  }
+  
+  // Validate content
+  if (data.content && typeof data.content === 'string' && data.content.length > MAX_CONTENT_LENGTH) {
+    errors.push(`Content too long (max ${MAX_CONTENT_LENGTH} characters)`)
+  }
+  
+  // Validate images
+  if (data.images && !Array.isArray(data.images)) {
+    errors.push('Images must be an array')
+  } else if (Array.isArray(data.images)) {
+    if (data.images.length > MAX_IMAGES) {
+      errors.push(`Too many images (max ${MAX_IMAGES})`)
+    }
+    
+    // Validate image sizes
+    const totalSize = data.images.reduce((sum, img) => {
+      return sum + (img.src ? img.src.length : 0)
+    }, 0)
+    
+    if (totalSize > MAX_IMAGE_SIZE) {
+      errors.push(`Total image size exceeds limit: ${(totalSize / 1024 / 1024).toFixed(1)}MB (max 50MB)`)
+    }
+  }
+  
+  // Validate items
+  if (data.items && !Array.isArray(data.items)) {
+    errors.push('Items must be an array')
+  } else if (Array.isArray(data.items) && data.items.length > MAX_ITEMS) {
+    errors.push(`Too many items (max ${MAX_ITEMS})`)
+  }
+  
+  // Validate tags
+  if (data.tags && !Array.isArray(data.tags)) {
+    errors.push('Tags must be an array')
+  } else if (Array.isArray(data.tags) && data.tags.length > MAX_TAGS) {
+    errors.push(`Too many tags (max ${MAX_TAGS})`)
+  }
+  
+  // Validate color
+  if (data.color && typeof data.color !== 'string') {
+    errors.push('Color must be a string')
+  }
+  
+  return errors
+}
 
 /**
  * Enhanced API fetch wrapper
@@ -25,6 +104,19 @@ const API_KEY = 'glassy-dash-auth'
 export async function api(path, { method = 'GET', body, signal, token: manualToken } = {}) {
   // Get token from manual override or Zustand auth store
   const token = manualToken || useAuthStore.getState().token
+
+  // Validate request data for POST/PUT/PATCH
+  if (body && ['POST', 'PUT', 'PATCH'].includes(method)) {
+    if (path === '/notes') {
+      const validationErrors = validateNoteData(body)
+      if (validationErrors.length > 0) {
+        const error = new Error(validationErrors.join('; '))
+        error.isValidationError = true
+        error.validationErrors = validationErrors
+        throw error
+      }
+    }
+  }
 
   if (path !== '/auth/settings' && path !== '/login' && path !== '/register') {
     console.log(
@@ -46,18 +138,38 @@ export async function api(path, { method = 'GET', body, signal, token: manualTok
   }
 
   try {
-    // Create abort controller for timeout
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+    // Retry API calls for better resilience
+    const res = await retryOperation(
+      async () => {
+        // Create abort controller for timeout
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
 
-    const res = await fetch(`${API_BASE}${path}`, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-      signal: signal || controller.signal,
-    })
+        const response = await fetch(`${API_BASE}${path}`, {
+          method,
+          headers,
+          body: body ? JSON.stringify(body) : undefined,
+          signal: signal || controller.signal,
+        })
 
-    clearTimeout(timeoutId)
+        clearTimeout(timeoutId)
+        return response
+      },
+      {
+        maxRetries: 3,
+        delay: 1000,
+        onRetry: (attempt, error, waitTime) => {
+          logger.warn('api_retry_attempt', {
+            path,
+            method,
+            attempt,
+            waitTime,
+            error: error.message,
+            requestId,
+          })
+        },
+      }
+    )
 
     // Handle 204 No Content responses
     if (res.status === 204) return null

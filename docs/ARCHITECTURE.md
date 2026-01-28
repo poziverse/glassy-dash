@@ -1,7 +1,7 @@
 # System Architecture
 
-**Version:** 1.1.3 (Stability & Data Integrity)
-**Last Updated:** January 21, 2026
+**Version:** 2.0 (AI Assistant & Gemini-First)
+**Last Updated:** January 28, 2026
 
 ---
 
@@ -19,7 +19,7 @@ GlassyDash is built on a modern, modular architecture leveraging **TanStack Quer
 - [Database Architecture](#database-architecture)
 - [Security Architecture](#security-architecture)
 - [Performance Architecture](#performance-architecture)
-- [State Management & Data Integrity](#state-management--data-integrity)
+- [Unified State Management](#unified-state-management)
 - [Real-time Collaboration](#real-time-collaboration)
 
 ---
@@ -43,7 +43,8 @@ GlassyDash is built on a modern, modular architecture leveraging **TanStack Quer
 - **JWT (jsonwebtoken)** - Authentication
 - **bcrypt** - Password hashing
 - **node-cron** - Task scheduling
-- **onnxruntime** - AI inference (Local AI)
+- **Google Gemini API** - Primary AI Engine (Cloud-First)
+- **Better-Sqlite3** - Database with AI grounding support
 
 ### Development
 
@@ -58,7 +59,7 @@ GlassyDash is built on a modern, modular architecture leveraging **TanStack Quer
 
 ### Component Hierarchy
 
-```
+```text
 App.jsx
 ├── ErrorBoundary
 ├── Router (Hash-based)
@@ -68,6 +69,7 @@ App.jsx
 │   ├── NotesView
 │   │   ├── DashboardLayout
 │   │   │   ├── Sidebar
+│   │   │   ├── AiAssistant (Sidebar)
 │   │   │   ├── SearchBar
 │   │   │   └── NotesGrid
 │   │   │       └── NoteCard (xN)
@@ -83,11 +85,12 @@ App.jsx
 │       └── SystemStats
 └── GlobalProviders
     ├── AuthContext
-    ├── NotesContext
+    ├── NotesContext (Bridge)
     ├── SettingsContext
     ├── ModalContext
     ├── ComposerContext
-    └── UIContext
+    ├── UIContext
+    └── AiStore (Zustand - Logic & UI)
 ```
 
 ### Key Components
@@ -131,7 +134,7 @@ App.jsx
 
 ### Server Structure
 
-```
+```text
 server/index.js (Main Entry)
 ├── Middleware
 │   ├── Security (Helmet)
@@ -212,7 +215,7 @@ app.use(errorHandler)
 
 **RESTful API Design:**
 
-```
+```text
 /api/auth/
   POST /register - Register user
   POST /login - Login user
@@ -591,53 +594,23 @@ try {
 
 ---
 
-## State Management & Data Integrity
+### 1. Unified State Management
 
-Glass Keep utilizes a multi-layered state management strategy to balance performance, local reactivity, and server synchronization.
+GlassyDash utilizes a multi-layered state management strategy to balance performance, local reactivity, and server synchronization.
 
-### 1. Server State (TanStack Query)
+- **Server State (TanStack Query)**: The "Source of Truth" for persistent data (Notes, Admin Users, Settings).
+- **Local Store (Zustand)**: Manages ephemeral UI states and persistent preferences (Themes, Voice Studio state, UI toggles).
+- **Service Layer (Context API)**: Orchestrates logical units like Authentication and Cross-Component messaging.
 
-The "Source of Truth" for all persistent data (Notes, Admin Users, Settings).
+### 2. AI & Transcription Layer
 
-- **Caching**: Automatic caching and background refetching.
-- **Optimistic Updates**: Immediate UI feedback for standard actions (Delete, Archive, Reorder).
-- **Rollback Mechanism**: Automatic restoration of previous state if an API call fails.
-- **Data Integrity**: Uses `PATCH` for field-level updates to prevent the "Stale Data Wipe" problem common with full `PUT` updates.
+Integrates cutting-edge AI for automated workflows.
 
-### 2. Local UI State (Zustand)
-
-Manages ephemeral or purely local data.
-
-- **SettingsStore**: Persistent local storage for themes, accent colors, and layout preferences.
-- **UIStore**: Managing modals, toasts, and navigation states.
-
-### 3. Service Layer (Context API)
-
-Bridges the gap between raw hooks and UI requirements.
-
-- **AuthContext**: Orchestrates login, token storage, and session validation.
-- **NotesContext**: Aggregates `useNoteMutations` and `useNotes` queries. Provides a high-level API for complex UI tasks (e.g., "Clear Bin").
-- **SSE Bridge**: Listens for remote changes and invalidates the Query Cache globally, triggering a refresh without manual state manipulation.
-
-### State Flow (Circular Sync)
-
-```
-[User Action] → [Mutation Hook] → [Optimistic Update (UI)]
-                               ↓
-                         [Backend API (PATCH/PUT)]
-                               ↓
-                        [Database Update]
-                               ↓
-                        [SSE Broadcast]
-                               ↓
-                   [NotesContext SSE Listener]
-                               ↓
-                   [Query Cache Invalidation]
-                               ↓
-                     [UI Refresh (Final Sync)]
-```
-
-This "Circular Sync" pattern ensures that even in multi-tab or collaborative environments, every instance of the app remains consistent without complex client-side reconciliation logic.
+- **Transcription**: Google Gemini 2.5 Flash (2026 model) for high-fidelity streaming transcription via `server/gemini.js`.
+- **Assistance**: Gemini-First RAG (Retrieval-Augmented Generation). Prioritizes Gemini for complex reasoning.
+- **Provider Orchestration**: Heuristic fallbacks when Gemini is unavailable.
+- **Grounding**: RAG system uses currently active notes and archived context to provide accurate, personalized responses.
+- **Processing**: Intelligent summarization, keyword extraction, and tag recommendation engine.
 
 ---
 

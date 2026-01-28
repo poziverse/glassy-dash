@@ -78,6 +78,7 @@ export default function Sidebar({
   collapsed = false,
   onToggleCollapse = () => {},
   onSignOut = () => {},
+  onOpenSettings = () => {},
 }) {
   // Defensive: ensure tags is always an array
   const safeTags = Array.isArray(tags) ? tags : []
@@ -141,8 +142,9 @@ export default function Sidebar({
           label="All Notes"
           active={activeSection === 'overview' && !activeTag}
           onClick={() => {
-            safeOnNavigate('overview')
+            // Clear tag filter first for consistency
             safeOnTagSelect(null)
+            safeOnNavigate('overview')
           }}
           collapsed={collapsed}
         />
@@ -170,10 +172,12 @@ export default function Sidebar({
         <SidebarItem
           icon={Archive}
           label="Archive"
-          active={activeTag === 'ARCHIVED' && activeSection === 'overview'}
+          active={activeTag === 'ARCHIVED'}
           onClick={() => {
-            safeOnNavigate('overview')
+            // Set tag filter FIRST to prevent race condition where notes view
+            // renders before the ARCHIVED filter is applied
             safeOnTagSelect('ARCHIVED')
+            safeOnNavigate('overview')
           }}
           collapsed={collapsed}
         />
@@ -205,8 +209,9 @@ export default function Sidebar({
                 active={activeTag === tag.name && activeSection === 'overview'}
                 badge={!collapsed ? tag.count : undefined}
                 onClick={() => {
-                  safeOnNavigate('overview')
+                  // Set tag filter first for consistency
                   safeOnTagSelect(tag.name)
+                  safeOnNavigate('overview')
                 }}
                 collapsed={collapsed}
               />

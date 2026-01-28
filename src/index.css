@@ -1,6 +1,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @import 'tailwindcss';
+@import './styles/design-tokens.css';
 
 @theme {
   --color-glass-border: rgba(255, 255, 255, 0.08);
@@ -19,6 +20,11 @@
   --glass-surface-hover: rgba(30, 30, 30, 0.7);
   --neon-accent: #646cff;
 
+  /* Default Glass Base (Light Mode) */
+  --glass-base: 255, 255, 255;
+  --glass-highlight-opacity: 0.4;
+  --glass-shadow-opacity: 0.1;
+
   /* Default Accent (Indigo-600) */
   --color-accent: #6366f1;
   /* Default Accent Hover (Indigo-700) */
@@ -27,15 +33,18 @@
   --color-accent-glow: rgba(99, 102, 241, 0.15);
 }
 
+.dark {
+  /* Glass Base (Dark Mode) */
+  --glass-base: 10, 10, 12; /* Slightly blue-ish tinted dark */
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight-opacity: 0.1;
+  --glass-shadow-opacity: 0.3;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
-  /* Deep space gradient background */
-  background:
-    radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.1), transparent 25%),
-    linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
-  background-attachment: fixed;
+  background: transparent;
   background-attachment: fixed;
   @apply text-gray-900 dark:text-gray-200;
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -43,63 +52,62 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-.dark body {
+/* Default gradient - only applies when no custom background is set */
+body:not([data-has-background]) {
+  background:
+    radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.1), transparent 25%),
+    linear-gradient(to bottom, #dbeafe, #eff6ff, #f8fafc); /* Light mode gradient */
+}
+
+.dark body:not([data-has-background]) {
   /* Ensure dark mode background persists */
   background:
     radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.2), transparent 40%),
     radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.15), transparent 40%),
     linear-gradient(to bottom, #050505, #121212, #0a0a0a);
-  /* No need to set color here as it's handled by @apply in body */
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Utility class for Glassmorphism */
 .glass-panel {
-  background: rgba(20, 20, 25, 0.4);
+  background: rgba(var(--glass-base), var(--glass-opacity, 0.4));
   backdrop-filter: blur(var(--glass-blur, 24px));
   -webkit-backdrop-filter: blur(var(--glass-blur, 24px));
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border);
   box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 4px 6px -1px rgba(0, 0, 0, var(--glass-shadow-opacity)),
     0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .glass-card {
-  /* Dynamic Background with gradient hint */
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-  backdrop-filter: blur(var(--glass-blur, 16px));
-  -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
+  /* Dynamic Background using CSS variable for opacity */
+  background: linear-gradient(
+    145deg,
+    rgba(var(--glass-base), var(--glass-opacity, 0.45)) 0%,
+    rgba(var(--glass-base), calc(var(--glass-opacity, 0.45) * 0.4)) 100%
+  );
+  backdrop-filter: blur(var(--glass-blur, 20px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 20px));
 
   /* Organic Border */
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border);
   border-top: 1px solid rgba(255, 255, 255, 0.15);
   border-left: 1px solid rgba(255, 255, 255, 0.12);
 
   /* Liquid Shadow */
   box-shadow:
-    0 4px 24px -1px rgba(0, 0, 0, 0.2),
+    0 4px 24px -1px rgba(0, 0, 0, var(--glass-shadow-opacity)),
     0 0 0 1px rgba(255, 255, 255, 0.02) inset;
 
   /* transition handled by framer-motion */
 }
 
 .glass-card:hover {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+  background: linear-gradient(
+    145deg,
+    rgba(var(--glass-base), calc(var(--glass-opacity, 0.45) + 0.05)) 0%,
+    rgba(var(--glass-base), calc(var(--glass-opacity, 0.45) * 0.6)) 100%
+  );
   border-color: rgba(255, 255, 255, 0.25);
   box-shadow:
     0 10px 40px -10px rgba(0, 0, 0, 0.5),
@@ -232,4 +240,71 @@ body {
 .note-content--dense ul:last-child,
 .note-content--dense ol:last-child {
   margin-bottom: 0;
+}
+
+/* Code block styling */
+.note-content pre {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  border: 1px solid var(--glass-border);
+}
+
+.note-content code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.2em 0.4em;
+  border-radius: 0.25rem;
+}
+
+.note-content pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  color: #e2e8f0;
+}
+
+.dark .note-content pre {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Bottom-Positioned Page Header */
+/* Positioned at bottom-left, aligned with content area accounting for sidebar */
+/* Uses glass effects consistent with template system */
+.page-header-bottom {
+  position: fixed;
+  bottom: 1.5rem;
+  /* Account for collapsed sidebar (64px = 16 * 4px) + content padding (1.5rem) */
+  left: calc(4rem + 1.5rem);
+  z-index: 5;
+  max-width: 32rem;
+}
+
+/* Ensure header respects template overlay effects */
+.page-header-bottom .glass-card {
+  backdrop-filter: blur(var(--glass-blur, 20px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 20px));
+  background: linear-gradient(
+    145deg,
+    rgba(var(--glass-base), calc(var(--glass-opacity, 0.45) * 0.8)) 0%,
+    rgba(var(--glass-base), calc(var(--glass-opacity, 0.45) * 0.3)) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 4px 24px -1px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+}
+
+/* Responsive adjustments for bottom header */
+@media (max-width: 768px) {
+  .page-header-bottom {
+    bottom: 1rem;
+    left: calc(4rem + 1rem);
+    right: 1rem;
+    max-width: none;
+  }
 }

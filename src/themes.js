@@ -25,7 +25,7 @@ export const THEME_PRESETS = [
     backgroundId: 'City-Night.png',
     accentId: 'rose',
     overlay: true,
-    overlayOpacity: 0.7, // Reduced for better glass visibility
+    overlayOpacity: 0.7,
     darkMode: true,
     transparencyId: 'frosted',
   },
@@ -37,7 +37,7 @@ export const THEME_PRESETS = [
     overlay: true,
     overlayOpacity: 0.6,
     darkMode: true,
-    transparencyId: 'medium',
+    transparencyId: 'airy',
   },
   {
     id: 'golden',
@@ -45,8 +45,8 @@ export const THEME_PRESETS = [
     backgroundId: 'Fantasy - Sunset.png',
     accentId: 'amber',
     overlay: true,
-    overlayOpacity: 0.5, // Lighter for warm glow
-    darkMode: false,
+    overlayOpacity: 0.4,
+    darkMode: true,
     transparencyId: 'medium',
   },
   {
@@ -75,7 +75,7 @@ export const THEME_PRESETS = [
     backgroundId: 'Nightfall-by-the-Lake.jpg',
     accentId: 'sky',
     overlay: true,
-    overlayOpacity: 0.6, // Reduced slightly
+    overlayOpacity: 0.6,
     darkMode: true,
     transparencyId: 'subtle',
   },
@@ -83,9 +83,9 @@ export const THEME_PRESETS = [
     id: 'rain',
     name: 'Urban Rain',
     backgroundId: 'City-Rain.png',
-    accentId: 'indigo', // or cyan
+    accentId: 'indigo',
     overlay: true,
-    overlayOpacity: 0.7, // Reduced to show rain
+    overlayOpacity: 0.7,
     darkMode: true,
     transparencyId: 'medium',
   },
@@ -93,13 +93,13 @@ export const THEME_PRESETS = [
 
 /** ---------- Transparency Presets ---------- */
 export const TRANSPARENCY_PRESETS = [
-  { id: 'solid', name: 'Solid', opacity: 0.95, blur: '0px' },
-  { id: 'subtle', name: 'Subtle Glass', opacity: 0.8, blur: '8px' },
-  { id: 'medium', name: 'Medium Glass', opacity: 0.6, blur: '16px' },
-  { id: 'frosted', name: 'Frosted', opacity: 0.35, blur: '24px' },
-  { id: 'airy', name: 'Airy', opacity: 0.2, blur: '10px' },
+  { id: 'solid', name: 'Solid', opacity: 0.85, blur: '4px' },
+  { id: 'subtle', name: 'Subtle Glass', opacity: 0.65, blur: '12px' },
+  { id: 'medium', name: 'Medium Glass', opacity: 0.45, blur: '20px' },
+  { id: 'frosted', name: 'Frosted', opacity: 0.3, blur: '28px' },
+  { id: 'airy', name: 'Airy', opacity: 0.2, blur: '16px' },
 ]
-export const DEFAULT_TRANSPARENCY = 'medium' // 0.6 opacity
+export const DEFAULT_TRANSPARENCY = 'medium'
 
 /** ---------- Colors ---------- */
 /* Added 6 pastel boho colors + two-line picker layout via grid-cols-6 */
@@ -119,7 +119,7 @@ export const LIGHT_COLORS = {
   mauve: 'rgba(220, 198, 224, 0.6)',
 }
 export const DARK_COLORS = {
-  default: 'rgba(40, 40, 40, 0.6)',
+  default: 'rgba(10, 10, 12, 0.6)',
   red: 'rgba(153, 27, 27, 0.6)',
   yellow: 'rgba(154, 117, 21, 0.6)',
   green: 'rgba(22, 101, 52, 0.6)',
@@ -177,7 +177,6 @@ export const bgFor = (
   return applyOpacity(base, opacity)
 }
 
-/** ---------- Modal light boost ---------- */
 export const parseRGBA = str => {
   const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?\)/.exec(str || '')
   if (!m) return { r: 255, g: 255, b: 255, a: 0.85 }
@@ -194,6 +193,6 @@ export const mixWithWhite = (rgbaStr, whiteRatio = 0.8, outAlpha = 0.92) => {
 
 export const modalBgFor = (colorKey, dark) => {
   const base = bgFor(colorKey, dark)
-  if (dark) return base
+  if (dark) return applyOpacity(base, 0.95)
   return mixWithWhite(solid(base), 0.8, 0.92)
 }

@@ -12,11 +12,34 @@ A sleek notes application with Markdown, checklists, images, tag chips, color th
   - Secret recovery key download and Sign in with Secret Key
   - Each user sees only their notes
 
-- **Private AI Assistant (Llama 3.2)**
-  - 100% Local & Private — Runs entirely on your own server. No data ever leaves your hardware.
-  - Note-Aware (RAG) — The AI reads your own notes to answer questions factually.
-  - Smart Search — Ask questions and get direct answers based on your private data.
-  - Privacy First — Uses an optimized Llama 3.2 (1B) model running inside your Docker container.
+- **AI Assistant (Gemini-Powered)**
+  - Cloud-Based & Secure — Uses Google Gemini API for intelligent responses.
+  - Note-Aware (RAG) — The AI reads your notes to answer questions factually.
+  - Smart Features — Ask questions, suggest tags, and summarize notes.
+  - Graceful Fallbacks — Heuristic methods when AI service is unavailable.
+
+- **Documents System**
+  - **Rich Text Documents**: Create long-form documents with a dedicated editor.
+  - **Organization**: Support for nested folders and hierarchy.
+  - **Views**: Toggle between Grid and List views with sorting options (Date/Name).
+  - **Bulk Actions**: Select multiple documents to delete, archive, or move.
+  - **Sidebar**: Collapsible navigation tree.
+
+- **Voice Studio (Audio Recording & Editing)**
+  - Real-time audio recording with waveform visualization
+  - AI-powered transcription using Google Gemini 2.5 Flash (2026 model)
+  - Automatic transcription streaming while recording
+  - Intelligent summarization of recordings
+  - **Robust Error Handling**: Automatic retry (3 attempts) for failed transcriptions, audio error components
+  - **Network Resilience**: API layer uses retry logic for all network requests
+  - **Quality Assurance**: Audio quality indicator validates recordings before transcription
+  - **Recovery Features**: Undo/Redo with full history, keyboard shortcuts for quick recovery
+  - **Audio Editor**: Visual waveform editing with trim/cut support (2026 Phase 6)
+  - **Enhancements**: Volume Normalization (-1dB peak) and Noise Reduction (gate)
+  - **Transcript Segment Editor**: view, edit, delete, and restore individual transcript segments
+  - FormatToolbar for rich text formatting (bold, italic, lists, etc.)
+  - Voice Gallery with fuzzy search, filters, and bulk operations
+  - Export recordings to notes or download as files
 
 - **Real-time Collaboration**
   - Real-time collaboration for checklists — multiple people can add/tick items together and see updates instantly.
@@ -25,13 +48,14 @@ A sleek notes application with Markdown, checklists, images, tag chips, color th
   - View-only mode for collaborators — open notes in view mode without overwriting edits from others.
   - Automatic conflict resolution — prevents stale data from overwriting recent edits.
 
-- **Admin Panel**
+- **Admin Dashboard**
   - Access: Located in the User Avatar Dropdown menu (top right).
-  - Create new users, reset passwords, and manage permissions.
-  - Toggle whether new account sign-ups are allowed (off by default).
-  - View all users with: Name, Email/Username, Is Admin, Notes count, Storage used, Created at.
-  - Delete user (also deletes their notes; protected against deleting last admin).
-  - **Mission Control (Health Dashboard)**: Real-time system telemetry page showing CPU/Memory vitals, DB stats, and API performance.
+  - **Dashboard Overview**: Real-time stats for Total Users, Admins, Notes, and Storage.
+  - **User Management**: Create, Edit, Toggle Admin Status, and Delete users.
+  - **Registration Toggle**: Enable/Disable new account sign-ups directly from the UI.
+  - **Storage Quotas**: Visualized storage usage bars (1GB limit) per user.
+  - **Audit Logs**: Comprehensive event tracking for system actions.
+  - **Mission Control**: System telemetry for CPU/Memory vitals and DB performance.
 
 - **Notes**
   - Text notes with Markdown (H1/H2/H3, bold, italic, strike, links, blockquote, inline/fenced code)
@@ -157,8 +181,8 @@ setx ADMIN_EMAILS "your-admin-username"
 npm run dev
 ```
 
-- Frontend (Vite): http://localhost:5173
-- Docker: http://localhost:3001  
+- Frontend (Vite): <http://localhost:5173>
+- Docker: <http://localhost:3001>  
   _(Vite dev server proxies `/api` → `http://localhost:8080` internally, but production maps to `3001`.)_
 
 **Promote an existing user to admin (optional):**
@@ -237,8 +261,8 @@ docker run -d \
   GLASSYDASH:latest
 ```
 
-- App & API: http://localhost:3001
-- **Admin Panel (Docker/prod):** http://localhost:3001/#/admin  
+- App & API: <http://localhost:3001>
+- **Admin Panel (Docker/prod):** <http://localhost:3001/#/admin>  
   _(Make sure `ADMIN_EMAILS` matches username exactly when creating admin account)_
 
 ### docker-compose.yml
@@ -277,18 +301,21 @@ docker compose up -d
 ## 🧭 Using the Admin Panel
 
 - **Where**
-  - Dev: http://localhost:5173/#/admin
-  - Docker/Prod: http://localhost:3001/#/admin
+  - Dev: <http://localhost:5173/#/admin>
+  - Docker/Prod: <http://localhost:3001/#/admin>
 - **Who can access**: Users with `is_admin = 1`.
   - Auto-promote by setting `ADMIN_EMAILS="your-admin-username"` before starting server/container, **or**
   - Run a one-off SQL update:
+
     ```sql
     UPDATE users SET is_admin=1 WHERE email='your-admin-username';
     ```
+
   - **Note:** If registration is disabled (default), you can use the default admin account to log in for the first time:
     - **Username:** `admin`
     - **Password:** `admin`
     - After logging in, you can create new users or change admin password in the Admin Panel.
+
 - **What you can do**
   - View all users with: **Is Admin**, **Notes count**, **Storage used**, **Created at**
   - **Delete** a user (also removes their notes; cannot delete last admin)
@@ -333,9 +360,8 @@ docker compose up -d
 
 - **Search & AI Assistance**
   - **Deep Search**: Searches across title, Markdown text, tags, checklist items, and image names.
-  - **AI Assistant**: Press **Enter** in the search bar to ask questions about your notes.
-  - **Smart Grounding**: The AI analyzes your relevant notes to give you accurate, private answers.
-  - **One-Click Clear**: Closing the **AI response box** automatically clears your search query.
+  - **AI Assistant**: Use the sparkle icon or `⌘J` to open the AI assistant sidebar.
+  - **Smart Grounding**: The AI analyzes your relevant notes to give you accurate answers.
 
 - **Export / Import**
   - Header **⋮** → **Export** to JSON (backup/sharing).
@@ -358,21 +384,49 @@ docker compose up -d
 - Treat your **Secret Key** like a password. Anyone with it can sign in as you.
 - Change `JWT_SECRET` in production to a long, random string.
 - Serve over HTTPS in production for PWA and security best practices.
+- **Error Recovery**: Graceful handling of network timeouts, authentication failures, and audio errors
+- **Retry Logic**: Automatic retries (3 attempts, 1s delay) for transient failures
+
+## 🧪 Testing & Quality
+
+- **Comprehensive Test Coverage**: 198 unit tests covering core functionality
+- **Performance Tests**: Audio processing benchmarks and memory leak detection
+- **Error Scenario Tests**: Coverage of all failure modes (network, auth, server, validation)
+- **Accessibility Tests**: WCAG 2.1 AA compliance for Voice Studio (keyboard navigation, screen reader support)
+- **Test Duration**: Fast execution in 1.78s (well under 15s requirement)
+- **E2E Tests**: Playwright tests for critical user flows and voice workflows
 
 ---
 
 ## 🧪 Troubleshooting
 
 - **Dev proxy error (`ECONNREFUSED` to `/api`)**
-  - Ensure the API is running on `:8080` (`npm run dev` starts both).
+  - Ensure that API is running on `:8080` (`npm run dev` starts both).
+  - Check for network error retries in console (automatic retry enabled with 3 attempts).
+
+- **Recording/transcription failures**
+  - Check microphone permissions in browser settings
+  - Verify network connectivity (automatic retry will attempt 3 times)
+  - Check AudioError component for specific troubleshooting tips
 
 - **Docker runs but CSS looks wrong**
   - Rebuild after Tailwind config changes: `docker compose build --no-cache`.
-  - Ensure the app is built (`npm run build`) before running the Node server image.
+  - Ensure that app is built (`npm run build`) before running the Node server image.
 
 - **PWA "Install" doesn't appear**
   - Use the built preview (`npm run preview`) or serve production build over HTTPS.
   - Check DevTools → Application → Manifest & Service Worker for errors.
+
+## 📊 Error Handling
+
+The application includes comprehensive error handling with user-friendly recovery:
+
+- **Network Errors**: Auto-retry (3 attempts), connection tips, retry buttons
+- **Authentication Errors**: Session expiration handling, automatic logout, sign-in guidance
+- **Audio Errors**: Microphone access troubleshooting, recording retry options
+- **API Errors**: Retry logic for all endpoints, validation messages, error context logging
+
+All errors are logged with structured context for debugging and monitoring.
 
 ---
 

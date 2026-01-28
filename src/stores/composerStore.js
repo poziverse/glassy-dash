@@ -18,6 +18,7 @@ export const useComposerStore = create((set, get) => ({
   clInput: '',
   showFormatting: false,
   showColorPicker: false,
+  composerIsAnnouncement: false,
 
   // Actions
   openComposer: () => {
@@ -35,6 +36,7 @@ export const useComposerStore = create((set, get) => ({
       composerHasChanges: false,
       isComposing: false,
       collapsed: false,
+      composerIsAnnouncement: false,
     })
   },
 
@@ -53,6 +55,7 @@ export const useComposerStore = create((set, get) => ({
       composerHasChanges: false,
       isComposing: false,
       collapsed: true,
+      composerIsAnnouncement: false,
     })
   },
 
@@ -67,6 +70,8 @@ export const useComposerStore = create((set, get) => ({
   setClInput: clInput => set({ clInput }),
   setShowFormatting: show => set({ showFormatting: show }),
   setShowColorPicker: show => set({ showColorPicker: show }),
+  setComposerIsAnnouncement: isAnnouncement =>
+    set({ composerIsAnnouncement: isAnnouncement, composerHasChanges: true }),
 
   addComposerItem: item =>
     set(state => ({
@@ -109,6 +114,7 @@ export const useComposerStore = create((set, get) => ({
       clInput: '',
       showFormatting: false,
       showColorPicker: false,
+      composerIsAnnouncement: false,
     })
   },
 }))

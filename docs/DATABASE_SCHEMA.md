@@ -1,7 +1,7 @@
 # Database Schema
 
 **Version:** ALPHA 1.0  
-**Last Updated:** January 19, 2026  
+**Last Updated:** January 19, 2026
 
 ---
 
@@ -29,6 +29,7 @@ CREATE TABLE users (
 ```
 
 **Indexes:**
+
 - `username` (unique)
 - `email` (unique)
 
@@ -58,19 +59,23 @@ CREATE TABLE notes (
 ```
 
 **Indexes:**
+
 - `user_id` - Fast user queries (via foreign key)
 - `idx_notes_deleted_at` - Trash/recovery queries
 - `timestamp` - Sort by creation time
 - `position` - Ordering for display
 
 **Note Types:**
+
 - `text` - Plain text notes
 - `checklist` - Todo lists
 
 **Colors:**
+
 - `default`, `red`, `orange`, `yellow`, `green`, `blue`, `purple`, `pink`
 
 **Soft Delete:**
+
 - `deleted_at` - NULL for active notes, UNIX timestamp for trash
 - Notes in trash are recoverable for 30 days
 - Automatic cleanup of notes >30 days in trash
@@ -94,6 +99,7 @@ CREATE TABLE checklist_items (
 ```
 
 **Indexes:**
+
 - `note_id` - Fast note lookups
 
 ---
@@ -115,6 +121,7 @@ CREATE TABLE note_collaborators (
 ```
 
 **Indexes:**
+
 - `note_id` - Get collaborators for note
 - `user_id` - Get notes user can access
 
@@ -134,6 +141,7 @@ CREATE TABLE settings (
 ```
 
 **Example Settings:**
+
 - `allow_registration` - Boolean for registration availability
 - `maintenance_mode` - Boolean for maintenance status
 
@@ -156,6 +164,7 @@ CREATE TABLE user_settings (
 ```
 
 **Available Settings Keys:**
+
 - `dark` - Dark mode (boolean)
 - `backgroundImage` - Background filename (string)
 - `backgroundOverlay` - Show overlay (boolean)
@@ -165,6 +174,7 @@ CREATE TABLE user_settings (
 - `localAiEnabled` - AI assistant (boolean)
 
 **Indexes:**
+
 - `user_id` - Fast user settings lookup
 
 ---
@@ -185,9 +195,35 @@ CREATE TABLE note_views (
 ```
 
 **Indexes:**
+
 - `note_id` - Track note popularity
 - `user_id` - User's viewed notes
 - `viewed_at` - Time-based queries
+
+---
+
+### bug_reports
+
+User-submitted bug reports.
+
+```sql
+CREATE TABLE bug_reports (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER,           -- Optional
+  email TEXT,                -- Optional
+  description TEXT NOT NULL,
+  metadata TEXT,             -- JSON string
+  status TEXT DEFAULT 'open',-- 'open', 'resolved', 'ignored'
+  created_at TEXT NOT NULL,
+  updated_at TEXT
+);
+```
+
+**Indexes:**
+
+- `created_at` - Sort by submission time
+- `status` - Filter by status
+- `user_id` - Track reporting user
 
 ---
 
@@ -198,26 +234,31 @@ CREATE TABLE note_views (
 ### Migration History
 
 **v1 - Initial Schema (2026-01-01)**
+
 - Created all tables
 - Set up indexes
 - Established foreign key relationships
 
 **v2 - Add Indexes (2026-01-05)**
+
 - Added performance indexes
 - Optimized query patterns
 - Improved sorting and filtering
 
 **v3 - Add Collaboration (2026-01-10)**
+
 - Created note_collaborators table
 - Added note_views table
 - Enabled real-time collaboration
 
 **v4 - Add Settings (2026-01-15)**
+
 - Created user_settings table
 - Created settings table
 - Added view_mode setting
 
 **v5 - Add Soft Delete (2026-01-21)**
+
 - Added deleted_at column to notes table
 - Created idx_notes_deleted_at index
 - Enabled trash/recovery feature with 30-day retention
@@ -232,6 +273,7 @@ npm run migrate
 ```
 
 This will:
+
 1. Check current database version
 2. Apply pending migrations in order
 3. Update version number
@@ -325,15 +367,19 @@ LIMIT 10;
 ## Performance Considerations
 
 ### Index Usage
+
 All frequently queried columns are indexed for performance.
 
 ### Prepared Statements
+
 Always use prepared statements to prevent SQL injection and improve performance.
 
 ### Transactions
+
 Use transactions for bulk operations to maintain data integrity.
 
 ### Connection Management
+
 - Single connection pool
 - WAL mode for concurrent reads
 - Automatic connection recovery

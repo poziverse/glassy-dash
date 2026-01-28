@@ -49,10 +49,6 @@ export function SettingsProvider({ children }) {
       setListView: store.setListView,
       toggleListView: store.toggleListView,
 
-      // Local AI
-      localAiEnabled: store.localAiEnabled,
-      setLocalAiEnabled: store.setLocalAiEnabled,
-
       // Music Player
       musicSettings: store.musicSettings,
       setMusicSettings: store.setMusicSettings,

@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom'
  * Renders content in a portal positioned relative to an anchor element
  * Automatically adjusts position to keep content visible in viewport
  */
-export function Popover({ anchorRef, open, onClose, children, offset = 8 }) {
+export function Popover({ anchorRef, open, onClose, children, offset = 8, align = 'center' }) {
   const [pos, setPos] = useState({ top: 0, left: 0 })
   const boxRef = useRef(null)
 
@@ -25,8 +25,15 @@ export function Popover({ anchorRef, open, onClose, children, offset = 8 }) {
         const bw = el.offsetWidth
         const bh = el.offsetHeight
         let t = top
-        // Center horizontally relative to anchor
-        let l = r.left + r.width / 2 - bw / 2
+
+        // Calculate horizontal position based on alignment
+        let l = r.left + r.width / 2 - bw / 2 // Default center
+
+        if (align === 'start') {
+          l = r.left
+        } else if (align === 'end') {
+          l = r.right - bw
+        }
 
         const vw = window.innerWidth
         const vh = window.innerHeight
@@ -48,7 +55,7 @@ export function Popover({ anchorRef, open, onClose, children, offset = 8 }) {
       window.removeEventListener('scroll', onWin, true)
       window.removeEventListener('resize', onWin)
     }
-  }, [open, anchorRef, offset])
+  }, [open, anchorRef, offset, align])
 
   useEffect(() => {
     if (!open) return

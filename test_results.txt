@@ -1,0 +1,55 @@
+
+> glassy-dash@1.1.6 test
+> vitest run tests/Archive.test.jsx tests/VoiceStudio.test.jsx
+
+
+[1m[46m RUN [49m[22m [36mv4.0.17 [39m[90m/home/pozicontrol/projects/glassy-dash/GLASSYDASH[39m
+
+[90mstderr[2m | tests/VoiceStudio.test.jsx
+[22m[39m[VoiceStore] IndexedDB init warning: ReferenceError: indexedDB is not defined
+    at [90m/home/pozicontrol/projects/glassy-dash/GLASSYDASH/[39msrc/utils/audioStorage.js:18:21
+    at new Promise (<anonymous>)
+    at initDB [90m(/home/pozicontrol/projects/glassy-dash/GLASSYDASH/[39msrc/utils/audioStorage.js:17:10[90m)[39m
+    at [90m/home/pozicontrol/projects/glassy-dash/GLASSYDASH/[39msrc/stores/voiceStore.js:13:7
+[90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at VitestModuleEvaluator._runInlinedModule [90m(file:///home/pozicontrol/projects/glassy-dash/GLASSYDASH/[39mnode_modules/[4mvitest[24m/dist/module-evaluator.js:197:4[90m)[39m
+    at VitestModuleRunner.directRequest [90m(file:///home/pozicontrol/projects/glassy-dash/GLASSYDASH/[39mnode_modules/[4mvite[24m/dist/node/module-runner.js:1146:59[90m)[39m
+    at VitestModuleRunner.cachedRequest [90m(file:///home/pozicontrol/projects/glassy-dash/GLASSYDASH/[39mnode_modules/[4mvite[24m/dist/node/module-runner.js:1053:73[90m)[39m
+    at [90mfile:///home/pozicontrol/projects/glassy-dash/GLASSYDASH/[39mnode_modules/[4mvitest[24m/dist/chunks/startModuleRunner.DEj0jb3e.js:487:17
+    at VitestModuleRunner.cachedRequest [90m(file:///home/pozicontrol/projects/glassy-dash/GLASSYDASH/[39mnode_modules/[4mvitest[24m/dist/chunks/startModuleRunner.DEj0jb3e.js:664:17[90m)[39m
+
+ [32m✓[39m tests/VoiceStudio.test.jsx [2m([22m[2m4 tests[22m[2m)[22m[32m 109[2mms[22m[39m
+ [31m❯[39m tests/Archive.test.jsx [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 92[2mms[22m[39m
+[31m     [31m×[31m sorts archived notes by date-desc by default[39m[32m 80[2mms[22m[39m
+[31m     [31m×[31m sorts archived notes by title-asc[39m[32m 11[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/Archive.test.jsx[2m > [22mNotesView - Archive Logic[2m > [22msorts archived notes by date-desc by default
+[41m[1m FAIL [22m[49m tests/Archive.test.jsx[2m > [22mNotesView - Archive Logic[2m > [22msorts archived notes by title-asc
+[31m[1mError[22m: useModal must be used within ModalProvider[39m
+[36m [2m❯[22m useModal src/contexts/ModalContext.jsx:[2m631:11[22m[39m
+    [90m629| [39m  [35mconst[39m context [33m=[39m [34museContext[39m([33mModalContext[39m)
+    [90m630| [39m  [35mif[39m ([33m![39mcontext) {
+    [90m631| [39m    [35mthrow[39m [35mnew[39m [33mError[39m([32m'useModal must be used within ModalProvider'[39m)
+    [90m   | [39m          [31m^[39m
+    [90m632| [39m  }
+    [90m633| [39m  [35mreturn[39m context
+[90m [2m❯[22m NoteCard src/components/NoteCard.jsx:[2m54:24[22m[39m
+[90m [2m❯[22m Object.react_stack_bottom_frame node_modules/react-dom/cjs/react-dom-client.development.js:[2m23863:20[22m[39m
+[90m [2m❯[22m renderWithHooks node_modules/react-dom/cjs/react-dom-client.development.js:[2m5529:22[22m[39m
+[90m [2m❯[22m updateFunctionComponent node_modules/react-dom/cjs/react-dom-client.development.js:[2m8897:19[22m[39m
+[90m [2m❯[22m beginWork node_modules/react-dom/cjs/react-dom-client.development.js:[2m10522:18[22m[39m
+[90m [2m❯[22m runWithFiberInDEV node_modules/react-dom/cjs/react-dom-client.development.js:[2m1522:13[22m[39m
+[90m [2m❯[22m performUnitOfWork node_modules/react-dom/cjs/react-dom-client.development.js:[2m15140:22[22m[39m
+[90m [2m❯[22m workLoopSync node_modules/react-dom/cjs/react-dom-client.development.js:[2m14956:41[22m[39m
+[90m [2m❯[22m renderRootSync node_modules/react-dom/cjs/react-dom-client.development.js:[2m14936:11[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 17:43:58
+[2m   Duration [22m 874ms[2m (transform 398ms, setup 121ms, import 643ms, tests 201ms, environment 500ms)[22m
+

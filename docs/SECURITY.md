@@ -1,7 +1,8 @@
 # Security Architecture & Best Practices
 
-**Version:** ALPHA 1.0  
-**Last Updated:** January 19, 2026  
+**Version:** 1.1  
+**Last Updated:** January 28, 2026  
+**Status:** Updated
 
 ---
 
@@ -17,6 +18,7 @@ GlassKeep implements multi-layer security architecture to protect user data, pre
 - [Authentication & Authorization](#authentication--authorization)
 - [Data Protection](#data-protection)
 - [API Security](#api-security)
+- [AI Security & Privacy](#ai-security--privacy)
 - [Frontend Security](#frontend-security)
 - [Database Security](#database-security)
 - [Monitoring & Auditing](#monitoring--auditing)
@@ -29,36 +31,42 @@ GlassKeep implements multi-layer security architecture to protect user data, pre
 GlassKeep uses defense-in-depth with 6 security layers:
 
 ### Layer 1: Network Security
+
 - HTTPS enforcement (HSTS)
 - CORS configuration
 - Security headers
 - DDoS protection (rate limiting)
 
 ### Layer 2: Authentication
+
 - JWT tokens with expiration
 - bcrypt password hashing (12 rounds)
 - Secure session management
 - Secret key encryption
 
 ### Layer 3: Authorization
+
 - User-specific data isolation
 - Role-based access control (admin/user)
 - Note ownership verification
 - Collaborator permission checks
 
 ### Layer 4: Input Validation
+
 - Express-validator on all endpoints
 - XSS prevention (HTML sanitization)
 - SQL injection prevention (prepared statements)
 - File upload validation
 
 ### Layer 5: Application Security
+
 - Rate limiting (per-endpoint tiers)
 - Request logging
 - Error handling (no sensitive data exposure)
 - CSRF protection
 
 ### Layer 6: Logging & Auditing
+
 - Structured error logging
 - Security event tracking
 - Audit trail for sensitive operations
@@ -71,18 +79,20 @@ GlassKeep uses defense-in-depth with 6 security layers:
 ### Password Security
 
 **Hashing:**
+
 ```javascript
-const bcrypt = require('bcrypt');
-const saltRounds = 12;
+const bcrypt = require('bcrypt')
+const saltRounds = 12
 
 // Hash password
-const hash = await bcrypt.hash(password, saltRounds);
+const hash = await bcrypt.hash(password, saltRounds)
 
 // Verify password
-const isValid = await bcrypt.compare(password, hash);
+const isValid = await bcrypt.compare(password, hash)
 ```
 
 **Requirements:**
+
 - Minimum 8 characters
 - bcrypt with 12 rounds
 - Never store plain text passwords
@@ -91,21 +101,21 @@ const isValid = await bcrypt.compare(password, hash);
 ### JWT Authentication
 
 **Token Format:**
+
 ```javascript
-const jwt = require('jsonwebtoken');
+const jwt = require('jsonwebtoken')
 
 // Generate token
-const token = jwt.sign(
-  { userId: user.id, username: user.username },
-  process.env.JWT_SECRET,
-  { expiresIn: '7d' }
-);
+const token = jwt.sign({ userId: user.id, username: user.username }, process.env.JWT_SECRET, {
+  expiresIn: '7d',
+})
 
 // Verify token
-const decoded = jwt.verify(token, process.env.JWT_SECRET);
+const decoded = jwt.verify(token, process.env.JWT_SECRET)
 ```
 
 **Token Payload:**
+
 ```javascript
 {
   "userId": 1,
@@ -116,20 +126,28 @@ const decoded = jwt.verify(token, process.env.JWT_SECRET);
 ```
 
 **Best Practices:**
+
 - Strong JWT secret (32+ random bytes)
 - Short expiration (7 days max)
 - HTTPS only transmission
 - Secure storage (httpOnly cookies recommended)
 
+**Unified Middleware:**
+
+- All protected routes use a unified `auth` middleware.
+- Ensures consistent token validation and user context attachment across all API endpoints.
+
 ### Secret Recovery Key
 
 **Generation:**
+
 ```javascript
-const key = `sk-${crypto.randomBytes(16).toString('hex')}`;
+const key = `sk-${crypto.randomBytes(16).toString('hex')}`
 // Example: sk-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p
 ```
 
 **Security:**
+
 - One-time use
 - Server-side invalidation after use
 - Secure storage by user
@@ -142,49 +160,56 @@ const key = `sk-${crypto.randomBytes(16).toString('hex')}`;
 ### Input Validation
 
 **Server-Side:**
+
 ```javascript
-const { body, validationResult } = require('express-validator');
+const { body, validationResult } = require('express-validator')
 
 // Validation rules
-app.post('/api/notes', [
-  body('title').trim().isLength({ min: 0, max: 200 }),
-  body('content').trim().isLength({ max: 100000 }),
-  body('type').isIn(['text', 'checklist', 'draw'])
-], (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+app.post(
+  '/api/notes',
+  [
+    body('title').trim().isLength({ min: 0, max: 200 }),
+    body('content').trim().isLength({ max: 100000 }),
+    body('type').isIn(['text', 'checklist', 'draw']),
+  ],
+  (req, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+    // Process request
   }
-  // Process request
-});
+)
 ```
 
 ### XSS Prevention
 
 **HTML Sanitization:**
+
 ```javascript
-import DOMPurify from 'dompurify';
+import DOMPurify from 'dompurify'
 
 // Sanitize user input
-const cleanContent = DOMPurify.sanitize(userContent);
+const cleanContent = DOMPurify.sanitize(userContent)
 
 // Allow only safe HTML
 const cleanHtml = DOMPurify.sanitize(html, {
   ALLOWED_TAGS: ['b', 'i', 'u', 'em', 'strong', 'a'],
-  ALLOWED_ATTR: ['href']
-});
+  ALLOWED_ATTR: ['href'],
+})
 ```
 
 ### SQL Injection Prevention
 
 **Prepared Statements:**
+
 ```javascript
 // BAD: Vulnerable to SQL injection
-const notes = db.exec(`SELECT * FROM notes WHERE user_id = ${userId}`);
+const notes = db.exec(`SELECT * FROM notes WHERE user_id = ${userId}`)
 
 // GOOD: Prepared statement
-const stmt = db.prepare('SELECT * FROM notes WHERE user_id = ?');
-const notes = stmt.all(userId);
+const stmt = db.prepare('SELECT * FROM notes WHERE user_id = ?')
+const notes = stmt.all(userId)
 ```
 
 **All database queries use prepared statements.**
@@ -192,20 +217,21 @@ const notes = stmt.all(userId);
 ### File Upload Security
 
 **Validation:**
+
 ```javascript
 // File size limit (10MB)
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_FILE_SIZE = 10 * 1024 * 1024
 
 // Allowed formats
-const ALLOWED_FORMATS = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ALLOWED_FORMATS = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 
 // Validation
 function validateImage(file) {
   if (file.size > MAX_FILE_SIZE) {
-    throw new Error('File too large');
+    throw new Error('File too large')
   }
   if (!ALLOWED_FORMATS.includes(file.type)) {
-    throw new Error('Invalid file type');
+    throw new Error('Invalid file type')
   }
 }
 ```
@@ -218,37 +244,39 @@ function validateImage(file) {
 
 **Three-Tier Rate Limits:**
 
-| Endpoint Type | Limit | Window | Purpose |
-|--------------|-------|--------|---------|
-| Standard | 100 | 1 minute | Regular usage |
-| Auth | 10 | 1 minute | Brute force prevention |
-| Upload | 10 | 1 minute | Resource protection |
-| AI | 20 | 1 minute | API cost control |
+| Endpoint Type | Limit | Window   | Purpose                |
+| ------------- | ----- | -------- | ---------------------- |
+| Standard      | 100   | 1 minute | Regular usage          |
+| Auth          | 10    | 1 minute | Brute force prevention |
+| Upload        | 10    | 1 minute | Resource protection    |
+| AI            | 20    | 1 minute | API cost control       |
 
 **Implementation:**
+
 ```javascript
-const rateLimit = require('express-rate-limit');
+const rateLimit = require('express-rate-limit')
 
 const standardLimiter = rateLimit({
   windowMs: 60000,
   max: 100,
   message: 'Too many requests, please try again later',
   standardHeaders: true,
-  legacyHeaders: false
-});
+  legacyHeaders: false,
+})
 
 const authLimiter = rateLimit({
   windowMs: 60000,
   max: 10,
-  skipSuccessfulRequests: true // Don't count successful logins
-});
+  skipSuccessfulRequests: true, // Don't count successful logins
+})
 
 // Apply to routes
-app.use('/api/notes', standardLimiter);
-app.use('/api/auth', authLimiter);
+app.use('/api/notes', standardLimiter)
+app.use('/api/auth', authLimiter)
 ```
 
 **Headers:**
+
 ```
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 95
@@ -259,36 +287,40 @@ Retry-After: 60
 ### Security Headers
 
 **Helmet Configuration:**
-```javascript
-const helmet = require('helmet');
 
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"]
-    }
-  },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
-  },
-  noSniff: true,
-  xssFilter: true,
-  frameguard: { action: 'deny' },
-  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
-}));
+```javascript
+const helmet = require('helmet')
+
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+      },
+    },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
+    noSniff: true,
+    xssFilter: true,
+    frameguard: { action: 'deny' },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  })
+)
 ```
 
 **Headers Sent:**
+
 ```
 Content-Security-Policy: default-src 'self'; ...
 Strict-Transport-Security: max-age=31536000; includeSubDomains
@@ -302,16 +334,40 @@ Permissions-Policy: geolocation=(), microphone=(), camera=()
 ### CORS Configuration
 
 ```javascript
-const cors = require('cors');
+const cors = require('cors')
 
-app.use(cors({
-  origin: process.env.CORS_ORIGIN, // e.g., http://localhost:5173
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  maxAge: 86400 // 24 hours
-}));
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN, // e.g., http://localhost:5173
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400, // 24 hours
+  })
+)
 ```
+
+---
+
+## AI Security & Privacy
+
+### Gemini API Integration
+
+**API Key Protection:**
+
+- `GEMINI_API_KEY` is stored **only** in server-side environment variables.
+- Never exposed to the client.
+- Calls to Google's API are proxied through the backend (`/api/ai/*`).
+
+**Data Privacy:**
+
+- User notes sent to AI for context are **ephemeral** (only for the duration of the request).
+- No user data is used to train Google's models (Enterprise API policy).
+- "Zero Data Retention" policy for AI interactions on the server.
+
+**Rate Limiting:**
+
+- Specific strict limits on AI endpoints (20 req/min) to prevent cost abuse.
 
 ---
 
@@ -323,17 +379,19 @@ app.use(cors({
 
 ```javascript
 // BAD: Hardcoded secrets
-const API_KEY = "sk-1234567890";
+const API_KEY = 'sk-1234567890'
 
 // GOOD: Environment variable
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL
 ```
 
 **Allowed Environment Variables:**
+
 - `VITE_API_URL` - API endpoint URL
 - `VITE_APP_NAME` - Application name
 
 **Never expose:**
+
 - JWT secrets
 - Database credentials
 - API keys
@@ -342,37 +400,41 @@ const API_URL = import.meta.env.VITE_API_URL;
 ### Token Storage
 
 **Best Practice:**
+
 ```javascript
 // Store in localStorage (current implementation)
-localStorage.setItem('token', token);
+localStorage.setItem('token', token)
 
 // Recommended: Use httpOnly cookies for production
 // Requires backend cookie support
 ```
 
 **Token Expiration Handling:**
+
 ```javascript
 // Check token expiration
 function isTokenExpired(token) {
-  const decoded = jwtDecode(token);
-  return decoded.exp < Date.now() / 1000;
+  const decoded = jwtDecode(token)
+  return decoded.exp < Date.now() / 1000
 }
 
 // Refresh token
 if (isTokenExpired(token)) {
-  logout();
-  redirectToLogin();
+  logout()
+  redirectToLogin()
 }
 ```
 
 ### Content Security
 
 **Avoid:**
+
 - `dangerouslySetInnerHTML` with user content
 - `eval()` with user input
 - `new Function()` with user input
 
 **Use:**
+
 - DOMPurify for HTML sanitization
 - React's built-in XSS protection
 - Safe DOM manipulation methods
@@ -384,50 +446,62 @@ if (isTokenExpired(token)) {
 ### Access Control
 
 **User Data Isolation:**
+
 ```javascript
 // All queries include user_id filter
 app.get('/api/notes', authenticate, (req, res) => {
-  const userId = req.user.id;
-  
+  const userId = req.user.id
+
   // Always filter by user_id
-  const notes = db.prepare(`
+  const notes = db
+    .prepare(
+      `
     SELECT * FROM notes
     WHERE user_id = ? AND archived = 0
-  `).all(userId);
-  
-  res.json(notes);
-});
+  `
+    )
+    .all(userId)
+
+  res.json(notes)
+})
 ```
 
 **Note Ownership:**
+
 ```javascript
 // Verify ownership before updates
 app.put('/api/notes/:id', authenticate, (req, res) => {
-  const userId = req.user.id;
-  const noteId = req.params.id;
-  
+  const userId = req.user.id
+  const noteId = req.params.id
+
   // Check ownership
-  const note = db.prepare(`
+  const note = db
+    .prepare(
+      `
     SELECT * FROM notes
     WHERE id = ? AND user_id = ?
-  `).get(noteId, userId);
-  
+  `
+    )
+    .get(noteId, userId)
+
   if (!note) {
-    return res.status(404).json({ error: 'Not found' });
+    return res.status(404).json({ error: 'Not found' })
   }
-  
+
   // Proceed with update
-});
+})
 ```
 
 ### Encryption
 
 **At Rest:**
+
 - Database file permissions (600)
 - Backup encryption (AES-256)
 - Secure key management
 
 **In Transit:**
+
 - HTTPS only in production
 - TLS 1.2+ required
 - Valid SSL certificates
@@ -439,6 +513,7 @@ app.put('/api/notes/:id', authenticate, (req, res) => {
 ### Security Logging
 
 **Logged Events:**
+
 - Failed login attempts
 - Successful logins from new locations
 - Unauthorized access attempts
@@ -446,6 +521,7 @@ app.put('/api/notes/:id', authenticate, (req, res) => {
 - Suspicious activity patterns
 
 **Log Format:**
+
 ```javascript
 {
   timestamp: "2026-01-19T12:00:00.000Z",
@@ -465,6 +541,7 @@ app.put('/api/notes/:id', authenticate, (req, res) => {
 ### Anomaly Detection
 
 **Alerts Triggered On:**
+
 - 5+ failed logins from same IP in 10 minutes
 - Unusual login location (geo IP check)
 - Sudden increase in API usage
@@ -549,11 +626,13 @@ app.put('/api/notes/:id', authenticate, (req, res) => {
 ## Reporting Security Issues
 
 **For Users:**
+
 - Contact administrator immediately
 - Do not disclose publicly
 - Provide detailed information
 
 **For Researchers (Responsible Disclosure):**
+
 - Email: security@GLASSYDASH.example.com
 - Allow 90 days for fix before disclosure
 - Provide proof of concept
@@ -566,12 +645,14 @@ app.put('/api/notes/:id', authenticate, (req, res) => {
 ## Compliance
 
 **GDPR Compliance:**
+
 - User data export available
 - User data deletion on request
 - Data retention policies in place
 - Privacy controls implemented
 
 **Data Protection:**
+
 - Encryption at rest and in transit
 - Secure authentication
 - Access control and authorization

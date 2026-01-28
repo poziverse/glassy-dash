@@ -15,14 +15,16 @@ import {
   FileText,
   Save,
 } from 'lucide-react'
-import { useSettings } from '../contexts/SettingsContext'
+import { useSettingsStore } from '../stores/settingsStore'
 import { useAuthStore } from '../stores/authStore'
+import { useUIStore } from '../stores/uiStore'
 
 export default function HealthView() {
   const [metrics, setMetrics] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const { dark } = useSettings()
+  const dark = useSettingsStore(state => state.dark)
+  const setSettingsPanelOpen = useUIStore(state => state.setSettingsPanelOpen)
   const currentUser = useAuthStore(state => state.currentUser)
   const signOut = useAuthStore(state => state.signOut)
 
@@ -67,7 +69,7 @@ export default function HealthView() {
     <DashboardLayout
       activeSection="health"
       onNavigate={section => {
-        if (['health', 'alerts', 'admin', 'trash', 'docs', 'voice'].includes(section)) {
+        if (['health', 'alerts', 'admin', 'trash', 'docs', 'voice', 'settings'].includes(section)) {
           window.location.hash = `#/${section}`
         } else if (section === 'overview') {
           window.location.hash = '#/notes'
@@ -75,29 +77,20 @@ export default function HealthView() {
       }}
       user={currentUser}
       title="Mission Control"
+      headerActions={
+        metrics?.uptime && (
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/5 border border-indigo-500/10">
+            <Clock size={14} className="text-indigo-400" />
+            <span className="text-xs font-mono text-indigo-300">
+              UPTIME: {Math.floor(metrics.uptime / 60)}m {Math.floor(metrics.uptime % 60)}s
+            </span>
+          </div>
+        )
+      }
       onSignOut={signOut}
+      onOpenSettings={() => setSettingsPanelOpen(true)}
     >
       <div className="pb-20">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <Activity className="text-emerald-400" />
-              Mission Control
-            </h1>
-            <p className="text-white/60 mt-2">
-              Real-time system telemetry and performance analysis.
-            </p>
-          </div>
-          {metrics?.uptime && (
-            <div className="glass-card px-4 py-2 rounded-full flex items-center gap-2 text-sm font-mono border border-emerald-500/20 bg-emerald-500/5">
-              <Clock className="w-4 h-4 text-emerald-400" />
-              <span className="text-emerald-300">
-                UPTIME: {Math.floor(metrics.uptime / 60)}m {Math.floor(metrics.uptime % 60)}s
-              </span>
-            </div>
-          )}
-        </div>
-
           {loading && !metrics && (
             <div className="text-white/60 animate-pulse flex items-center gap-2">
               <Zap className="w-4 h-4" /> Initializing telemetry...

@@ -23,7 +23,7 @@ export const ModalContext = createContext()
  */
 export function ModalProvider({ children }) {
   const { token, currentUser } = useAuth()
-  const { notes, setNotes, updateNote, deleteNote, invalidateNotesCache } = useNotes()
+  const { updateNote, deleteNote } = useNotes()
   const { showToast } = useUI()
 
   // Connect to Zustand store
@@ -92,7 +92,6 @@ export function ModalProvider({ children }) {
     setDropdownPosition,
     openNote: openNoteStore,
     closeNote: closeNoteStore,
-    resetModal: resetStore,
   } = useModalStore()
 
   // --- Refs ---
@@ -177,13 +176,15 @@ export function ModalProvider({ children }) {
         ? { ...base, type: 'text', content: mBody, items: [] }
         : mType === 'checklist'
           ? { ...base, type: 'checklist', content: '', items: mItems }
-          : { ...base, type: 'draw', content: JSON.stringify(mDrawingData), items: [] }
+          : mType === 'youtube' || mType === 'music'
+            ? { ...base, type: mType, content: mBody, items: [] }
+            : { ...base, type: 'draw', content: JSON.stringify(mDrawingData), items: [] }
 
     try {
       setIsSaving(true)
       await updateNote(activeId, payload)
       closeNoteStore() // Force close after successful save
-    } catch (e) {
+    } catch (_e) {
       showToast('Could not save your changes. Please try again.', 'error')
     } finally {
       setIsSaving(false)
@@ -228,7 +229,7 @@ export function ModalProvider({ children }) {
       await deleteNote(activeId)
       closeModal()
       showToast('Note deleted successfully', 'success')
-    } catch (e) {
+    } catch (_e) {
       showToast('Could not delete this note. Please try again.', 'error')
     }
   }, [activeId, activeNoteObj, currentUser, deleteNote, closeModal, showToast])
@@ -362,44 +363,6 @@ export function ModalProvider({ children }) {
     [viewMode, mType, setViewMode, resizeModalTextarea]
   )
 
-  const handleCollaboratorSearch = useCallback(
-    async val => {
-      setCollaboratorUsername(val)
-      if (val.length < 2) {
-        setFilteredUsers([])
-        setShowUserDropdown(false)
-        return
-      }
-      try {
-        setLoadingUsers(true)
-        const results = await api(`/admin/users/search?q=${encodeURIComponent(val)}`, { token })
-        setFilteredUsers(results || [])
-        setShowUserDropdown(results.length > 0)
-        // Position dropdown
-        if (collaboratorInputRef.current) {
-          const rect = collaboratorInputRef.current.getBoundingClientRect()
-          setDropdownPosition({
-            top: rect.bottom + window.scrollY,
-            left: rect.left + window.scrollX,
-            width: rect.width,
-          })
-        }
-      } catch (e) {
-        console.error('Search failed:', e)
-      } finally {
-        setLoadingUsers(false)
-      }
-    },
-    [
-      token,
-      setCollaboratorUsername,
-      setFilteredUsers,
-      setShowUserDropdown,
-      setLoadingUsers,
-      setDropdownPosition,
-    ]
-  )
-
   const addCollaborator = useCallback(
     async username => {
       if (!activeId) return
@@ -435,7 +398,7 @@ export function ModalProvider({ children }) {
         await api(`/notes/${activeId}/collaborate/${userId}`, { method: 'DELETE', token })
         setAddModalCollaborators(addModalCollaborators.filter(c => c.id !== userId))
         showToast('Collaborator removed', 'success')
-      } catch (e) {
+      } catch (_e) {
         showToast('Failed to remove collaborator', 'error')
       }
     },
@@ -511,7 +474,7 @@ export function ModalProvider({ children }) {
         const [removed] = items.splice(sourceIdx, 1)
         items.splice(targetIdx, 0, removed)
         setMItems(items)
-      } catch (err) {}
+      } catch (_err) {}
       setChecklistDragId(null)
     },
     [mItems, setMItems, setChecklistDragId]

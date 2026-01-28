@@ -1,20 +1,21 @@
 # GLASSYDASH System Overview
-**Version:** 2.0  
-**Last Updated:** January 20, 2026  
+
+**Version:** 2.2  
+**Last Updated:** January 28, 2026  
 **Status:** Production Ready
 
 ---
 
 ## Executive Summary
 
-GLASSYDASH is a modern, full-featured notes application inspired by Google Keep, built with React, Express, and SQLite. It provides a sleek, glassmorphic UI with comprehensive features including Markdown editing, checklists, drawings, real-time collaboration, AI assistance, and advanced theming.
+GLASSYDASH is a modern, full-featured notes application inspired by Google Keep, built with React, Express, and SQLite. It provides a sleek, glassmorphic UI with comprehensive features including Markdown editing, checklists, drawings, real-time collaboration, AI assistance, voice recording with AI transcription, and advanced theming.
 
 ### Key Characteristics
 
 - **Modern Stack**: React + Vite (frontend), Express + SQLite (backend)
 - **Real-time**: Server-Sent Events (SSE) for live updates
 - **Collaborative**: Multi-user with real-time note collaboration
-- **AI-Powered**: Local Llama 3.2 integration for intelligent assistance
+- **AI-Powered**: Premium AI Assistant sidebar powered by Google Gemini
 - **Production Ready**: Docker deployment, comprehensive logging, security features
 - **Responsive**: Mobile-first design with PWA support
 
@@ -71,6 +72,9 @@ App (Root)
 │   ├── NotesView (Grid/List Display)
 │   │   ├── NoteCard (Individual Note)
 │   │   └── Bulk Operations
+│   ├── DocsView (Document Editor)
+│   │   └── GlassyEditor
+│   │       └── EditorToolbar (Glass-style formatting)
 │   ├── Modal (Note Editor)
 │   │   ├── FormatToolbar
 │   │   ├── DrawingCanvas
@@ -88,9 +92,10 @@ App (Root)
 ├── AdminView (Admin Panel)
 │   └── User Management
 │
-└── SearchBar
-    ├── Text Search
-    └── AI Assistant (Llama 3.2)
+    ├── AI Assistant (Gemini-First)
+    └── SearchBar
+        ├── Text Search
+        └── Intelligent Context Search
 ```
 
 ---
@@ -99,34 +104,34 @@ App (Root)
 
 ### Frontend
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| React | 18.x | UI Framework |
-| Vite | 5.x | Build Tool & Dev Server |
-| Tailwind CSS | 4.x | Styling |
-| React Router | 6.x | Client-side Routing |
-| SSE | Native | Real-time Updates |
+| Technology   | Version | Purpose                 |
+| ------------ | ------- | ----------------------- |
+| React        | 18.x    | UI Framework            |
+| Vite         | 5.x     | Build Tool & Dev Server |
+| Tailwind CSS | 4.x     | Styling                 |
+| React Router | 6.x     | Client-side Routing     |
+| SSE          | Native  | Real-time Updates       |
 
 ### Backend
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| Express | 4.x | Web Framework |
-| Node.js | 18+ | Runtime |
-| better-sqlite3 | 9.x | Database |
-| jsonwebtoken | 9.x | Authentication |
-| bcryptjs | 2.x | Password Hashing |
-| CORS | 2.x | Cross-Origin Requests |
+| Technology     | Version | Purpose               |
+| -------------- | ------- | --------------------- |
+| Express        | 4.x     | Web Framework         |
+| Node.js        | 18+     | Runtime               |
+| better-sqlite3 | 9.x     | Database              |
+| jsonwebtoken   | 9.x     | Authentication        |
+| bcryptjs       | 2.x     | Password Hashing      |
+| CORS           | 2.x     | Cross-Origin Requests |
 
 ### Development Tools
 
-| Technology | Purpose |
-|------------|---------|
-| ESLint | Code Linting |
-| Prettier | Code Formatting |
-| Vitest | Unit Testing |
-| Playwright | E2E Testing |
-| Docker | Containerization |
+| Technology | Purpose          |
+| ---------- | ---------------- |
+| ESLint     | Code Linting     |
+| Prettier   | Code Formatting  |
+| Vitest     | Unit Testing     |
+| Playwright | E2E Testing      |
+| Docker     | Containerization |
 
 ---
 
@@ -135,12 +140,14 @@ App (Root)
 ### 1. Note Management
 
 **Note Types:**
+
 - Text Notes with Markdown support
 - Checklists with drag-and-drop reordering
 - Drawing/Handwritten notes
 - Mixed content (text + images + drawings)
 
 **Operations:**
+
 - Create, Read, Update, Delete (CRUD)
 - Pin/Unpin notes
 - Color customization
@@ -150,6 +157,7 @@ App (Root)
 ### 2. Collaboration
 
 **Features:**
+
 - Real-time collaboration on notes
 - Add/remove collaborators by username/email
 - View-only mode for collaborators
@@ -157,26 +165,58 @@ App (Root)
 - Real-time checklist sync
 
 **Implementation:**
+
 - Server-Sent Events (SSE) for live updates
 - Optimistic updates for UI responsiveness
 - Token-based authentication for collaborators
 
-### 3. AI Assistant
+### 3. AI Assistant (Premium Sidebar)
 
 **Features:**
-- Local Llama 3.2 (1B) model
-- Note-aware (RAG - Retrieval Augmented Generation)
-- Private - no data leaves your server
-- Smart search and question answering
+
+- **Premium Slideout**: Glassmorphic sidebar accessible via sparkle icon or `⌘J`.
+- **Gemini-Powered**: Uses Google Gemini API for intelligent responses.
+- **Context-Aware Chat**: Answers questions using currently viewed notes as grounding.
+- **Quick Actions**: "Format Notes", "Find Duplicates", and "Organize Thoughts".
+- **Graceful Fallbacks**: Uses heuristic methods when AI service is unavailable.
 
 **Use Cases:**
-- "What are my AWS commands?"
-- "How old am I?"
-- "Show me all notes about X"
 
-### 4. Theming System
+- "Summarize this long project plan"
+- "Suggest 3 tags for this meeting note"
+- "What are the action items from my last sync?"
+
+### 4. Voice Studio (Audio Recording & Editing)
 
 **Features:**
+
+- Real-time audio recording with waveform visualization
+- AI-powered transcription using Google Gemini 2.5 Flash (2026 model)
+- Automatic transcription streaming while recording
+- Intelligent summarization of recordings
+- **Audio Editor (Phase 6)**: Visual waveform editing with trim/cut support (destructive and non-destructive workflows)
+- **Audio Enhancements**: Volume Normalization (-1dB peak) and Noise Reduction (gate implementation)
+- **Transcript Segment Editor**: view, edit, delete, and restore individual transcript segments
+- **FormatToolbar**: Rich text formatting in transcripts (Bold, Italic, Code, Headings, Lists, Quotes)
+- Smart Export/Save modal with content-based recommendations
+- Audio quality indicator and full Undo/Redo history
+- Voice Gallery with fuzzy search, filters, and bulk operations
+- Unified experience with all tools integrated in the main view
+
+**Implementation:**
+
+- Browser MediaRecorder API for audio capture
+- Google Gemini API for transcription
+- Real-time streaming transcription
+- Segment-based transcript editing with soft delete
+- FormatToolbar with textarea ref targeting for proper accessibility
+- Smart recommendation engine based on content length
+- Export utilities for multiple file formats
+
+### 5. Theming System
+
+**Features:**
+
 - Dark/Light mode
 - Theme presets (Neon Tokyo, Zen Garden, etc.)
 - Custom background images
@@ -185,33 +225,37 @@ App (Root)
 - Smart overlay for readability
 
 **Implementation:**
+
 - CSS Custom Properties for theming
 - Context-based state management
 - Persistent storage (localStorage)
 
-### 5. Search
+### 5. Archive & Storage Tier
 
 **Capabilities:**
-- Full-text search across:
-  - Note titles
-  - Markdown content
-  - Tags
-  - Checklist items
-  - Image names
-- AI-powered query assistance
-- Quick filters (All Notes, All Images)
+
+- Dedicated storage tier for long-term retention
+- **Enhanced Sorting**: Sort archived notes by Date (Newest/Oldest), Title (A-Z/Z-A), or Tag
+- Bulk archive/unarchive operations
+- Visual separation from the main active workspace
+- Search across archived content
+- AI grounding includes archived context
 
 ### 6. Import/Export
 
 **Features:**
+
 - Export all notes to JSON
 - Import JSON (merges with existing)
 - Export individual notes to Markdown
 - Import from Google Takeout
+- Voice Studio exports (Markdown, TXT, JSON formats)
+- Smart save options (Save as Note, Document, Voice Note)
 
 ### 7. Administration
 
 **Features:**
+
 - User management (CRUD)
 - Password reset
 - Admin role assignment
@@ -221,12 +265,22 @@ App (Root)
 ### 8. Security
 
 **Features:**
+
 - JWT-based authentication
 - Secret key recovery
 - Password hashing (bcrypt)
 - Protected API endpoints
 - Admin-only endpoints
 - CORS protection
+
+### 9. Admin Announcements (New)
+
+**Features:**
+
+- **Publish to All**: Admins can turn any note into a system-wide announcement.
+- **Visual Distinction**: Announcements appear with a distinctive golden frame and megaphone icon.
+- **User Control**: Users can dismiss individual announcements or opt-out entirely via Settings.
+- **Tracking**: System tracks dismissals per user to ensure announcements are only seen once.
 
 ---
 
@@ -235,6 +289,7 @@ App (Root)
 ### Database Schema
 
 #### Users Table
+
 ```sql
 CREATE TABLE users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -248,6 +303,7 @@ CREATE TABLE users (
 ```
 
 #### Notes Table
+
 ```sql
 CREATE TABLE notes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -264,6 +320,7 @@ CREATE TABLE notes (
 ```
 
 #### Checklist Items Table
+
 ```sql
 CREATE TABLE checklist_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -277,6 +334,7 @@ CREATE TABLE checklist_items (
 ```
 
 #### Tags Table
+
 ```sql
 CREATE TABLE tags (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -288,6 +346,7 @@ CREATE TABLE tags (
 ```
 
 #### Collaborators Table
+
 ```sql
 CREATE TABLE collaborators (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -302,6 +361,7 @@ CREATE TABLE collaborators (
 ```
 
 #### Images Table
+
 ```sql
 CREATE TABLE images (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -319,6 +379,7 @@ CREATE TABLE images (
 ## API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - Login user
 - `POST /api/auth/logout` - Logout user
@@ -327,6 +388,7 @@ CREATE TABLE images (
 - `POST /api/auth/login-secret` - Login with secret key
 
 ### Notes
+
 - `GET /api/notes` - Get all notes for user
 - `GET /api/notes/:id` - Get single note
 - `POST /api/notes` - Create new note
@@ -338,20 +400,24 @@ CREATE TABLE images (
 - `POST /api/notes/export` - Export all notes
 
 ### Tags
+
 - `GET /api/tags` - Get all tags for user
 - `POST /api/notes/:id/tags` - Add tag to note
 - `DELETE /api/notes/:id/tags/:tag` - Remove tag from note
 
 ### Collaboration
+
 - `GET /api/notes/:id/collaborators` - Get note collaborators
 - `POST /api/notes/:id/collaborators` - Add collaborator
 - `DELETE /api/notes/:id/collaborators/:userId` - Remove collaborator
 
 ### Images
+
 - `POST /api/notes/:id/images` - Upload image
 - `DELETE /api/images/:id` - Delete image
 
 ### Admin
+
 - `GET /api/admin/users` - Get all users
 - `POST /api/admin/users` - Create user
 - `DELETE /api/admin/users/:id` - Delete user
@@ -359,17 +425,22 @@ CREATE TABLE images (
 - `POST /api/admin/users/:id/reset-password` - Reset password
 
 ### SSE (Server-Sent Events)
+
 - `GET /api/sse/notes` - Real-time note updates
 - `GET /api/sse/users` - Real-time user events (admin only)
 
 ### Logging (Admin Only)
+
 - `GET /api/logs` - Query logs
 - `GET /api/logs/stats` - Get log statistics
 - `POST /api/logs/export` - Export logs
 - `GET /api/logs/recent` - Get recent logs
 
-### AI (Local Llama 3.2)
-- `POST /api/ai/query` - Ask AI about your notes
+### AI Assistant & Intelligent Insights
+
+- `POST /api/ai/ask` - Ask AI about your notes (powered by Gemini)
+- `POST /api/ai/transform` - Transform text (inline editing)
+- `POST /api/ai/generate-image` - Generate images from prompts
 
 ---
 
@@ -496,17 +567,20 @@ User Action → API Request → Database Update → SSE Broadcast → Client Upd
 ## Deployment Options
 
 ### 1. Development
+
 - Vite dev server (http://localhost:5173)
 - Express API (http://localhost:8080)
 - Hot module replacement
 
 ### 2. Production (Docker)
+
 - Single container with Node.js
 - Built frontend served by Express
 - Persistent data volume
 - Environment variable configuration
 
 ### 3. Production (Manual)
+
 - Build frontend: `npm run build`
 - Serve static files with Express
 - Configure reverse proxy (nginx)
@@ -544,22 +618,26 @@ User Action → API Request → Database Update → SSE Broadcast → Client Upd
 ## Testing Strategy
 
 ### Unit Tests (Vitest)
+
 - Component rendering
 - Context providers
 - Utility functions
 - Business logic
 
 ### Integration Tests
+
 - API endpoints
 - Database operations
 - Authentication flows
 
 ### E2E Tests (Playwright)
+
 - User workflows
 - Cross-browser testing
 - Mobile responsiveness
 
 ### Stability Tests
+
 - Memory leak detection
 - SSE connection cleanup
 - Race condition prevention
@@ -571,7 +649,7 @@ User Action → API Request → Database Update → SSE Broadcast → Client Upd
 1. **PWA Offline Support**: Phase 3 stopped - not fully implemented
 2. **Scalability**: SQLite limits concurrent writes (suitable for small-medium deployments)
 3. **File Storage**: Images stored in database (consider CDN for production)
-4. **AI Model**: Llama 3.2 1B is optimized but may not handle complex queries as well as larger models
+4. **AI Service**: Requires GEMINI_API_KEY environment variable for AI features
 
 ---
 
@@ -606,11 +684,12 @@ User Action → API Request → Database Update → SSE Broadcast → Client Upd
 ---
 
 **Related Documents:**
+
 - [README.md](../README.md) - Project overview and setup
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - Detailed architecture
 - [API_REFERENCE.md](./API_REFERENCE.md) - Complete API reference
 - [GETTING_STARTED.md](./GETTING_STARTED.md) - Quick start guide
 
-**Last Updated:** January 20, 2026  
+**Last Updated:** January 27, 2026  
 **Maintained By:** Development Team  
 **Status:** ✅ Current

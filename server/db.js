@@ -73,6 +73,14 @@ class Statement {
 class Database {
   constructor(filename, options = {}) {
     this.db = new sqlite3.Database(filename)
+    Database.instance = this
+  }
+
+  static getDb() {
+    if (!Database.instance) {
+      throw new Error('Database not initialized. Call new Database() first.')
+    }
+    return Database.instance
   }
 
   prepare(sql) {

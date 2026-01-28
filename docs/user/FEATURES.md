@@ -27,9 +27,11 @@ GLASSYDASH provides three main note management modules, each fully operational w
 - Tag-based filtering
 - Search across all notes
 - Real-time collaboration via SSE
-- AI-powered search and insights
+- **AI Assistant Sidebar**: Premium chat and insights panel (⌘J)
+- AI-powered search and automated tagging
 
 **Implementation:**
+
 - Zustand + React Query for state management
 - Optimistic updates with rollback
 - Real-time collaboration via Server-Sent Events
@@ -47,6 +49,7 @@ GLASSYDASH provides three main note management modules, each fully operational w
 - Clean, Notion-style interface
 
 **Implementation:**
+
 - Zustand-only state management (local features)
 - TipTap for rich text editing
 - Persistent storage in localStorage
@@ -65,6 +68,7 @@ GLASSYDASH provides three main note management modules, each fully operational w
 - Gradient visualization (indigo → purple → pink)
 
 **How to Use:**
+
 1. Navigate to Voice Studio (sidebar: Voice Studio or `#/voice`)
 2. Click "Record Note" card in Voice Gallery (first card with microphone icon)
 3. Recording Studio opens with audio visualizer
@@ -73,6 +77,7 @@ GLASSYDASH provides three main note management modules, each fully operational w
 6. Note created automatically in Notes with transcript and summary
 
 **Implementation:**
+
 - Zustand + React Query for state management
 - Canvas API for real-time visualization
 - MediaRecorder API for audio capture
@@ -404,20 +409,24 @@ GLASSYDASH provides dual AI capabilities: Local Llama 3.2 for privacy and Google
 **AI Capabilities:**
 
 **Question Answering:**
+
 - "What are my AWS commands?"
 - "Show me all project X notes"
 - "What tasks need completion?"
 
 **Summarization:**
+
 - "Summarize my meeting notes"
 - "What were my key achievements this month?"
 
 **Information Extraction:**
+
 - "Extract all deadlines from my notes"
 - "Find all phone numbers"
 - "List all project mentions"
 
 **Context Understanding:**
+
 - Connects related information
 - Understands relationships
 - Remembers context across queries
@@ -432,7 +441,22 @@ GLASSYDASH provides dual AI capabilities: Local Llama 3.2 for privacy and Google
 - Direct integration with Voice Studio
 - No configuration required (uses API keys)
 
+### AI Assistant Sidebar (New)
+
+**Features:**
+
+- **Premium Interface**: A sleek, glass-styled slideout panel for all your AI needs.
+- **Context-Aware Chat**: Talk to your AI about specific notes or your entire workspace.
+- **Suggest Tags**: One-click intelligent tag generation for current notes.
+- **Summarize**: Instantly condense long notes into 2-3 bullet points.
+- **Keyboard Shortcut**: Toggle with `⌘J` (Command+J) or `Ctrl+J`.
+- **Intelligent Fallbacks**: Automatically uses the best available AI (Gemini cloud or local Llama).
+
+**Why Gemini-First?**
+Standard cloud AI (Gemini) ensures high performance and 100% feature availability on any deployment (including hosted/cloud). If you prefer local-only, the system fallback preserves privacy on supported hardware.
+
 **Use Cases:**
+
 - Voice note capture
 - Meeting transcription
 - Lecture recording
@@ -765,7 +789,8 @@ All major components have been successfully migrated from deprecated Context API
 - ✅ **Documents**: Grid View and editor fully functional
 - ✅ **Notes**: All operations (create, edit, delete, pin, archive) restored
 - ✅ **Real-time Collaboration**: SSE-based collaboration working
-- ✅ **AI Integration**: Both Llama 3.2 (local) and Gemini (voice) operational
+- ✅ **AI Assistant Sidebar**: Premium chat, tagging, and summarization panel fully live
+- ✅ **AI Integration**: Gemini-First architecture with Llama fallback operational
 - ✅ **Theming**: All customization features working
 - ✅ **Search**: Full-text and AI-powered search functional
 - ✅ **Import/Export**: JSON and Markdown export/import working
@@ -773,11 +798,13 @@ All major components have been successfully migrated from deprecated Context API
 ### 🏗️ Architecture Notes
 
 **State Management:**
+
 - Zustand stores for local state (auth, settings, UI, modal, docs, notes)
 - React Query for server state (notes queries, mutations)
 - Compatibility layer for gradual migration (useNotesCompat)
 
 **Build Status:**
+
 - Clean build with 2,256 modules transformed
 - Build time: 3.75s
 - No compilation errors

@@ -41,6 +41,8 @@ export function ComposerProvider({ children }) {
     setShowFormatting,
     showColorPicker,
     setShowColorPicker,
+    composerIsAnnouncement: isAnnouncement,
+    setComposerIsAnnouncement: setIsAnnouncement,
     resetComposer: resetStore,
   } = useComposerStore()
 
@@ -102,6 +104,7 @@ export function ComposerProvider({ children }) {
       images: images,
       color: color,
       pinned: false,
+      is_announcement: isAnnouncement,
       position: Date.now(),
       timestamp: nowIso,
       updated_at: nowIso,
@@ -126,6 +129,7 @@ export function ComposerProvider({ children }) {
     createNote,
     reset,
     showToast,
+    isAnnouncement,
   ])
 
   const onKeyDown = useCallback(
@@ -252,6 +256,8 @@ export function ComposerProvider({ children }) {
     handleImageUpload,
     removeImage,
     save,
+    isAnnouncement,
+    setIsAnnouncement,
   }
 
   return <ComposerContext.Provider value={value}>{children}</ComposerContext.Provider>

@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 
 export const useNotesStore = create(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       // Initial state
       notes: [],
       pinned: [],

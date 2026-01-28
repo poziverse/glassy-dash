@@ -50,11 +50,8 @@ import {
   COLOR_ORDER,
   LIGHT_COLORS,
   TRANSPARENCY_PRESETS,
-  normalizeImageFilename,
-  downloadDataUrl,
-  uid,
-  addImagesToState,
-} from '../utils/helpers'
+} from '../themes'
+import { normalizeImageFilename, downloadDataUrl, uid, addImagesToState } from '../utils/helpers'
 
 /**
  * Modal Component
@@ -210,8 +207,8 @@ const Modal = ({
         onClick={e => {
           if (scrimClickStartRef.current && e.target === e.currentTarget) {
             closeModal()
+            scrimClickStartRef.current = false
           }
-          scrimClickStartRef.current = false
         }}
       >
         <motion.div
@@ -219,7 +216,7 @@ const Modal = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
           transition={{ type: 'spring', duration: 0.5, bounce: 0.3 }}
-          className="glass-card rounded-xl shadow-2xl w-full h-full max-w-none rounded-none sm:w-11/12 sm:max-w-2xl sm:h-[95vh] sm:rounded-xl flex flex-col relative overflow-hidden"
+          className="glass-card rounded-xl shadow-2xl w-full h-full max-w-none rounded-none sm:w-11/12 sm:max-w-5xl sm:h-[95vh] sm:rounded-xl flex flex-col relative overflow-hidden"
           style={{ backgroundColor: modalBgFor(mColor, dark) }}
           onMouseDown={e => e.stopPropagation()}
           onMouseUp={e => e.stopPropagation()}
@@ -300,6 +297,7 @@ const Modal = ({
                         anchorRef={modalFmtBtnRef}
                         open={showModalFmt}
                         onClose={() => setShowModalFmt(false)}
+                        align="end"
                       >
                         <FormatToolbar
                           dark={dark}
@@ -350,7 +348,7 @@ const Modal = ({
                             className={`flex items-center gap-2 w-full text-left px-3 py-2 text-sm ${dark ? 'hover:bg-white/10' : 'hover:bg-gray-100'}`}
                             onClick={() => {
                               if (activeNoteObj) {
-                                toggleArchiveNote(activeId)
+                                toggleArchiveNote(activeId, !activeNoteObj?.archived)
                                 setModalMenuOpen(false)
                               }
                             }}
@@ -400,7 +398,7 @@ const Modal = ({
             {/* Content area - Text, Checklist, or Drawing */}
             <div className={mType === 'draw' ? 'p-2 pb-6' : 'p-6 pb-12'} onClick={onModalBodyClick}>
               {/* Images */}
-              {mImages.length > 0 && (
+              {Array.isArray(mImages) && mImages.length > 0 && (
                 <div className="mb-5 flex gap-3 overflow-x-auto">
                   {mImages.map((im, idx) => (
                     <div key={im.id} className="relative inline-block">
@@ -574,7 +572,7 @@ const Modal = ({
                   onKeyDown={handleTagKeyDown}
                   onBlur={handleTagBlur}
                   onPaste={handleTagPaste}
-                  placeholder={mTagList.length ? 'Add tag' : 'Add tags'}
+                  placeholder={Array.isArray(mTagList) && mTagList.length ? 'Add tag' : 'Add tags'}
                   className="bg-transparent text-sm placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none min-w-[8ch] flex-1"
                 />
               )}
@@ -799,7 +797,7 @@ const Modal = ({
           )}
 
           {/* Image viewer */}
-          {imgViewOpen && mImages.length > 0 && (
+          {imgViewOpen && Array.isArray(mImages) && mImages.length > 0 && (
             <div
               className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
               onClick={e => {

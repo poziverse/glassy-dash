@@ -8,7 +8,7 @@ import { api } from '../../lib/api'
 import { notesKeys } from '../queries/useNotes'
 
 /**
- * Create a new note with optimistic update
+ * Create a new note with optimistic update and retry logic
  * @param {Object} options - Additional useMutation options
  * @returns {UseMutationResult} Mutation result
  */
@@ -46,11 +46,42 @@ export function useCreateNote(options = {}) {
       if (context?.previousNotes) {
         queryClient.setQueryData(notesKeys.list({ type: 'active' }), context.previousNotes)
       }
+      
+      // Log error for debugging
+      console.error('[useCreateNote] Error:', {
+        error: err.message,
+        status: err.status,
+        isValidationError: err.isValidationError,
+        isApiError: err.isApiError,
+        isNetworkError: err.isNetworkError,
+        validationErrors: err.validationErrors,
+        noteData: {
+          type: newNote.type,
+          hasImages: !!newNote.images,
+          imagesCount: newNote.images?.length || 0,
+        }
+      })
     },
     onSuccess: () => {
       // Refetch to get server data (replaces temp ID)
       queryClient.invalidateQueries({ queryKey: notesKeys.lists() })
     },
+    // Retry logic: retry on network errors or 5xx server errors
+    retry: (failureCount, error) => {
+      const shouldRetry = (
+        failureCount < 3 && 
+        (error.isNetworkError || 
+         (error.status >= 500 && error.status < 600) ||
+         error.isValidationError)
+      )
+      
+      if (shouldRetry) {
+        console.log(`[useCreateNote] Retrying (attempt ${failureCount + 1}/3):`, error.message)
+      }
+      
+      return shouldRetry
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     ...options,
   })
 }

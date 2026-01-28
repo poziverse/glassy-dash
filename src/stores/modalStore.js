@@ -69,11 +69,16 @@ export const useModalStore = create((set, get) => ({
         ? (() => {
             try {
               return JSON.parse(note.content)
-            } catch (e) {
+            } catch (_e) {
               return { paths: [], dimensions: null }
             }
           })()
         : { paths: [], dimensions: null }
+
+    // Ensure images is always an array
+    const images = Array.isArray(note?.images) ? note.images : []
+    // Ensure tags is always an array
+    const tags = Array.isArray(note?.tags) ? note.tags : []
 
     set({
       open: true,
@@ -89,16 +94,16 @@ export const useModalStore = create((set, get) => ({
       mDrawingData: drawingData,
       mColor: note?.color || 'default',
       mTransparency: note?.transparency || null,
-      mImages: note?.images || [],
-      mTagList: note?.tags || [],
+      mImages: images,
+      mTagList: tags,
       viewMode: 'edit',
       originalValues: {
         title: note?.title || '',
         body: note?.content || '',
-        tags: note?.tags || [],
+        tags: tags,
         color: note?.color || 'default',
         transparency: note?.transparency || null,
-        images: note?.images || [],
+        images: images,
         items: note?.items || [],
         drawingData: drawingData,
       },
@@ -140,17 +145,32 @@ export const useModalStore = create((set, get) => ({
     })
   },
 
-  setMTitle: title => set({ mTitle: title }),
-  setMBody: body => set({ mBody: body }),
-  setMType: type => set({ mType: type }),
-  setMItems: items => set({ mItems: items }),
-  setMInput: input => set({ mInput: input }),
-  setMDrawingData: data => set({ mDrawingData: data }),
-  setMColor: color => set({ mColor: color }),
-  setMTransparency: transparency => set({ mTransparency: transparency }),
-  setMImages: images => set({ mImages: images }),
-  setTagInput: input => set({ tagInput: input }),
-  setMTagList: tagList => set({ mTagList: tagList }),
+  setMTitle: value =>
+    set(state => ({ mTitle: typeof value === 'function' ? value(state.mTitle) : value })),
+  setMBody: value =>
+    set(state => ({ mBody: typeof value === 'function' ? value(state.mBody) : value })),
+  setMType: value =>
+    set(state => ({ mType: typeof value === 'function' ? value(state.mType) : value })),
+  setMItems: value =>
+    set(state => ({ mItems: typeof value === 'function' ? value(state.mItems) : value })),
+  setMInput: value =>
+    set(state => ({ mInput: typeof value === 'function' ? value(state.mInput) : value })),
+  setMDrawingData: value =>
+    set(state => ({
+      mDrawingData: typeof value === 'function' ? value(state.mDrawingData) : value,
+    })),
+  setMColor: value =>
+    set(state => ({ mColor: typeof value === 'function' ? value(state.mColor) : value })),
+  setMTransparency: value =>
+    set(state => ({
+      mTransparency: typeof value === 'function' ? value(state.mTransparency) : value,
+    })),
+  setMImages: value =>
+    set(state => ({ mImages: typeof value === 'function' ? value(state.mImages) : value })),
+  setTagInput: value =>
+    set(state => ({ tagInput: typeof value === 'function' ? value(state.tagInput) : value })),
+  setMTagList: value =>
+    set(state => ({ mTagList: typeof value === 'function' ? value(state.mTagList) : value })),
   setViewMode: mode => set({ viewMode: mode, showModalFmt: false }),
   setShowModalFmt: show => set({ showModalFmt: show }),
   setModalMenuOpen: open => set({ modalMenuOpen: open }),

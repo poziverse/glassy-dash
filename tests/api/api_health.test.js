@@ -7,7 +7,7 @@ import dotenv from 'dotenv'
 // Load env for test (simulate running in container or locally with env)
 dotenv.config({ path: path.resolve(__dirname, '../../server/.env') })
 
-const BASE_URL = `http://localhost:${process.env.API_PORT || 8080}/api`
+const BASE_URL = `http://localhost:${process.env.API_PORT || 3001}/api`
 
 describe('API Health & Stability', () => {
   it('should return 200 OK for health check (monitoring)', async () => {

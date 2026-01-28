@@ -1,11 +1,30 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useVoiceStore } from '../../stores/voiceStore'
 import { transcribeAudio, transcribeAudioStream } from '../../utils/gemini'
+import { retryOperation } from '../../utils/retryOperation'
+import logger from '../../utils/logger'
 import AudioQualityIndicator from './AudioQualityIndicator'
 import PlaybackControls from './PlaybackControls'
 import FormatToolbar from './FormatToolbar'
 import ExportButton from './ExportButton'
-import { Mic, Square, Pause, Play, ChevronDown, ChevronUp, Clock, Sparkles, Save, X, Loader2, Undo, Redo, Edit2, Download, CheckCircle } from 'lucide-react'
+import {
+  Mic,
+  Square,
+  Pause,
+  Play,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Sparkles,
+  Save,
+  X,
+  Loader2,
+  Undo,
+  Redo,
+  Edit2,
+  Download,
+  CheckCircle,
+} from 'lucide-react'
 
 export default function RecordingStudio() {
   const {
@@ -34,6 +53,7 @@ export default function RecordingStudio() {
     setError,
     setAudioData,
     setRecordingDuration,
+    setRecordingState,
   } = useVoiceStore()
 
   // Local state
@@ -77,7 +97,7 @@ export default function RecordingStudio() {
   }, [localDuration])
 
   // Format time helper
-  const formatTime = (seconds) => {
+  const formatTime = seconds => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
@@ -107,20 +127,20 @@ export default function RecordingStudio() {
       mediaRecorder.onstop = async () => {
         stopVisualizer()
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-        
+
         // Set processing state
         setError(null)
-        
+
         try {
           // Convert to base64 for transcription
           const reader = new FileReader()
           reader.readAsDataURL(audioBlob)
           reader.onloadend = async () => {
             const base64String = reader.result.split(',')[1]
-            
+
             // Set audio data in store
             setAudioData(base64String)
-            
+
             // Trigger transcription via Gemini API
             await processTranscription(base64String)
           }
@@ -153,39 +173,67 @@ export default function RecordingStudio() {
     }
   }
 
-  // Transcription via Gemini API (with streaming support)
+  // Transcription via Gemini API (with streaming support and retry logic)
   const processTranscription = async base64Audio => {
     try {
+      logger.info('transcription_start_attempt', { audioLength: base64Audio.length })
       setError(null)
-      
-      // Use streaming transcription for better UX
-      await transcribeAudioStream(
-        base64Audio,
-        // onChunk - partial results
-        (chunk) => {
-          if (chunk.transcript) {
-            setTranscript(chunk.transcript)
-            if (chunk.summary) {
-              setSummary(chunk.summary)
+
+      // Use streaming transcription for better UX with retry logic
+      await retryOperation(
+        () =>
+          transcribeAudioStream(
+            base64Audio,
+            // onChunk - partial results
+            chunk => {
+              if (chunk.transcript) {
+                logger.debug('transcription_chunk_received', {
+                  transcriptLength: chunk.transcript.length,
+                })
+                setTranscript(chunk.transcript)
+                if (chunk.summary) {
+                  logger.debug('transcription_summary_received', {
+                    summaryLength: chunk.summary.length,
+                  })
+                  setSummary(chunk.summary)
+                }
+              }
+            },
+            // onComplete - final results
+            result => {
+              logger.info('transcription_complete', {
+                transcriptLength: result?.transcript?.length,
+                summaryLength: result?.summary?.length,
+              })
+              if (result && result.transcript) {
+                setTranscript(result.transcript)
+                setSummary(result.summary || 'No summary available')
+                // Transition to reviewing state to dismiss the spinner
+                setRecordingState('reviewing')
+              } else {
+                logger.warn('transcription_failed_no_result', {})
+                setError('Transcription failed. Please try again.')
+                setRecordingState('idle')
+              }
+            },
+            // onError - error handling
+            err => {
+              logger.error('transcription_stream_error', {}, err)
+              console.error('Streaming transcription error:', err)
+              setError('Failed to transcribe audio. Please try again.')
+              setRecordingState('idle')
             }
-          }
-        },
-        // onComplete - final results
-        (result) => {
-          if (result && result.transcript) {
-            setTranscript(result.transcript)
-            setSummary(result.summary || 'No summary available')
-          } else {
-            setError('Transcription failed. Please try again.')
-          }
-        },
-        // onError - error handling
-        (err) => {
-          console.error('Streaming transcription error:', err)
-          setError('Failed to transcribe audio. Please try again.')
+          ),
+        {
+          maxRetries: 3,
+          delay: 1000,
+          onRetry: (attempt, error, waitTime) => {
+            logger.warn('transcription_retry_attempt', { attempt, waitTime, error: error.message })
+          },
         }
       )
     } catch (err) {
+      logger.error('transcription_error', {}, err)
       console.error('Transcription error:', err)
       setError('Failed to transcribe audio. Please try again.')
     }
@@ -271,7 +319,7 @@ export default function RecordingStudio() {
 
   // Keyboard shortcuts for transcript editing
   useEffect(() => {
-    const handleTranscriptKeyDown = (e) => {
+    const handleTranscriptKeyDown = e => {
       // Only handle Ctrl+Z and Ctrl+Y in transcript textarea
       if (e.target.tagName === 'TEXTAREA') {
         if (e.ctrlKey || e.metaKey) {
@@ -287,7 +335,7 @@ export default function RecordingStudio() {
     }
 
     // Keyboard shortcuts for controls
-    const handleKeyDown = (e) => {
+    const handleKeyDown = e => {
       // Ignore if in input field (except for Ctrl+Z/Y which are handled separately)
       if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') {
         return
@@ -355,42 +403,46 @@ export default function RecordingStudio() {
   // Get recording being edited
   const editingRecording = recordings.find(r => r.id === activeRecordingId)
 
-  const showSaveMessage = (message) => {
+  const showSaveMessage = message => {
     setSaveMessage(message)
     setTimeout(() => setSaveMessage(null), 3000)
   }
 
-  const handleSave = (destination) => {
-    saveRecording(destination, { 
-      title: destination === 'notes' 
-        ? `Voice Note ${new Date().toLocaleDateString()}`
-        : `Recording ${new Date().toLocaleDateString()}`,
-      duration: localDuration
+  const handleSave = destination => {
+    saveRecording(destination, {
+      title:
+        destination === 'notes'
+          ? `Voice Note ${new Date().toLocaleDateString()}`
+          : `Recording ${new Date().toLocaleDateString()}`,
+      duration: localDuration,
     })
-    
+
     if (saveToBoth) {
       // Save to other location too
       saveRecording(destination === 'notes' ? 'gallery' : 'notes', {
         title: `Recording ${new Date().toLocaleDateString()}`,
-        duration: localDuration
+        duration: localDuration,
       })
       showSaveMessage('Saved to Notes & Gallery')
     } else {
       showSaveMessage(destination === 'notes' ? 'Saved to Notes' : 'Saved to Gallery')
     }
-    
+
     clearActiveRecording()
     setLocalDuration(0)
   }
 
   return (
-    <div className={`
+    <div
+      className={`
       mb-6 rounded-2xl border transition-all duration-300
-      ${studioCollapsed 
-        ? 'bg-white/5 border-white/10' 
-        : 'bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-indigo-500/20'
+      ${
+        studioCollapsed
+          ? 'bg-white/5 border-white/10'
+          : 'bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-indigo-500/20'
       }
-    `}>
+    `}
+    >
       {/* Header - Always Visible */}
       <div className="flex items-center justify-between p-4">
         <button
@@ -404,7 +456,12 @@ export default function RecordingStudio() {
         <div className="flex items-center gap-3">
           {recordingState !== 'idle' && (
             <div className="flex items-center gap-2 text-sm">
-              <Clock size={16} className={recordingState === 'recording' ? 'text-red-400 animate-pulse' : 'text-gray-400'} />
+              <Clock
+                size={16}
+                className={
+                  recordingState === 'recording' ? 'text-red-400 animate-pulse' : 'text-gray-400'
+                }
+              />
               <span className={recordingState === 'recording' ? 'text-red-400' : 'text-gray-400'}>
                 {timer}
               </span>
@@ -422,14 +479,14 @@ export default function RecordingStudio() {
         <div className="p-6 space-y-6">
           {/* Export Button (in review mode) */}
           {recordingState === 'reviewing' && currentAudio && (
-            <ExportButton 
+            <ExportButton
               recording={{
                 title: `Voice Note ${new Date().toLocaleDateString()}`,
                 transcript: currentTranscript,
                 summary: currentSummary,
                 duration: localDuration,
                 createdAt: new Date().toISOString(),
-                audioData: currentAudio
+                audioData: currentAudio,
               }}
               className="w-full"
             />
@@ -439,7 +496,9 @@ export default function RecordingStudio() {
           {editingRecording && (
             <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm flex items-center gap-2">
               <Edit2 size={16} />
-              <span>Editing: <strong>{editingRecording.title}</strong></span>
+              <span>
+                Editing: <strong>{editingRecording.title}</strong>
+              </span>
               <button
                 onClick={() => clearActiveRecording()}
                 className="ml-auto px-3 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-xs transition-colors"
@@ -461,18 +520,21 @@ export default function RecordingStudio() {
           <div className="flex gap-4">
             {/* Audio Quality Indicator */}
             {recordingState === 'recording' && (
-              <AudioQualityIndicator stream={streamRef.current} isRecording={recordingState === 'recording'} />
+              <AudioQualityIndicator
+                stream={streamRef.current}
+                isRecording={recordingState === 'recording'}
+              />
             )}
 
             {/* Visualizer */}
             <div className="flex-1 h-32 bg-black/20 rounded-xl overflow-hidden border border-white/5">
-            <canvas
-              ref={canvasRef}
-              width={600}
-              height={128}
-              className="w-full h-full object-cover"
-            />
-            
+              <canvas
+                ref={canvasRef}
+                width={600}
+                height={128}
+                className="w-full h-full object-cover"
+              />
+
               {recordingState === 'idle' && (
                 <div className="absolute inset-0 flex items-center justify-center text-gray-500">
                   <Mic size={32} className="opacity-30" />
@@ -557,7 +619,7 @@ export default function RecordingStudio() {
           {(currentAudio || recordingState === 'reviewing') && (
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-400">Audio Playback</label>
-              <PlaybackControls 
+              <PlaybackControls
                 audioUrl={`data:audio/webm;base64,${currentAudio}`}
                 onEnded={() => setIsPlaying(false)}
               />
@@ -571,10 +633,13 @@ export default function RecordingStudio() {
                 type="checkbox"
                 id="saveToBoth"
                 checked={saveToBoth}
-                onChange={(e) => setSaveToBoth(e.target.checked)}
+                onChange={e => setSaveToBoth(e.target.checked)}
                 className="w-4 h-4 rounded border-white/20 bg-white/5 focus:ring-indigo-500"
               />
-              <label htmlFor="saveToBoth" className="cursor-pointer hover:text-white transition-colors">
+              <label
+                htmlFor="saveToBoth"
+                className="cursor-pointer hover:text-white transition-colors"
+              >
                 Save to both Notes & Gallery
               </label>
             </div>
@@ -604,20 +669,20 @@ export default function RecordingStudio() {
                   </button>
                 </div>
               </div>
-              
+
               {/* Format Toolbar */}
-              <FormatToolbar 
+              <FormatToolbar
                 value={localTranscript}
-                onChange={(newValue) => {
+                onChange={newValue => {
                   setLocalTranscript(newValue)
                   setTranscript(newValue)
                 }}
                 className="mb-2"
               />
-              
+
               <textarea
                 value={localTranscript}
-                onChange={(e) => {
+                onChange={e => {
                   setLocalTranscript(e.target.value)
                   setTranscript(e.target.value)
                 }}
@@ -633,7 +698,7 @@ export default function RecordingStudio() {
               <label className="text-sm font-medium text-gray-400">AI Summary</label>
               <textarea
                 value={currentSummary}
-                onChange={(e) => setSummary(e.target.value)}
+                onChange={e => setSummary(e.target.value)}
                 placeholder="AI summary will appear here..."
                 className="w-full h-20 p-4 rounded-xl bg-black/20 border border-white/10 text-white placeholder-gray-500 resize-none focus:outline-none focus:border-indigo-500/50 transition-colors"
               />

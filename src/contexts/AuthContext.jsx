@@ -119,6 +119,31 @@ export function AuthProvider({ children }) {
     [storeLogin]
   )
 
+  const updateUserSettings = useCallback(
+    async settings => {
+      try {
+        const data = await api('/users/me/settings', {
+          method: 'PATCH',
+          body: settings,
+        })
+
+        if (data.ok && data.user) {
+          // Preserve the token, update the user
+          storeLogin(data.user, token)
+          if (data.user.email || data.user.name) {
+            logger.setUserId(data.user.email || data.user.name)
+          }
+          return { ok: true }
+        }
+
+        return { ok: false, error: data.error || 'Failed to update settings' }
+      } catch (error) {
+        return { ok: false, error: error.message || 'Failed to update settings' }
+      }
+    },
+    [storeLogin, token]
+  )
+
   const value = useMemo(
     () => ({
       session: { user: currentUser, token },
@@ -131,8 +156,19 @@ export function AuthProvider({ children }) {
       signIn,
       register,
       signInWithSecret,
+      updateUserSettings,
     }),
-    [currentUser, token, isAuthenticated, logout, updateSession, signIn, register, signInWithSecret]
+    [
+      currentUser,
+      token,
+      isAuthenticated,
+      logout,
+      updateSession,
+      signIn,
+      register,
+      signInWithSecret,
+      updateUserSettings,
+    ]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

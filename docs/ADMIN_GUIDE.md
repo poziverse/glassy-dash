@@ -1,13 +1,13 @@
 # Admin Guide
 
-**Version:** ALPHA 1.0  
-**Last Updated:** January 19, 2026  
+**Version:** 1.1.6  
+**Last Updated:** January 27, 2026
 
 ---
 
 ## Overview
 
-This guide covers administrative tasks for managing GlassKeep, including user management, system monitoring, and maintenance operations.
+This guide covers administrative tasks for managing GlassyDash, including user management, system monitoring, and maintenance operations.
 
 ---
 
@@ -15,6 +15,8 @@ This guide covers administrative tasks for managing GlassKeep, including user ma
 
 - [Admin Access](#admin-access)
 - [User Management](#user-management)
+- [Announcements](#announcements)
+- [Bug Reports](#bug-reports)
 - [System Monitoring](#system-monitoring)
 - [Log Management](#log-management)
 - [Backup & Restore](#backup--restore)
@@ -29,6 +31,7 @@ This guide covers administrative tasks for managing GlassKeep, including user ma
 The first registered user is automatically assigned admin role.
 
 **Check Admin Status:**
+
 ```javascript
 // User object includes is_admin field
 {
@@ -42,15 +45,55 @@ The first registered user is automatically assigned admin role.
 ### Admin Permissions
 
 Admins can:
-- View all users
-- Delete user accounts
-- Access system statistics
-- View and export logs
-- Run database migrations
-- Access health checks
-- View system metrics
 
-**Regular users cannot:** Access admin panel
+- **User Management**
+  - View all registered users
+  - Create new user accounts
+  - Edit user details (name, email, password)
+  - Toggle user admin status
+  - Delete user accounts
+
+- **Audit Logs (New)**
+  - Integrated event tracking for system actions
+  - Filterable by user, action type, and date range
+  - Visual timeline of administrative events
+
+- **System Control**
+  - **Registration Toggle**: Enable/Disable new user registration directly from the UI
+  - Real-time dashboard stats for Total Users, Admins, Notes, and Storage
+  - Mission Control: System telemetry (CPU, Memory, DB status)
+
+- **Bug Reports (New)**
+  - View user-submitted bug reports
+  - View metadata (browser, screen size, URL)
+  - Mark reports as resolved or reopen them
+  - Delete reports
+
+**Regular users cannot:** Access the admin panel or any of its sub-modules.
+
+---
+
+## Admin Dashboard UI
+
+### Accessing Admin Panel
+
+1. Log in with an admin account
+2. Click the **User Avatar** (top right)
+3. Select **Admin Dashboard** from the dropdown menu
+
+### Dashboard Sections
+
+#### 1. Overview (Mission Control)
+
+- **Real-time Stats**: Instant snapshots of system health
+- **Storage Quotas**: Visual bars showing per-user usage against the 1GB limit
+- **System Vitals**: CPU and Memory telemetry (for Docker/VM environments)
+
+#### 2. User Management
+
+- **User Table**: Comprehensive list with search and filtering
+- **Registration Toggle**: Global override for new account sign-ups
+- **Action Menu**: Create, Edit, Toggle Admin, and Delete users directly
 
 ---
 
@@ -59,12 +102,14 @@ Admins can:
 ### View All Users
 
 **API:**
+
 ```
 GET /api/admin/users
 Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 [
   {
@@ -80,6 +125,7 @@ Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+
 - `limit` - Number of results (default: 100)
 - `offset` - Skip N results (pagination)
 
@@ -88,12 +134,14 @@ Authorization: Bearer <token>
 ### Search Users
 
 **API:**
+
 ```
 GET /api/users/search?q=john
 Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 [
   {
@@ -112,6 +160,7 @@ Authorization: Bearer <token>
 **WARNING:** This permanently deletes the user and all their notes.
 
 **API:**
+
 ```
 DELETE /api/admin/users/:id
 Authorization: Bearer <token>
@@ -120,14 +169,71 @@ Authorization: Bearer <token>
 **Response:** `204 No Content`
 
 **Restrictions:**
+
 - Cannot delete yourself
 - Cannot delete other admins (unless you're the only admin)
 
 **Pre-deletion Checklist:**
+
 - [ ] Confirm user identity
 - [ ] Warn user about data loss
 - [ ] Export user's data if needed
 - [ ] Verify this isn't a mistake
+
+- [ ] Verify this isn't a mistake
+
+---
+
+## Announcements
+
+Admins can broadcast important messages to all users by converting any note into an Announcement.
+
+### Creating an Announcement
+
+1. Create a normal note with the content you want to broadcast.
+2. Open the note in the **Edit Modal**.
+3. Toggle the **"Make Announcement"** switch (Megaphone icon).
+4. Save the note.
+
+**Effects:**
+
+- The note appears at the top of **all users'** dashboards.
+- Users see a "Megaphone" icon and golden border.
+- Users can **Dismiss** the announcement, which hides it for them personally.
+- Admins can edit the announcement to update the message.
+
+### Managing Announcements
+
+To stop broadcasting:
+
+1. Open the original note.
+2. Toggle **OFF** the "Make Announcement" switch.
+3. Save.
+
+**Tracking:**
+The system tracks which users have dismissed the announcement to ensure they don't see it again unless it's a new announcement.
+
+---
+
+## Bug Reports
+
+Admin Dashboard now includes a "Bug Reports" tab.
+
+### Features
+
+- **List View**: See all bug reports with status, description, and reporter (if known).
+- **Metadata**: Hover over context icons to see `User-Agent`, `URL`, and `Screen Resolution`.
+- **Status Management**:
+  - **Open** (Default): Pending review.
+  - **Resolved**: Fixed or addressed (Green checkmark).
+  - **Ignored/Closed**: (Not fully implemented in UI yet, but API supports it).
+- **Actions**:
+  - Click **Checkmark** to resolve.
+  - Click **Trash** to delete.
+
+### API
+
+See `API_REFERENCE.md` for full endpoints (`/api/bug-reports`).
 
 ---
 
@@ -136,12 +242,14 @@ Authorization: Bearer <token>
 ### View System Statistics
 
 **API:**
+
 ```
 GET /api/admin/stats
 Authorization: Bearer <token>
 ```
 
 **Response:**
+
 ```json
 {
   "users": {
@@ -180,11 +288,13 @@ Authorization: Bearer <token>
 ### Health Checks
 
 **Overall Health:**
+
 ```
 GET /health
 ```
 
 **Response:**
+
 ```json
 {
   "status": "healthy",
@@ -211,11 +321,13 @@ GET /health
 ```
 
 **Database Readiness:**
+
 ```
 GET /ready
 ```
 
 **Response:**
+
 ```json
 {
   "status": "ready",
@@ -228,11 +340,13 @@ GET /ready
 ### Performance Metrics
 
 **API:**
+
 ```
 GET /metrics
 ```
 
 **Response:**
+
 ```json
 {
   "performance": {
@@ -265,6 +379,7 @@ GET /metrics
 ```
 
 **Prometheus Format:**
+
 ```
 GET /metrics/prometheus
 ```
@@ -276,12 +391,14 @@ GET /metrics/prometheus
 ### Query Logs
 
 **API:**
+
 ```
 GET /api/logs
 Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+
 - `date` - Filter by date (YYYY-MM-DD)
 - `level` - Filter by level (error, warn, info, debug)
 - `action` - Filter by action name
@@ -290,11 +407,13 @@ Authorization: Bearer <token>
 - `offset` - Skip N entries (default: 0)
 
 **Example:**
+
 ```
 GET /api/logs?level=error&limit=50
 ```
 
 **Response:**
+
 ```json
 {
   "entries": [
@@ -322,15 +441,18 @@ GET /api/logs?level=error&limit=50
 ### Log Statistics
 
 **API:**
+
 ```
 GET /api/logs/stats
 Authorization: Bearer <token>
 ```
 
 **Query Parameters:**
+
 - `days` - Number of days to analyze (default: 7)
 
 **Response:**
+
 ```json
 {
   "levelDistribution": {
@@ -364,6 +486,7 @@ Authorization: Bearer <token>
 ### Export Logs
 
 **API:**
+
 ```
 POST /api/logs/export
 Authorization: Bearer <token>
@@ -371,6 +494,7 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "format": "csv|json",
@@ -403,6 +527,7 @@ Backups are automatically created daily at 2:00 AM.
 ### Manual Backup
 
 **Command:**
+
 ```bash
 cd GLASSYDASH/server
 npm run db:backup
@@ -417,6 +542,7 @@ npm run db:backup
 **WARNING:** This overwrites the current database. A pre-restore backup is automatically created.
 
 **Command:**
+
 ```bash
 cd GLASSYDASH/server
 npm run db:restore data/backups/notes.db.2026-01-19T02-00-00
@@ -429,6 +555,7 @@ npm run db:restore data/backups/notes.db.2026-01-19T02-00-00
 ### Backup Verification
 
 **Verify Backup Integrity:**
+
 ```bash
 cd GLASSYDASH/server
 
@@ -449,17 +576,20 @@ sqlite3 data/backups/notes.db.2026-01-19T02-00-00 "SELECT COUNT(*) FROM notes;"
 ### Database Maintenance
 
 **Run VACUUM:**
+
 ```bash
 cd GLASSYDASH/server
 sqlite3 data/notes.db "VACUUM;"
 ```
 
 **Run ANALYZE:**
+
 ```bash
 sqlite3 data/notes.db "ANANLYZE;"
 ```
 
 **Reindex:**
+
 ```bash
 sqlite3 data/notes.db "REINDEX;"
 ```
@@ -469,11 +599,13 @@ sqlite3 data/notes.db "REINDEX;"
 ### Log Cleanup
 
 **Automatic Cleanup:**
+
 - Old logs (>30 days) automatically archived
 - Archived logs compressed
 - Manual cleanup available via admin panel
 
 **Manual Cleanup:**
+
 ```bash
 # Remove logs older than 30 days
 find data/logs/ -name "*.log" -mtime +30 -delete
@@ -484,18 +616,21 @@ find data/logs/ -name "*.log" -mtime +30 -delete
 ### Update Dependencies
 
 **Check for Updates:**
+
 ```bash
 cd GLASSYDASH
 npm outdated
 ```
 
 **Update Dependencies:**
+
 ```bash
 npm update
 npm audit fix
 ```
 
 **Security Audit:**
+
 ```bash
 npm audit
 ```
@@ -507,6 +642,7 @@ npm audit
 ### Review Failed Logins
 
 **Query:**
+
 ```javascript
 // Get failed login attempts
 GET /api/logs?action=auth_failed&level=warn
@@ -519,6 +655,7 @@ GET /api/logs?action=auth_failed&level=warn
 ### Monitor Rate Limit Violations
 
 **Check Logs:**
+
 ```bash
 grep "rate_limit" GLASSYDASH/server/server.log
 ```
@@ -530,12 +667,14 @@ grep "rate_limit" GLASSYDASH/server/server.log
 ### Rotate Secrets
 
 **JWT Secret Rotation:**
+
 1. Generate new secret
 2. Update `.env` file
 3. Restart server
 4. Old tokens expire naturally (7 days)
 
 **Procedure:**
+
 ```bash
 # Generate new secret
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
@@ -552,18 +691,21 @@ cd server && npm restart
 ## Best Practices
 
 ### Daily Tasks
+
 - [ ] Review error logs
 - [ ] Check system health
 - [ ] Monitor disk space
 - [ ] Verify backups completed
 
 ### Weekly Tasks
+
 - [ ] Review user registrations
 - [ ] Check system metrics
 - [ ] Review storage usage
 - [ ] Update dependencies if needed
 
 ### Monthly Tasks
+
 - [ ] Review all logs
 - [ ] Test restore procedure
 - [ ] Security audit
@@ -571,6 +713,7 @@ cd server && npm restart
 - [ ] User cleanup (inactive accounts)
 
 ### Quarterly Tasks
+
 - [ ] Full system backup verification
 - [ ] Disaster recovery testing
 - [ ] Security review
@@ -583,10 +726,12 @@ cd server && npm restart
 ### High Memory Usage
 
 **Symptoms:**
+
 - Memory >90%
 - Application slowdown
 
 **Solutions:**
+
 1. Check for memory leaks
 2. Review active SSE connections
 3. Increase system memory
@@ -605,10 +750,12 @@ ps aux | grep node
 ### High Disk Usage
 
 **Symptoms:**
+
 - Disk >80% full
 - Backup failures
 
 **Solutions:**
+
 1. Clean old backups
 2. Archive old logs
 3. Review user storage
@@ -627,10 +774,12 @@ find data/ -type f -size +100M
 ### Database Corruption
 
 **Symptoms:**
+
 - Database errors
 - Queries failing
 
 **Solutions:**
+
 1. Check database integrity
 2. Restore from backup
 3. Rebuild database
@@ -650,11 +799,13 @@ npm run db:restore <backup-file>
 ### Data Retention
 
 **User Data:**
+
 - Notes: Retained until user deletion
 - Logs: Retained for 30 days
 - Backups: Retained for 30 days
 
 **Deletion Process:**
+
 1. User requests deletion
 2. Verify identity
 3. Delete user account
@@ -664,12 +815,14 @@ npm run db:restore <backup-file>
 ### Audit Trail
 
 All administrative actions are logged:
+
 - User deletions
 - Settings changes
 - System modifications
 - Access attempts
 
 **Export Audit Log:**
+
 ```bash
 # Export admin actions
 GET /api/logs?action=admin_*&format=csv

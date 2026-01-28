@@ -1,7 +1,7 @@
 # Testing Guide
 
-**Version:** ALPHA 1.0  
-**Last Updated:** January 19, 2026
+**Version:** ALPHA 1.2  
+**Last Updated:** January 28, 2026
 
 ---
 
@@ -60,13 +60,34 @@ export default defineConfig({
 **setup.js:**
 
 ```javascript
-import '@testing-library/jest-dom'
+// Test setup file for Vitest
+import { expect, afterEach, vi, beforeAll, afterAll } from 'vitest'
 import { cleanup } from '@testing-library/react'
-import { afterEach } from 'vitest'
+import '@testing-library/jest-dom'
 
+// Cleanup after each test
 afterEach(() => {
   cleanup()
 })
+
+// Mock localStorage
+const localStorageMock = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+}
+global.localStorage = localStorageMock
+
+// Mock fetch - Always mock global fetch to avoid ECONNREFUSED in node environment
+global.fetch = vi.fn().mockImplementation(() =>
+  Promise.resolve({
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve({}),
+    headers: new Headers(),
+  })
+)
 ```
 
 ---
@@ -75,7 +96,7 @@ afterEach(() => {
 
 ### Component Testing
 
-**Example: NoteCard Component**
+#### Example: NoteCard Component
 
 ```javascript
 import { describe, it, expect, vi } from 'vitest'
@@ -117,7 +138,7 @@ describe('NoteCard', () => {
 
 ### Hook Testing
 
-**Example: useNotes Hook**
+#### Example: useNotes Hook
 
 ```javascript
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -154,7 +175,7 @@ describe('useNotes', () => {
 
 ### Utility Testing
 
-**Example: Format Date Utility**
+#### Example: Format Date Utility
 
 ```javascript
 import { describe, it, expect } from 'vitest'
@@ -203,7 +224,7 @@ docker exec glassy-dash-dev npx vitest run -c vitest.api.config.js tests/api/api
 
 ### Context Integration
 
-**Example: NotesProvider Integration**
+#### Example: NotesProvider Integration
 
 ```javascript
 import { describe, it, expect, vi } from 'vitest'
@@ -288,7 +309,7 @@ export default defineConfig({
 
 ### E2E Test Example
 
-**Example: Note Creation Flow**
+#### Example: Note Creation Flow
 
 ```javascript
 import { test, expect } from '@playwright/test'
@@ -374,7 +395,7 @@ npm install --save-dev supertest
 
 ### API Test Example
 
-**Example: Notes API**
+#### Example: Notes API
 
 ```javascript
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
@@ -642,14 +663,17 @@ npm run test:coverage
 
 - Open `coverage/index.html` in browser
 
-### Coverage Goals
+### Coverage Goals (Updated January 28, 2026)
 
-| Type       | Target |
-| ---------- | ------ |
-| Statements | 80%    |
-| Branches   | 75%    |
-| Functions  | 80%    |
-| Lines      | 80%    |
+| Type       | Target | Current Status (Settings Area) |
+| ---------- | ------ | ------------------------------ |
+| Statements | 80%    | 77.10% (settingsStore)         |
+| Branches   | 75%    | 62.50% (settingsStore)         |
+| Functions  | 80%    | 48.27% (settingsStore)         |
+| Lines      | 80%    | 77.77% (settingsStore)         |
+
+> [!NOTE]
+> As of Jan 28, 2026, the settings and voice stores have been prioritized for coverage expansion. Settings area components now average >65% coverage.
 
 ### CI/CD Integration
 
@@ -707,7 +731,7 @@ npx playwright show-trace trace.zip
 
 ## Test Organization
 
-```
+```text
 GLASSYDASH/
 ├── src/
 │   └── __tests__/
@@ -736,6 +760,6 @@ GLASSYDASH/
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** January 19, 2026  
-**Status:** Complete
+**Version:** ALPHA 1.2  
+**Last Updated:** January 28, 2026  
+**Status:** In Progress (Expansion)

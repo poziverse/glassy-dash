@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react'
+import React, { useState, useRef, useMemo, useEffect, Suspense } from 'react'
 import { useNotesCompat } from '../hooks/useNotesCompat'
 import { useAdmin } from '../hooks'
 import { useAuthStore } from '../stores/authStore'
@@ -13,8 +13,7 @@ import { SettingsPanel } from './SettingsPanel'
 import DashboardLayout from './DashboardLayout'
 import { Popover } from './Popover'
 import { ColorDot } from './ColorDot'
-import { PinIcon, ArchiveIcon, CloseIcon, Sparkles } from './Icons'
-import { safeAiMarkdown } from '../utils/safe-markdown'
+import { PinIcon, ArchiveIcon, CloseIcon } from './Icons'
 import { ALL_IMAGES } from '../utils/helpers'
 
 export default function NotesView() {
@@ -55,16 +54,11 @@ export default function NotesView() {
   const backgroundOverlay = useSettingsStore(state => state.backgroundOverlay)
   const cardTransparency = useSettingsStore(state => state.cardTransparency)
   const listView = useSettingsStore(state => state.listView)
-  const localAiEnabled = useSettingsStore(state => state.localAiEnabled)
   const overlayOpacity = useSettingsStore(state => state.overlayOpacity)
 
   const headerMenuOpen = useUIStore(state => state.headerMenuOpen)
   const setHeaderMenuOpen = useUIStore(state => state.setHeaderMenuOpen)
-  const aiResponse = useUIStore(state => state.aiResponse)
-  const setAiResponse = useUIStore(state => state.setAiResponse)
-  const isAiLoading = useUIStore(state => state.isAiLoading)
-  const aiLoadingProgress = useUIStore(state => state.aiLoadingProgress)
-  const onAiSearch = useUIStore(state => state.onAiSearch)
+  const setSettingsPanelOpen = useUIStore(state => state.setSettingsPanelOpen)
 
   // Admin hooks logic moved to AdminView, but we might pass some status here if needed
   // For now, we only need to know if user is admin, which is on currentUser
@@ -73,6 +67,52 @@ export default function NotesView() {
   const [activeSection, setActiveSection] = useState('overview')
   const multiColorBtnRef = useRef(null)
   const [showMultiColorPop, setShowMultiColorPop] = useState(false)
+
+  // Sorting state for archive
+  const [sortBy, setSortBy] = useState('date-desc')
+
+  // Sorted archived notes
+  const sortedArchivedNotes = useMemo(() => {
+    if (tagFilter !== 'ARCHIVED') return []
+
+    return [...archivedNotes].sort((a, b) => {
+      if (sortBy === 'date-desc') {
+        return (b.timestamp || 0) - (a.timestamp || 0)
+      }
+      if (sortBy === 'date-asc') {
+        return (a.timestamp || 0) - (b.timestamp || 0)
+      }
+      if (sortBy === 'title-asc') {
+        return (a.title || '').localeCompare(b.title || '')
+      }
+      if (sortBy === 'title-desc') {
+        return (b.title || '').localeCompare(a.title || '')
+      }
+      if (sortBy === 'tag-asc' || sortBy === 'tag-desc') {
+        const tagA = a.tags && a.tags.length > 0 ? a.tags[0] : ''
+        const tagB = b.tags && b.tags.length > 0 ? b.tags[0] : ''
+
+        // Notes without tags go to the bottom in both cases
+        if (!tagA && tagB) return 1
+        if (tagA && !tagB) return -1
+        if (!tagA && !tagB) return 0
+
+        if (sortBy === 'tag-asc') {
+          return tagA.localeCompare(tagB)
+        } else {
+          return tagB.localeCompare(tagA)
+        }
+      }
+      return 0
+    })
+  }, [archivedNotes, tagFilter, sortBy])
+
+  // Ensure archive view is preserved when component mounts/remounts
+  useEffect(() => {
+    if (tagFilter === 'ARCHIVED' && activeSection !== 'overview') {
+      setActiveSection('overview')
+    }
+  }, [tagFilter, activeSection])
 
   // --- Derived State ---
   const tagLabel =
@@ -116,11 +156,19 @@ export default function NotesView() {
 
   // --- Render ---
   return (
-    <>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-gray-400">Loading notes...</div>
+        </div>
+      }
+    >
       <DashboardLayout
         activeSection={activeSection}
         onNavigate={section => {
-          if (['health', 'alerts', 'admin', 'docs', 'voice', 'trash'].includes(section)) {
+          if (
+            ['health', 'alerts', 'admin', 'docs', 'voice', 'trash', 'settings'].includes(section)
+          ) {
             window.location.hash = `#/${section}`
           } else {
             setActiveSection(section)
@@ -134,6 +182,7 @@ export default function NotesView() {
         isAdmin={currentUser?.is_admin}
         title={dashboardTitle}
         onSignOut={signOut}
+        onOpenSettings={() => setSettingsPanelOpen(true)}
       >
         <div className="pb-20">
           {/* Render content based on activeSection */}
@@ -220,71 +269,50 @@ export default function NotesView() {
                 </div>
               )}
 
-              {/* AI Response Box */}
-              {localAiEnabled && (aiResponse || isAiLoading) && (
-                <div className="px-4 sm:px-6 md:px-8 lg:px-12 mb-6">
-                  <div className="max-w-2xl mx-auto glass-card rounded-xl shadow-lg p-5 border border-accent/30 relative overflow-hidden bg-gradient-to-br from-indigo-50/50 to-purple-50/50 dark:from-indigo-950/30 dark:to-purple-950/30">
-                    {isAiLoading && (
-                      <div
-                        className="absolute top-0 left-0 h-1 bg-accent transition-all duration-300"
-                        style={{ width: aiLoadingProgress ? `${aiLoadingProgress}%` : '5%' }}
-                      />
-                    )}
-                    <div className="flex items-center gap-2 mb-3">
-                      <Sparkles className="text-accent dark:text-indigo-400" />
-                      <h3 className="font-semibold text-accent dark:text-accent">AI Assistant</h3>
-                      {aiResponse && !isAiLoading && (
-                        <button
-                          onClick={() => {
-                            setAiResponse(null)
-                            setSearch('')
-                          }}
-                          className="ml-auto p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10"
-                          title="Clear response"
-                        >
-                          <CloseIcon />
-                        </button>
-                      )}
-                    </div>
-                    <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
-                      {isAiLoading ? (
-                        <p className="animate-pulse text-gray-500 italic flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-accent animate-bounce" />
-                          AI Assistant is thinking...
-                        </p>
-                      ) : (
-                        <div
-                          className="text-gray-800 dark:text-gray-200 note-content"
-                          dangerouslySetInnerHTML={{ __html: safeAiMarkdown(aiResponse || '') }}
-                        />
-                      )}
-                    </div>
+              {/* Composer (Create Note) - Only show if NOT archived */}
+              {tagFilter !== 'ARCHIVED' && (
+                <div className="px-4 sm:px-6 md:px-8 lg:px-12">
+                  <div className="w-full">
+                    <Composer />
                   </div>
                 </div>
               )}
-
-              {/* Composer (Create Note) */}
-              <div className="px-4 sm:px-6 md:px-8 lg:px-12">
-                <div className="max-w-2xl mx-auto">
-                  <Composer />
-                </div>
-              </div>
 
               {/* Notes Lists */}
               <main className="px-4 sm:px-6 md:px-8 lg:px-12 pb-12 mt-8">
                 {/* ARCHIVED VIEW */}
                 {tagFilter === 'ARCHIVED' && (
                   <section>
-                    <h2 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-3 ml-1 max-w-2xl mx-auto">
-                      Archived
-                    </h2>
-                    <div className={listView ? 'max-w-2xl mx-auto space-y-6' : 'masonry-grid'}>
-                      {archivedNotes.length === 0 ? (
+                    <div className="flex items-center justify-between mb-4 w-full">
+                      <h2 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 ml-1">
+                        Archived
+                      </h2>
+
+                      {/* Sorting Controls */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Sort by:</span>
+                        <select
+                          value={sortBy}
+                          onChange={e => setSortBy(e.target.value)}
+                          className="bg-white/50 dark:bg-black/50 border border-gray-200 dark:border-gray-700 rounded-lg text-xs px-2 py-1 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-accent"
+                        >
+                          <option value="date-desc">Newest First</option>
+                          <option value="date-asc">Oldest First</option>
+                          <option value="title-asc">Title (A-Z)</option>
+                          <option value="title-desc">Title (Z-A)</option>
+                          <option value="tag-asc">Tag (A-Z)</option>
+                          <option value="tag-desc">Tag (Z-A)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className={listView ? 'w-full space-y-6' : 'masonry-grid'}>
+                      {sortedArchivedNotes.length === 0 ? (
                         <p className="text-center text-gray-400 mt-8 col-span-full">
                           No archived notes.
                         </p>
                       ) : (
-                        archivedNotes.map(n => (
+                        sortedArchivedNotes.map(n => (
                           <NoteCard
                             key={n.id}
                             n={n}
@@ -309,10 +337,10 @@ export default function NotesView() {
                   <>
                     {pinned.length > 0 && (
                       <section className="mb-10">
-                        <h2 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-3 ml-1 max-w-2xl mx-auto">
+                        <h2 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-3 ml-1 w-full">
                           Pinned
                         </h2>
-                        <div className={listView ? 'max-w-2xl mx-auto space-y-6' : 'masonry-grid'}>
+                        <div className={listView ? 'w-full space-y-6' : 'masonry-grid'}>
                           {pinned.map(n => (
                             <NoteCard
                               key={n.id}
@@ -335,11 +363,11 @@ export default function NotesView() {
                     {(others.length > 0 || pinned.length > 0) && others.length > 0 && (
                       <section>
                         {pinned.length > 0 && (
-                          <h2 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-3 ml-1 max-w-2xl mx-auto">
+                          <h2 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-3 ml-1 w-full">
                             Others
                           </h2>
                         )}
-                        <div className={listView ? 'max-w-2xl mx-auto space-y-6' : 'masonry-grid'}>
+                        <div className={listView ? 'w-full space-y-6' : 'masonry-grid'}>
                           {others.map(n => (
                             <NoteCard
                               key={n.id}
@@ -397,6 +425,6 @@ export default function NotesView() {
           )}
         </div>
       </DashboardLayout>
-    </>
+    </Suspense>
   )
 }

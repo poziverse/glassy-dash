@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
 import Sidebar from './Sidebar'
 import ThemedBackground from './ThemedBackground'
-import { Settings, Shield, LogOut, Search } from 'lucide-react'
+import AiAssistant from './AiAssistant'
+import { useAiStore } from '../stores/aiStore'
+import { Settings, Shield, LogOut, Search, Sparkles } from 'lucide-react'
 
 export default function DashboardLayout({
   children,
@@ -14,14 +16,19 @@ export default function DashboardLayout({
   activeTag,
   isAdmin,
   title,
+  headerActions,
   onSignOut,
+  onOpenSettings,
 }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  // Sidebar: OPEN for all sections except main notes dashboard
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(activeSection === 'overview')
+  // Sidebar: Closed by default for maximum space
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
 
   return (
-    <div className="flex h-screen overflow-hidden bg-transparent text-gray-100 font-sans selection:bg-accent/30">
+    <div
+      className="flex h-screen overflow-hidden bg-transparent text-gray-100 font-sans selection:bg-accent/30"
+      style={{ '--sidebar-width': sidebarCollapsed ? '72px' : '256px' }}
+    >
       <ThemedBackground />
       {/* Sidebar */}
       <Sidebar
@@ -35,6 +42,7 @@ export default function DashboardLayout({
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         onSignOut={onSignOut}
+        onOpenSettings={onOpenSettings}
       />
 
       {/* Main Content Area */}
@@ -55,7 +63,7 @@ export default function DashboardLayout({
               />
               <input
                 type="text"
-                placeholder="Search notes..."
+                placeholder={`Search ${activeSection === 'overview' ? 'notes' : activeSection}...`}
                 className="bg-transparent border-none outline-none text-sm text-gray-200 placeholder-gray-500 w-full"
                 onChange={e => onSearch && onSearch(e.target.value)}
               />
@@ -63,6 +71,17 @@ export default function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-3">
+            {/* AI Assistant Button */}
+            <button
+              onClick={() => useAiStore.getState().toggle()}
+              className="p-2 rounded-xl text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 border border-transparent hover:border-purple-500/20 transition-all group"
+              title="AI Assistant (⌘J)"
+            >
+              <Sparkles size={20} className="group-hover:scale-110 transition-transform" />
+            </button>
+
+            {headerActions && <div className="flex items-center gap-2 mr-2">{headerActions}</div>}
+
             {/* Status Indicator - More subtle */}
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/5 border border-emerald-500/10">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_currentColor] animate-pulse" />
@@ -94,7 +113,7 @@ export default function DashboardLayout({
                       <button
                         onClick={() => {
                           setUserMenuOpen(false)
-                          onNavigate('settings')
+                          onOpenSettings?.()
                         }}
                         className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-white/5 flex items-center gap-2 transition-colors"
                       >
@@ -134,15 +153,18 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Scrollable Content */}
+        {/* Content Area */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 relative scrollbar-thin scrollbar-thumb-white/10">
-          <div className="container mx-auto max-w-7xl">{children}</div>
+          {children}
         </main>
 
         {/* Background decorative elements - Softer */}
         <div className="fixed top-20 right-20 w-96 h-96 bg-[var(--color-accent)]/10 rounded-full blur-[150px] pointer-events-none -z-10" />
-        <div className="fixed bottom-20 left-40 w-80 h-80 bg-violet-600/8 rounded-full blur-[120px] pointer-events-none -z-10" />
+        <div className="fixed bottom-20 left-40 w-80 h-80 bg-[var(--color-accent)]/8 rounded-full blur-[120px] pointer-events-none -z-10" />
       </div>
+
+      {/* AI Assistant Sidebar */}
+      <AiAssistant />
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { useCollaboration } from '../hooks/useCollaboration'
 import { uid, mdForDownload, sanitizeFilename, downloadText } from '../utils/helpers'
 import { api } from '../lib/api'
 import logger from '../utils/logger'
+import { exportNotesToJson, importNotesFromJson, exportSecretKey } from '../utils/fileSystem'
 import {
   useNotes as useNotesQuery,
   useTrash,
@@ -314,7 +315,9 @@ export function NotesProvider({ children }) {
 
       if (!note) return
 
-      const updatedItems = note.items.map(item =>
+      // Ensure items is always an array
+      const items = Array.isArray(note.items) ? note.items : []
+      const updatedItems = items.map(item =>
         item.id === itemId ? { ...item, done: checked } : item
       )
 
@@ -403,6 +406,63 @@ export function NotesProvider({ children }) {
     e.preventDefault()
   }, [])
 
+  // Export/Import functions
+  const exportAllNotes = useCallback(async () => {
+    if (!token) throw new Error('Not authenticated')
+    try {
+      const notesToExport = notes || []
+      await exportNotesToJson(notesToExport, userId || 'user')
+      logger.info('notes_exported', { count: notesToExport.length })
+      return true
+    } catch (error) {
+      logger.error('notes_export_failed', { userId }, error)
+      throw error
+    }
+  }, [notes, token, userId])
+
+  const importNotes = useCallback(async () => {
+    if (!token) throw new Error('Not authenticated')
+    try {
+      const importedData = await importNotesFromJson()
+      if (!importedData) return 0
+
+      const notesArr = Array.isArray(importedData.notes)
+        ? importedData.notes
+        : Array.isArray(importedData)
+          ? importedData
+          : []
+
+      if (!notesArr.length) throw new Error('No notes found in file')
+
+      // Import notes via API
+      await api('/notes/import', { method: 'POST', token, body: { notes: notesArr } })
+      
+      // Refresh notes
+      if (window.queryClient) {
+        window.queryClient.invalidateQueries({ queryKey: ['notes'] })
+      }
+      
+      logger.info('notes_imported', { count: notesArr.length })
+      return notesArr.length
+    } catch (error) {
+      logger.error('notes_import_failed', {}, error)
+      throw error
+    }
+  }, [token])
+
+  const downloadSecretKeyFn = useCallback(async () => {
+    if (!token) throw new Error('Not authenticated')
+    try {
+      const data = await api('/secret-key', { method: 'POST', token })
+      if (!data?.key) throw new Error('Secret key not returned by server')
+      await exportSecretKey(data.key)
+      return true
+    } catch (error) {
+      logger.error('secret_key_download_failed', {}, error)
+      throw error
+    }
+  }, [token])
+
   const value = {
     notes,
     setNotes,
@@ -450,6 +510,9 @@ export function NotesProvider({ children }) {
     permanentDeleteNote,
     togglePin,
     invalidateNotesCache,
+    exportAllNotes,
+    importNotes,
+    downloadSecretKey: downloadSecretKeyFn,
     sseConnected,
     isOnline,
   }

@@ -3,16 +3,24 @@
 
 const path = require('path')
 
-// Load environment variables from .env file
-require('dotenv').config({ path: path.join(__dirname, '.env') })
+// Load environment variables from config
+const { NODE_ENV, PORT, JWT_SECRET, DB_FILE } = require('./config')
 const fs = require('fs')
 const express = require('express')
 
-const NODE_ENV = process.env.NODE_ENV || 'development'
-const PORT = process.env.PORT || process.env.API_PORT || 3001
-const JWT_SECRET = process.env.JWT_SECRET || 'GLASSYDASH-secret-key-2025'
-
 // ---------- Process Error Handling ----------
+
+function logAuth(msg) {
+  try {
+    fs.appendFileSync(
+      path.join(__dirname, 'debug_auth.log'),
+      new Date().toISOString() + ' ' + msg + '\\n'
+    )
+  } catch (e) {
+    console.error('Log failed', e)
+  }
+}
+
 process.on('uncaughtException', err => {
   console.error('❌ CRITICAL: Uncaught Exception:', err.message, err.stack)
 })
@@ -37,8 +45,8 @@ const app = express()
 app.use(cors())
 
 // ---------- Body Parsing ----------
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
+app.use(express.json({ limit: '50mb' }))
+app.use(express.urlencoded({ extended: true, limit: '50mb' }))
 
 // ---------- Monitoring ----------
 try {
@@ -76,6 +84,24 @@ try {
   console.error('Failed to load Icon routes:', err)
 }
 
+// ---------- Bug Reports ----------
+try {
+  const bugReportRoutes = require('./routes/bug_reports')
+  app.use('/api/bug-reports', bugReportRoutes)
+  console.log('✓ Bug report routes mounted at /api/bug-reports')
+} catch (err) {
+  console.error('Failed to load Bug Report routes:', err)
+}
+
+// ---------- AI Assistant ----------
+try {
+  const aiRoutes = require('./routes/ai')
+  app.use('/api/ai', aiRoutes)
+  console.log('✓ AI routes mounted at /api/ai')
+} catch (err) {
+  console.error('Failed to load AI routes:', err)
+}
+
 const apiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -95,8 +121,12 @@ const secretKeyRateLimiter = rateLimit({
 })
 
 // ---------- SQLite ----------
-const dbFile =
-  process.env.DB_FILE || process.env.SQLITE_FILE || path.join(__dirname, '..', 'data', 'notes.db')
+const dbFile = DB_FILE
+console.log('---------------------------------------------------')
+console.log('>> SERVER STARTING')
+console.log('>> DATABASE_PATH env:', process.env.DATABASE_PATH)
+console.log('>> SELECTED DB FILE:', dbFile)
+console.log('---------------------------------------------------')
 
 // Ensure the directory for the DB exists
 try {
@@ -109,11 +139,75 @@ try {
 
 const db = new Database(dbFile)
 
+// ---------- Schema Validation ----------
+async function validateDatabaseSchema() {
+  console.log('🔍 Validating database schema...')
+
+  try {
+    // Validate notes table structure
+    const notesColumns = await db.prepare(`PRAGMA table_info(notes)`).all()
+    const notesColumnNames = new Set(notesColumns.map(c => c.name))
+
+    const requiredNotesColumns = [
+      'id',
+      'user_id',
+      'type',
+      'title',
+      'content',
+      'items_json',
+      'tags_json',
+      'images_json',
+      'color',
+      'pinned',
+      'position',
+      'timestamp',
+      'archived',
+      'updated_at',
+      'last_edited_by',
+      'last_edited_at',
+      'deleted_at',
+    ]
+
+    const missingNotesColumns = requiredNotesColumns.filter(c => !notesColumnNames.has(c))
+    if (missingNotesColumns.length > 0) {
+      throw new Error(`Missing required columns in notes table: ${missingNotesColumns.join(', ')}`)
+    }
+
+    // Validate users table structure
+    const usersColumns = await db.prepare(`PRAGMA table_info(users)`).all()
+    const usersColumnNames = new Set(usersColumns.map(c => c.name))
+
+    const requiredUsersColumns = [
+      'id',
+      'name',
+      'email',
+      'password_hash',
+      'created_at',
+      'is_admin',
+      'secret_key_hash',
+      'secret_key_created_at',
+    ]
+
+    const missingUsersColumns = requiredUsersColumns.filter(c => !usersColumnNames.has(c))
+    if (missingUsersColumns.length > 0) {
+      throw new Error(`Missing required columns in users table: ${missingUsersColumns.join(', ')}`)
+    }
+
+    console.log('✓ Database schema validation passed')
+  } catch (err) {
+    console.error('❌ Database schema validation failed:', err.message)
+    throw err
+  }
+}
+
 // Initialization logic inside an async function or top-level block
 async function initializeDatabase() {
   try {
     await db.exec('PRAGMA journal_mode = WAL')
     await db.exec('PRAGMA foreign_keys = ON')
+
+    // Validate schema before proceeding
+    // await validateDatabaseSchema()
 
     // Fresh tables (safe if already exist)
     await db.exec(`
@@ -159,11 +253,24 @@ CREATE TABLE IF NOT EXISTS note_collaborators (
   UNIQUE(note_id, user_id)
 );
 
+
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS bug_reports (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER,           -- Optional: if user is logged in
+  email TEXT,                -- Optional: if provided or logged in
+  description TEXT NOT NULL,
+  metadata TEXT,             -- JSON string: userAgent, url, etc.
+  status TEXT DEFAULT 'open',-- 'open', 'resolved', 'ignored'
+  created_at TEXT NOT NULL,
+  updated_at TEXT
+);
+
 `)
 
     // Tiny migrations (safe to run repeatedly)
@@ -250,6 +357,8 @@ CREATE TABLE IF NOT EXISTS settings (
       console.log(`Default admin user created: ${adminEmail} / ${adminPass}`)
     }
 
+    await validateDatabaseSchema()
+
     adminSettings = await loadAdminSettings()
     console.log('✓ Database initialization complete.')
   } catch (err) {
@@ -288,37 +397,56 @@ function signToken(user) {
       uid: user.id,
       email: user.email,
       name: user.name,
+      name: user.name,
       is_admin: !!user.is_admin,
+      announcements_opt_out: !!user.announcements_opt_out,
     },
     JWT_SECRET,
     { expiresIn: '7d' }
   )
 }
 
-function auth(req, res, next) {
+async function auth(req, res, next) {
   const h = req.headers.authorization || ''
   const token = h.startsWith('Bearer ') ? h.slice(7) : null
   if (!token) {
-    console.log(`[AUTH] Missing token for ${req.method} ${req.url}`)
+    // console.log(`[AUTH] Missing token for ${req.method} ${req.url}`)
     return res.status(401).json({ error: 'Missing token' })
   }
   try {
     const payload = jwt.verify(token, JWT_SECRET)
+    logAuth(`[AUTH_DEBUG] Verified payload: ${JSON.stringify(payload)}`)
+
+    // Validate user exists in current DB - crucial for DB swaps/restores
+    const user = await db
+      .prepare('SELECT id, is_admin, announcements_opt_out FROM users WHERE id = ?')
+      .get(payload.uid)
+
+    logAuth(
+      `[AUTH_DEBUG] DB Lookup result: ${user ? `Found User ${user.id}` : 'NOT FOUND'} for uid ${payload.uid}`
+    )
+
+    if (!user) {
+      logAuth(`[AUTH_FAIL] Token valid but User ID ${payload.uid} not found in DB. Rejecting.`)
+      return res.status(401).json({ error: 'User no longer exists' })
+    }
+
     req.user = {
-      id: payload.uid,
-      email: payload.email,
-      name: payload.name,
-      is_admin: !!payload.is_admin,
+      id: user.id,
+      email: payload.email, // Trust email from token or fetch if needed
+      name: payload.name, // Trust name from token
+      is_admin: !!user.is_admin, // Always use DB truth for admin status
+      announcements_opt_out: !!user.announcements_opt_out,
     }
     next()
   } catch (err) {
-    console.log(`[AUTH] Invalid token for ${req.method} ${req.url}: ${err.message}`)
+    logAuth(`[AUTH_ERROR] ${req.method} ${req.url}: ${err.message}`)
     return res.status(401).json({ error: 'Invalid token' })
   }
 }
 
 // Auth that also supports token in query string for EventSource
-function authFromQueryOrHeader(req, res, next) {
+async function authFromQueryOrHeader(req, res, next) {
   const h = req.headers.authorization || ''
   const headerToken = h.startsWith('Bearer ') ? h.slice(7) : null
   const queryToken = req.query && typeof req.query.token === 'string' ? req.query.token : null
@@ -326,11 +454,18 @@ function authFromQueryOrHeader(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Missing token' })
   try {
     const payload = jwt.verify(token, JWT_SECRET)
+    const user = await db
+      .prepare('SELECT id, is_admin, announcements_opt_out FROM users WHERE id = ?')
+      .get(payload.uid)
+
+    if (!user) return res.status(401).json({ error: 'User not found' })
+
     req.user = {
-      id: payload.uid,
+      id: user.id,
       email: payload.email,
       name: payload.name,
-      is_admin: !!payload.is_admin,
+      is_admin: !!user.is_admin,
+      announcements_opt_out: !!user.announcements_opt_out,
     }
     next()
   } catch {
@@ -359,20 +494,32 @@ const allNotesQuery = db.prepare(`
   SELECT DISTINCT n.*, 
     (SELECT COUNT(*) FROM note_collaborators nc2 WHERE nc2.note_id = n.id) as collaborator_count
   FROM notes n
-  WHERE (n.user_id = ? OR EXISTS(
-    SELECT 1 FROM note_collaborators nc 
-    WHERE nc.note_id = n.id AND nc.user_id = ?
-  )) AND n.archived = 0 AND n.deleted_at IS NULL
+  LEFT JOIN user_announcement_interactions uai ON n.id = uai.note_id AND uai.user_id = ?
+  JOIN users u ON u.id = ?
+  WHERE (
+    (n.user_id = ? OR EXISTS(
+      SELECT 1 FROM note_collaborators nc 
+      WHERE nc.note_id = n.id AND nc.user_id = ?
+    ))
+    OR
+    (n.is_announcement = 1 AND u.announcements_opt_out = 0 AND uai.note_id IS NULL)
+  ) AND n.archived = 0 AND n.deleted_at IS NULL
   ORDER BY n.pinned DESC, n.position DESC, n.timestamp DESC
 `)
 const allNotesWithPagingQuery = db.prepare(`
-  SELECT DISTINCT n.*,
+  SELECT DISTINCT n.*, 
     (SELECT COUNT(*) FROM note_collaborators nc2 WHERE nc2.note_id = n.id) as collaborator_count
   FROM notes n
-  WHERE (n.user_id = ? OR EXISTS(
-    SELECT 1 FROM note_collaborators nc 
-    WHERE nc.note_id = n.id AND nc.user_id = ?
-  )) AND n.archived = 0 AND n.deleted_at IS NULL
+  LEFT JOIN user_announcement_interactions uai ON n.id = uai.note_id AND uai.user_id = ?
+  JOIN users u ON u.id = ?
+  WHERE (
+    (n.user_id = ? OR EXISTS(
+      SELECT 1 FROM note_collaborators nc 
+      WHERE nc.note_id = n.id AND nc.user_id = ?
+    ))
+    OR
+    (n.is_announcement = 1 AND u.announcements_opt_out = 0 AND uai.note_id IS NULL)
+  ) AND n.archived = 0 AND n.deleted_at IS NULL
   ORDER BY n.pinned DESC, n.position DESC, n.timestamp DESC
   LIMIT ? OFFSET ?
 `)
@@ -383,13 +530,14 @@ const getNoteWithCollaboration = db.prepare(`
   WHERE n.id = ? AND (n.user_id = ? OR nc.user_id IS NOT NULL)
 `)
 const insertNote = db.prepare(`
-  INSERT INTO notes (id,user_id,type,title,content,items_json,tags_json,images_json,color,pinned,position,timestamp,archived)
-  VALUES (@id,@user_id,@type,@title,@content,@items_json,@tags_json,@images_json,@color,@pinned,@position,@timestamp,0)
+  INSERT INTO notes (id,user_id,type,title,content,items_json,tags_json,images_json,color,pinned,position,timestamp,archived,is_announcement)
+  VALUES (@id,@user_id,@type,@title,@content,@items_json,@tags_json,@images_json,@color,@pinned,@position,@timestamp,0,COALESCE(@is_announcement,0))
 `)
 const updateNote = db.prepare(`
   UPDATE notes SET
     type=@type, title=@title, content=@content, items_json=@items_json, tags_json=@tags_json,
-    images_json=@images_json, color=@color, pinned=@pinned, position=@position, timestamp=@timestamp
+    images_json=@images_json, color=@color, pinned=@pinned, position=@position, timestamp=@timestamp,
+    is_announcement=COALESCE(@is_announcement, is_announcement)
   WHERE id=@id AND user_id=@user_id
 `)
 const updateArchivedNote = db.prepare(`
@@ -433,6 +581,7 @@ const patchPosition = db.prepare(`
   UPDATE notes SET position=@position, pinned=@pinned WHERE id=@id AND user_id=@user_id
 `)
 const deleteNote = db.prepare('DELETE FROM notes WHERE id = ? AND user_id = ?')
+const deleteNoteAny = db.prepare('DELETE FROM notes WHERE id = ?')
 const softDeleteNote = db.prepare('UPDATE notes SET deleted_at = ? WHERE id = ? AND user_id = ?')
 const restoreNote = db.prepare('UPDATE notes SET deleted_at = NULL WHERE id = ? AND user_id = ?')
 const listTrash = db.prepare(
@@ -471,6 +620,15 @@ const updateNoteWithEditor = db.prepare(`
     last_edited_by = ?, 
     last_edited_at = ?
   WHERE id = ?
+`)
+
+const dismissAnnouncement = db.prepare(`
+  INSERT INTO user_announcement_interactions (user_id, note_id, dismissed_at)
+  VALUES (?, ?, ?)
+  ON CONFLICT(user_id, note_id) DO UPDATE SET dismissed_at = excluded.dismissed_at
+`)
+const updateUserAnnouncementsOptOut = db.prepare(`
+  UPDATE users SET announcements_opt_out = ? WHERE id = ?
 `)
 
 // ---------- Realtime (SSE) ----------
@@ -600,7 +758,13 @@ app.post('/api/register', authRateLimiter, async (req, res) => {
   const token = signToken(user)
   res.json({
     token,
-    user: { id: user.id, name: user.name, email: user.email, is_admin: !!user.is_admin },
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      is_admin: !!user.is_admin,
+      announcements_opt_out: !!user.announcements_opt_out,
+    },
   })
 })
 
@@ -609,17 +773,25 @@ app.post('/api/login', authRateLimiter, async (req, res) => {
   const user = email ? await getUserByEmail.get(email) : null
   if (!user) return res.status(401).json({ error: 'No account found for that email.' })
   if (!bcrypt.compareSync(password || '', user.password_hash)) {
+    logAuth(`[LOGIN_FAIL] Password mismatch for ${email}`)
     return res.status(401).json({ error: 'Incorrect password.' })
   }
+  logAuth(`[LOGIN_SUCCESS] User ${email} ID=${user.id} logged in.`)
   const token = signToken(user)
   res.json({
     token,
-    user: { id: user.id, name: user.name, email: user.email, is_admin: !!user.is_admin },
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      is_admin: !!user.is_admin,
+      announcements_opt_out: !!user.announcements_opt_out,
+    },
   })
 })
 
 // ---------- Admin ----------
-app.get('/admin/users', auth, async (req, res) => {
+app.get('/api/admin/users', auth, async (req, res) => {
   if (!req.user.is_admin) return res.status(403).json({ error: 'Admin access required' })
 
   try {
@@ -654,7 +826,7 @@ app.get('/admin/users', auth, async (req, res) => {
   }
 })
 
-app.delete('/admin/users/:id', auth, async (req, res) => {
+app.delete('/api/admin/users/:id', auth, async (req, res) => {
   if (!req.user.is_admin) return res.status(403).json({ error: 'Admin access required' })
 
   const targetId = req.params.id
@@ -670,6 +842,15 @@ app.delete('/admin/users/:id', auth, async (req, res) => {
     console.error('Admin user delete failed:', err)
     res.status(500).json({ error: 'Failed to delete user' })
   }
+})
+
+// Audit logs endpoint (Mock implementation for now to prevent 404)
+app.get('/api/admin/audit-logs', auth, async (req, res) => {
+  if (!req.user.is_admin) return res.status(403).json({ error: 'Admin access required' })
+
+  // Future: Implement real audit logging in database
+  // For now, return empty array so frontend doesn't error
+  res.json([])
 })
 
 // ---------- Secret Key (Recovery) ----------
@@ -709,11 +890,39 @@ app.post('/api/login/secret', secretKeyRateLimiter, async (req, res) => {
       const token = signToken(u)
       return res.json({
         token,
-        user: { id: u.id, name: u.name, email: u.email, is_admin: !!u.is_admin },
+        user: {
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          is_admin: !!u.is_admin,
+          announcements_opt_out: !!u.announcements_opt_out,
+        },
       })
     }
   }
   return res.status(401).json({ error: 'Secret key not recognized.' })
+})
+
+// ---------- User Settings ----------
+app.patch('/api/users/me/settings', auth, async (req, res) => {
+  const { announcements_opt_out } = req.body || {}
+
+  if (typeof announcements_opt_out !== 'undefined') {
+    await updateUserAnnouncementsOptOut.run(announcements_opt_out ? 1 : 0, req.user.id)
+  }
+
+  // Fetch updated user to return
+  const user = await getUserById.get(req.user.id)
+  res.json({
+    ok: true,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      is_admin: !!user.is_admin,
+      announcements_opt_out: !!user.announcements_opt_out,
+    },
+  })
 })
 
 // ---------- Notes ----------
@@ -722,10 +931,17 @@ app.get('/api/notes', auth, async (req, res) => {
   const lim = Number(req.query.limit ?? 0)
   const usePaging = Number.isFinite(lim) && lim > 0 && Number.isFinite(off) && off >= 0
 
-  // Get all notes (own + collaborated) in a single query to avoid duplicates
+  // Get all notes (own + collaborated + announcements) in a single query to avoid duplicates
   const rows = usePaging
-    ? await allNotesWithPagingQuery.all(req.user.id, req.user.id, lim, off)
-    : await allNotesQuery.all(req.user.id, req.user.id)
+    ? await allNotesWithPagingQuery.all(
+        req.user.id,
+        req.user.id,
+        req.user.id,
+        req.user.id,
+        lim,
+        off
+      )
+    : await allNotesQuery.all(req.user.id, req.user.id, req.user.id, req.user.id)
 
   res.json(
     rows.map(r => {
@@ -747,6 +963,7 @@ app.get('/api/notes', auth, async (req, res) => {
         lastEditedBy: r.last_edited_by,
         lastEditedAt: r.last_edited_at,
         archived: !!r.archived,
+        is_announcement: !!r.is_announcement,
         collaborators: hasCollaborators ? [] : null, // Empty array to indicate has collaborators, null if none
       }
     })
@@ -754,37 +971,218 @@ app.get('/api/notes', auth, async (req, res) => {
 })
 
 app.post('/api/notes', auth, async (req, res) => {
-  const body = req.body || {}
-  const n = {
-    id: body.id || uid(),
-    user_id: req.user.id,
-    type: ['text', 'checklist', 'draw', 'youtube', 'music'].includes(body.type)
-      ? body.type
-      : 'text',
-    title: String(body.title || ''),
-    content: body.type === 'checklist' ? '' : String(body.content || ''),
-    items_json: JSON.stringify(Array.isArray(body.items) ? body.items : []),
-    tags_json: JSON.stringify(Array.isArray(body.tags) ? body.tags : []),
-    images_json: JSON.stringify(Array.isArray(body.images) ? body.images : []),
-    color: body.color && typeof body.color === 'string' ? body.color : 'default',
-    pinned: body.pinned ? 1 : 0,
-    position: typeof body.position === 'number' ? body.position : Date.now(),
-    timestamp: body.timestamp || nowISO(),
+  const requestId = req.headers['x-request-id'] || 'unknown'
+
+  try {
+    // Validate request data
+    const body = req.body || {}
+    const validationErrors = []
+
+    // Validate note type
+    const validTypes = ['text', 'checklist', 'draw', 'youtube', 'music']
+    if (!body.type || typeof body.type !== 'string') {
+      validationErrors.push('Note type is required and must be a string')
+    } else if (!validTypes.includes(body.type)) {
+      validationErrors.push(
+        `Invalid note type: ${body.type}. Must be one of: ${validTypes.join(', ')}`
+      )
+    }
+
+    // Validate title length
+    if (body.title && typeof body.title === 'string' && body.title.length > 1000) {
+      validationErrors.push('Title is too long (max 1000 characters)')
+    }
+
+    // Validate content length
+    if (body.content && typeof body.content === 'string' && body.content.length > 100000) {
+      validationErrors.push('Content is too long (max 100,000 characters)')
+    }
+
+    // Validate images array
+    if (body.images && !Array.isArray(body.images)) {
+      validationErrors.push('Images must be an array')
+    } else if (Array.isArray(body.images) && body.images.length > 50) {
+      validationErrors.push('Too many images (max 50)')
+    }
+
+    // Validate total image size
+    if (Array.isArray(body.images)) {
+      const totalSize = body.images.reduce((sum, img) => {
+        const srcSize = img.src ? img.src.length : 0
+        return sum + srcSize
+      }, 0)
+      const maxImageSize = 50 * 1024 * 1024 // 50MB
+      if (totalSize > maxImageSize) {
+        validationErrors.push(
+          `Total image size exceeds limit: ${(totalSize / 1024 / 1024).toFixed(1)}MB (max 50MB)`
+        )
+      }
+    }
+
+    // Validate items array
+    if (body.items && !Array.isArray(body.items)) {
+      validationErrors.push('Items must be an array')
+    } else if (Array.isArray(body.items) && body.items.length > 500) {
+      validationErrors.push('Too many items (max 500)')
+    }
+
+    // Validate tags array
+    if (body.tags && !Array.isArray(body.tags)) {
+      validationErrors.push('Tags must be an array')
+    } else if (Array.isArray(body.tags) && body.tags.length > 50) {
+      validationErrors.push('Too many tags (max 50)')
+    }
+
+    // Validate color
+    if (body.color && typeof body.color !== 'string') {
+      validationErrors.push('Color must be a string')
+    }
+
+    // Return validation errors if any
+    if (validationErrors.length > 0) {
+      console.log(`[POST /notes] Validation failed for request ${requestId}:`, validationErrors)
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: validationErrors,
+        requestId,
+      })
+    }
+
+    console.log('[POST /notes] Request body:', {
+      hasImages: !!body.images,
+      imagesCount: Array.isArray(body.images) ? body.images.length : 0,
+      type: body.type,
+      title: body.title?.substring(0, 50),
+    })
+
+    // Validate and serialize images with better error handling
+    let images_json = '[]'
+    if (Array.isArray(body.images) && body.images.length > 0) {
+      try {
+        // Validate each image object structure
+        const validatedImages = body.images.map((img, idx) => ({
+          id: img?.id || `img-${idx}`,
+          src: img?.src || '',
+          name: img?.name || `image-${idx}`,
+        }))
+
+        // Calculate total size for logging
+        const totalSize = validatedImages.reduce((sum, img) => {
+          return sum + (img.src ? img.src.length : 0)
+        }, 0)
+        console.log(
+          `[POST /notes] Total images data size: ${(totalSize / 1024 / 1024).toFixed(2)}MB`
+        )
+
+        images_json = JSON.stringify(validatedImages)
+      } catch (e) {
+        console.error('[POST /notes] Failed to serialize images:', e)
+        return res.status(400).json({
+          error: 'Failed to process images',
+          details: e.message,
+          requestId,
+        })
+      }
+    }
+
+    const n = {
+      id: body.id || uid(),
+      user_id: req.user.id,
+      type: ['text', 'checklist', 'draw', 'youtube', 'music'].includes(body.type)
+        ? body.type
+        : 'text',
+      title: String(body.title || ''),
+      content: body.type === 'checklist' ? '' : String(body.content || ''),
+      items_json: JSON.stringify(Array.isArray(body.items) ? body.items : []),
+      tags_json: JSON.stringify(Array.isArray(body.tags) ? body.tags : []),
+      images_json: images_json,
+      color: body.color && typeof body.color === 'string' ? body.color : 'default',
+      pinned: body.pinned ? 1 : 0,
+      position: typeof body.position === 'number' ? body.position : Date.now(),
+      timestamp: body.timestamp || nowISO(),
+      is_announcement: body.is_announcement ? 1 : 0,
+    }
+
+    console.log(
+      '[POST /notes] Inserting note with images count:',
+      Array.isArray(body.images) ? body.images.length : 0,
+      'images_json length:',
+      images_json.length
+    )
+
+    try {
+      await insertNote.run(n)
+      console.log('[POST /notes] Successfully inserted note:', n.id)
+    } catch (insertError) {
+      console.error('[POST /notes] Database insertion error:', {
+        error: insertError.message,
+        code: insertError.code,
+        noteId: n.id,
+        userId: req.user.id,
+        images_json_length: n.images_json.length,
+      })
+      throw insertError
+    }
+
+    res.status(201).json({
+      id: n.id,
+      type: n.type,
+      title: n.title,
+      content: n.content,
+      items: JSON.parse(n.items_json),
+      tags: JSON.parse(n.tags_json),
+      images: JSON.parse(n.images_json),
+      color: n.color,
+      pinned: !!n.pinned,
+      position: n.position,
+      timestamp: n.timestamp,
+      is_announcement: !!n.is_announcement,
+    })
+  } catch (error) {
+    // Enhanced error logging with full context
+    console.error(`❌ [POST /notes] Error creating note [requestId: ${requestId}]:`, {
+      timestamp: new Date().toISOString(),
+      userId: req.user?.id || 'unknown',
+      error: {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+      },
+      request: {
+        bodyKeys: Object.keys(req.body || {}),
+        hasImages: !!(req.body && req.body.images),
+        imagesCount: Array.isArray(req.body?.images) ? req.body.images.length : 0,
+        imagesType: req.body && req.body.images ? typeof req.body.images : 'undefined',
+        titleLength: req.body?.title?.length || 0,
+        contentLength: req.body?.content?.length || 0,
+      },
+      stack: error.stack,
+    })
+
+    // Map database errors to user-friendly messages
+    let userMessage = 'Failed to create note'
+    if (error.code === 'SQLITE_CONSTRAINT') {
+      if (error.message.includes('UNIQUE')) {
+        userMessage = 'A note with this ID already exists'
+      } else if (error.message.includes('FOREIGN KEY')) {
+        userMessage = 'Invalid user reference'
+      } else {
+        userMessage = 'Database constraint violation'
+      }
+    } else if (error.code === 'SQLITE_TOOBIG') {
+      userMessage = 'Note data is too large. Try reducing content or images.'
+    } else if (error.message && error.message.includes('database is locked')) {
+      userMessage = 'Database is busy. Please try again.'
+    } else if (error.message && error.message.includes('no such table')) {
+      userMessage = 'Database schema error. Please contact support.'
+    }
+
+    res.status(500).json({
+      error: userMessage,
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      requestId,
+    })
   }
-  await insertNote.run(n)
-  res.status(201).json({
-    id: n.id,
-    type: n.type,
-    title: n.title,
-    content: n.content,
-    items: JSON.parse(n.items_json),
-    tags: JSON.parse(n.tags_json),
-    images: JSON.parse(n.images_json),
-    color: n.color,
-    pinned: !!n.pinned,
-    position: n.position,
-    timestamp: n.timestamp,
-  })
 })
 
 app.put('/api/notes/:id', auth, async (req, res) => {
@@ -793,15 +1191,34 @@ app.put('/api/notes/:id', auth, async (req, res) => {
   if (!existing) return res.status(404).json({ error: 'Note not found' })
 
   const b = req.body || {}
+
+  // Validate images array and size
+  if (b.images && !Array.isArray(b.images)) {
+    return res.status(400).json({ error: 'Images must be an array' })
+  }
+  if (Array.isArray(b.images) && b.images.length > 50) {
+    return res.status(400).json({ error: 'Too many images (max 50)' })
+  }
+  if (Array.isArray(b.images)) {
+    const totalSize = b.images.reduce((sum, img) => sum + (img.src ? img.src.length : 0), 0)
+    const maxImageSize = 50 * 1024 * 1024 // 50MB
+    if (totalSize > maxImageSize) {
+      return res.status(400).json({
+        error: 'Total image size exceeds limit',
+        details: `Total: ${(totalSize / 1024 / 1024).toFixed(1)}MB (max 50MB)`,
+      })
+    }
+  }
+
   const updated = {
     id,
     user_id: req.user.id,
-    type: b.type === 'checklist' ? 'checklist' : b.type === 'draw' ? 'draw' : 'text',
+    type: ['checklist', 'draw', 'youtube', 'music'].includes(b.type) ? b.type : 'text',
     title: String(b.title || ''),
     content: b.type === 'checklist' ? '' : String(b.content || ''),
     items_json: JSON.stringify(Array.isArray(b.items) ? b.items : []),
     tags_json: JSON.stringify(Array.isArray(b.tags) ? b.tags : []),
-    images_json: JSON.stringify(Array.isArray(b.images) ? b.images : []),
+    images_json: Array.isArray(b.images) ? JSON.stringify(b.images) : '[]',
     color: b.color && typeof b.color === 'string' ? b.color : 'default',
     pinned: b.pinned ? 1 : 0,
     position: typeof b.position === 'number' ? b.position : existing.position,
@@ -851,11 +1268,29 @@ app.patch('/api/notes/:id', auth, async (req, res) => {
 })
 
 app.delete('/api/notes/:id', auth, async (req, res) => {
-  // Soft delete - move to trash instead of permanent deletion
-  const deletedAt = Math.floor(Date.now() / 1000) // Unix timestamp in seconds
-  await softDeleteNote.run(deletedAt, req.params.id, req.user.id)
-  await broadcastNoteUpdated(req.params.id)
-  res.json({ ok: true })
+  const noteId = req.params.id
+
+  // Check if it's an announcement
+  const note = await getNoteById.get(noteId) // Using getNoteById to check global properties even if not owned
+
+  if (note && note.is_announcement) {
+    if (req.user.is_admin) {
+      // Admins permanently delete announcements
+      await deleteNoteAny.run(noteId)
+      await broadcastNoteUpdated(noteId)
+      res.json({ ok: true, deleted: true })
+    } else {
+      // Regular users just dismiss the announcement
+      await dismissAnnouncement.run(req.user.id, noteId, nowISO())
+      res.json({ ok: true, dismissed: true })
+    }
+  } else {
+    // Normal soft delete - move to trash
+    const deletedAt = Math.floor(Date.now() / 1000) // Unix timestamp in seconds
+    await softDeleteNote.run(deletedAt, noteId, req.user.id)
+    await broadcastNoteUpdated(noteId)
+    res.json({ ok: true })
+  }
 })
 
 // Trash endpoints
@@ -1424,90 +1859,60 @@ app.patch('/api/admin/users/:id', auth, adminOnly, async (req, res) => {
   })
 })
 
-// ---------- AI Assistant (Server side) ----------
+// ---------- AI Assistant (Server side, Gemini-only) ----------
 // Check AI status
 app.get('/api/ai/status', auth, (req, res) => {
+  const geminiAvailable = geminiAI && geminiAI.isGeminiAvailable()
   res.json({
-    initialized: !!aiGenerator,
-    modelSize: '~700MB',
-    modelName: 'Llama-3.2-1B-Instruct-ONNX',
+    available: geminiAvailable,
+    provider: geminiAvailable ? 'gemini' : 'heuristic',
   })
 })
 
-// Initialize AI (on-demand)
-app.post('/api/ai/initialize', auth, async (req, res) => {
-  try {
-    if (aiGenerator) {
-      return res.json({ ok: true, message: 'AI already initialized' })
-    }
-
-    await initServerAI()
-
-    if (!aiGenerator) {
-      return res.status(500).json({ error: 'Failed to initialize AI model' })
-    }
-
-    res.json({ ok: true, message: 'AI initialized successfully' })
-  } catch (err) {
-    console.error('AI initialization error:', err)
-    res.status(500).json({ error: 'Failed to initialize AI model' })
-  }
-})
+// ---------- Load Gemini helper ----------
+let geminiAI = null
+try {
+  geminiAI = require('./gemini')
+  console.log('[AI] ✓ Gemini module loaded')
+} catch (err) {
+  console.warn('[AI] Gemini module not available:', err.message)
+}
 
 app.post('/api/ai/ask', auth, async (req, res) => {
   const { question, notes } = req.body || {}
   if (!question) return res.status(400).json({ error: 'Missing question' })
 
   try {
-    if (!aiGenerator) {
-      // Try to init if not ready
-      await initServerAI()
-      if (!aiGenerator) {
-        return res
-          .status(503)
-          .json({ error: 'AI Assistant is still initializing or failed to load.' })
+    // Filter relevant notes based on question keywords
+    const relevantNotes = (notes || [])
+      .filter(n => {
+        const q = question.toLowerCase().replace(/[^\w\s]/g, ' ')
+        const words = q.split(/\s+/).filter(w => w.length >= 2)
+        const t = (n.title || '').toLowerCase()
+        const c = (n.content || '').toLowerCase()
+        return words.some(word => t.includes(word) || c.includes(word))
+      })
+      .slice(0, 5)
+
+    const notesToUse = relevantNotes.length > 0 ? relevantNotes : (notes || []).slice(0, 4)
+
+    // Use Gemini for AI responses
+    if (geminiAI && geminiAI.isGeminiAvailable()) {
+      try {
+        const answer = await geminiAI.answerQuestion(question, notesToUse)
+        return res.json({ answer, provider: 'gemini' })
+      } catch (geminiErr) {
+        console.error('[AI] Gemini failed:', geminiErr.message)
+        return res.status(503).json({
+          error: 'AI service temporarily unavailable. Please try again.',
+        })
       }
     }
 
-    // Limit context strictly - better search logic
-    const relevantNotes = (notes || [])
-      .filter(n => {
-        const q = question.toLowerCase().replace(/[^\w\s]/g, ' ') // Strip punctuation for searching
-        const words = q.split(/\s+/).filter(w => w.length >= 2) // At least 2 chars
-        const t = (n.title || '').toLowerCase()
-        const c = (n.content || '').toLowerCase()
-
-        return words.some(
-          word => t.includes(word) || c.includes(word) || (word.includes(t) && t.length > 2)
-        )
-      })
-      .slice(0, 5) // Take up to 5 relevant notes
-
-    const notesToUse = relevantNotes.length > 0 ? relevantNotes : (notes || []).slice(0, 4)
-    const context = notesToUse
-      .map(n => `TITLE: ${n.title}\nCONTENT: ${n.content.substring(0, 1500)}`)
-      .join('\n\n---\n\n')
-
-    const prompt = `<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-You are a private assistant for the Glass Keep notes app.
-Use ONLY the provided Note Context to answer the user. 
-If the answer is not in the notes, say "I couldn't find any information about that in your notes."
-Be direct, helpful, and concise.
-
-Note Context:
-${context}<|eot_id|><|start_header_id|>user<|end_header_id|>
-${question}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-`
-
-    const output = await aiGenerator(prompt, {
-      max_new_tokens: 300,
-      temperature: 0.1,
-      repetition_penalty: 1.1,
-      do_sample: false,
-      return_full_text: false,
+    // No AI available - Gemini not configured
+    return res.status(503).json({
+      error: 'AI not available. Please configure GEMINI_API_KEY in your environment.',
     })
-
-    res.json({ answer: output[0].generated_text.trim() })
   } catch (err) {
     console.error('Server AI Error:', err)
     res.status(500).json({ error: 'AI processing failed on server.' })

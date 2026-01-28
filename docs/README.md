@@ -1,7 +1,7 @@
 # GLASSYDASH Documentation
 
-**Last Updated:** January 25, 2026  
-**Version:** 1.0
+**Last Updated:** January 28, 2026  
+**Version:** 1.2
 
 ---
 
@@ -35,6 +35,7 @@ docs/
 │   ├── SearchBar.md
 │   ├── SettingsPanel.md
 │   ├── Sidebar.md
+│   ├── AiAssistant.md (New)
 │   ├── DocsView.md
 │   └── VoiceView.md
 ├── contexts/                          # Context documentation (6 files)
@@ -57,6 +58,7 @@ docs/
 ├── DATABASE_SCHEMA.md               # Database schema reference
 ├── DEVELOPMENT.md                   # Development guide
 ├── DEVELOPMENT_CONTEXT.md            # Development context and setup
+├── ERROR_HANDLING.md               # Error handling architecture and recovery
 ├── GETTING_STARTED.md               # Quick start guide
 ├── LOGGING_IMPLEMENTATION.md         # Logging system documentation
 ├── MCP_TOOLS_SETUP.md               # MCP tools setup guide
@@ -114,6 +116,7 @@ Operational and maintenance guides:
 
 - **ADMIN_GUIDE.md** - Administration and maintenance
 - **SECURITY.md** - Security best practices
+- **ERROR_HANDLING.md** - Error handling architecture and recovery (NEW 2026-01-27)
 - **LOGGING_IMPLEMENTATION.md** - Logging system
 - **THEMING.md** - Theming and customization
 - **MCP_TOOLS_SETUP.md** - MCP tools configuration
@@ -140,8 +143,9 @@ Operational and maintenance guides:
 
 1. Use **ADMIN_GUIDE.md** for daily operations
 2. Refer to **SECURITY.md** for security practices
-3. Check **LOGGING_IMPLEMENTATION.md** for monitoring
-4. Use **TROUBLESHOOTING.md** for common issues
+3. Check **ERROR_HANDLING.md** for error recovery and debugging
+4. Check **LOGGING_IMPLEMENTATION.md** for monitoring
+5. Use **TROUBLESHOOTING.md** for common issues
 
 ---
 
@@ -173,12 +177,12 @@ When adding or updating documentation:
 
 ## Total Documentation Count
 
-- **System docs**: 13 files
+- **System docs**: 14 files
 - **Component docs**: 17 files
 - **Context docs**: 6 files
-- **Total**: 36 comprehensive documentation files
+- **Total**: 37 comprehensive documentation files
 
 ---
 
-**Last Updated:** January 23, 2026  
-**Documentation Version:** 1.0
+**Last Updated:** January 28, 2026  
+**Documentation Version:** 1.2

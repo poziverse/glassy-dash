@@ -1,4 +1,5 @@
 # SettingsPanel Component
+
 **Last Updated:** January 21, 2026  
 **Version:** 1.0  
 **Status:** ✅ Production Ready
@@ -14,6 +15,7 @@
 ## Purpose
 
 Provide comprehensive settings management with:
+
 - Data export/import (JSON, Google Keep, Markdown)
 - Theme presets and customization
 - Background image selection
@@ -29,6 +31,7 @@ Provide comprehensive settings management with:
 ## Key Responsibilities
 
 ### 1. Data Management
+
 - Export all notes as JSON
 - Import notes from JSON
 - Import Google Keep notes
@@ -36,6 +39,7 @@ Provide comprehensive settings management with:
 - Download encryption key
 
 ### 2. Appearance Customization
+
 - Theme presets (predefined combinations)
 - Accent color selection
 - Card transparency levels
@@ -44,12 +48,13 @@ Provide comprehensive settings management with:
 - Dark mode toggle
 
 ### 3. UI Preferences
+
 - Dark mode toggle
-- Local AI assistant enable/disable
 - List view toggle
 - Sidebar visibility preferences
 
 ### 4. User Experience
+
 - Inline or panel modes
 - Smooth animations
 - Confirmation dialogs
@@ -87,7 +92,6 @@ SettingsPanel
 │   │       └── Wallpapers
 │   └── UI Preferences
 │       ├── Dark Mode Toggle
-│       ├── Local AI Assistant Toggle
 │       ├── List View Toggle
 │       └── Sidebar Visibility Toggle
 └── Hidden File Inputs
@@ -109,18 +113,21 @@ SettingsPanel
 ```
 
 ### inline
+
 - **Type:** `boolean`
 - **Default:** `false`
 - **Purpose:** Enable inline mode
 - **Usage:** Embed in page instead of slide-out panel
 
 ### open
+
 - **Type:** `boolean`
 - **Default:** `undefined` (uses context value)
 - **Purpose:** Control panel open state
 - **Usage:** Override context state when provided
 
 ### onClose
+
 - **Type:** `() => void`
 - **Default:** Context handler
 - **Purpose:** Handle panel close
@@ -131,47 +138,48 @@ SettingsPanel
 ## Context Dependencies
 
 ### useSettings
+
 ```javascript
 const {
-  dark,                           // Dark mode state
-  toggleDark,                    // Toggle dark mode
-  backgroundImage,               // Current background ID
-  setBackgroundImage,            // Set background ID
-  backgroundOverlay,             // Background overlay enabled
-  setBackgroundOverlay,          // Toggle background overlay
-  accentColor,                   // Current accent color ID
-  setAccentColor,                // Set accent color
-  cardTransparency,              // Current transparency ID
-  setCardTransparency,           // Set transparency
-  alwaysShowSidebarOnWide,       // Sidebar visibility preference
-  setAlwaysShowSidebarOnWide,     // Toggle sidebar visibility
-  localAiEnabled,                // AI assistant enabled
-  setLocalAiEnabled,             // Toggle AI assistant
-  listView,                      // List view enabled
-  toggleListView,                // Toggle list view
-  overlayOpacity,                // Overlay opacity (0.3-1.0)
-  setOverlayOpacity,             // Set overlay opacity
+  dark, // Dark mode state
+  toggleDark, // Toggle dark mode
+  backgroundImage, // Current background ID
+  setBackgroundImage, // Set background ID
+  backgroundOverlay, // Background overlay enabled
+  setBackgroundOverlay, // Toggle background overlay
+  accentColor, // Current accent color ID
+  setAccentColor, // Set accent color
+  cardTransparency, // Current transparency ID
+  setCardTransparency, // Set transparency
+  alwaysShowSidebarOnWide, // Sidebar visibility preference
+  setAlwaysShowSidebarOnWide, // Toggle sidebar visibility
+  listView, // List view enabled
+  toggleListView, // Toggle list view
+  overlayOpacity, // Overlay opacity (0.3-1.0)
+  setOverlayOpacity, // Set overlay opacity
 } = useSettings()
 ```
 
 ### useUI
+
 ```javascript
 const {
-  settingsPanelOpen,             // Panel open state
-  setSettingsPanelOpen,          // Set panel open state
-  showToast,                     // Show toast notification
-  showGenericConfirm,            // Show confirmation dialog
+  settingsPanelOpen, // Panel open state
+  setSettingsPanelOpen, // Set panel open state
+  showToast, // Show toast notification
+  showGenericConfirm, // Show confirmation dialog
 } = useUI()
 ```
 
 ### useNotes
+
 ```javascript
 const {
-  exportAllNotes,                // Export all notes to JSON
-  importNotes,                   // Import notes from JSON
-  importGoogleKeep,             // Import Google Keep notes
-  importMarkdown,                // Import Markdown files
-  downloadSecretKey,             // Download encryption key
+  exportAllNotes, // Export all notes to JSON
+  importNotes, // Import notes from JSON
+  importGoogleKeep, // Import Google Keep notes
+  importMarkdown, // Import Markdown files
+  downloadSecretKey, // Download encryption key
 } = useNotes()
 ```
 
@@ -184,12 +192,15 @@ const {
 #### Panel Mode (Default)
 
 ```javascript
-<div className={`fixed top-0 right-0 z-50 h-full w-full sm:w-96 shadow-2xl transition-transform duration-200 ${open ? 'translate-x-0' : 'translate-x-full'}`}>
+<div
+  className={`fixed top-0 right-0 z-50 h-full w-full sm:w-96 shadow-2xl transition-transform duration-200 ${open ? 'translate-x-0' : 'translate-x-full'}`}
+>
   {/* Content */}
 </div>
 ```
 
 **Features:**
+
 - Fixed positioning (top, right)
 - Slide-in animation
 - Backdrop overlay
@@ -200,12 +211,11 @@ const {
 #### Inline Mode
 
 ```javascript
-<div className="w-full h-full">
-  {/* Content */}
-</div>
+<div className="w-full h-full">{/* Content */}</div>
 ```
 
 **Features:**
+
 - Full width/height of container
 - No overlay
 - No close button
@@ -219,21 +229,24 @@ const {
 #### Export ALL Notes
 
 ```javascript
-<button onClick={async () => {
-  onClose()
-  try {
-    await exportAllNotes()
-    if (showToast) showToast('Notes exported successfully', 'success')
-  } catch (e) {
-    if (showToast) showToast(e.message || 'Export failed', 'error')
-  }
-}}>
+<button
+  onClick={async () => {
+    onClose()
+    try {
+      await exportAllNotes()
+      if (showToast) showToast('Notes exported successfully', 'success')
+    } catch (e) {
+      if (showToast) showToast(e.message || 'Export failed', 'error')
+    }
+  }}
+>
   <div className="font-medium">Export ALL notes (.json)</div>
   <div className="text-sm text-gray-500">Download all notes as JSON file</div>
 </button>
 ```
 
 **Behavior:**
+
 - Exports all notes to JSON file
 - Shows success/error toast
 - Closes panel on click
@@ -269,6 +282,7 @@ const {
 ```
 
 **Behavior:**
+
 - Opens file picker (JSON only)
 - Imports notes from selected file
 - Shows count of imported notes
@@ -281,24 +295,28 @@ const {
 #### Theme Presets
 
 ```javascript
-{THEME_PRESETS.map(preset => (
-  <button onClick={() => {
-    setBackgroundImage(preset.backgroundId)
-    setAccentColor(preset.accentId)
-    setBackgroundOverlay(preset.overlay)
-    if (preset.transparencyId) setCardTransparency(preset.transparencyId)
-    if (typeof preset.darkMode === 'boolean') {
-      if (preset.darkMode !== dark) toggleDark()
-    }
-    if (typeof preset.overlayOpacity === 'number')
-      setOverlayOpacity(preset.overlayOpacity)
-  }}>
-    {/* Preview thumbnail */}
-  </button>
-))}
+{
+  THEME_PRESETS.map(preset => (
+    <button
+      onClick={() => {
+        setBackgroundImage(preset.backgroundId)
+        setAccentColor(preset.accentId)
+        setBackgroundOverlay(preset.overlay)
+        if (preset.transparencyId) setCardTransparency(preset.transparencyId)
+        if (typeof preset.darkMode === 'boolean') {
+          if (preset.darkMode !== dark) toggleDark()
+        }
+        if (typeof preset.overlayOpacity === 'number') setOverlayOpacity(preset.overlayOpacity)
+      }}
+    >
+      {/* Preview thumbnail */}
+    </button>
+  ))
+}
 ```
 
 **Features:**
+
 - Applies complete theme (background, accent, overlay, transparency, dark mode)
 - Visual preview with background image
 - Accent color indicator
@@ -310,21 +328,24 @@ const {
 #### Accent Color Picker
 
 ```javascript
-{ACCENT_COLORS.map(color => {
-  const isSelected = accentColor === color.id
-  return (
-    <button
-      onClick={() => setAccentColor(color.id)}
-      style={{ backgroundColor: color.hex }}
-      title={color.name}
-    >
-      {isSelected && <CheckIcon />}
-    </button>
-  )
-})}
+{
+  ACCENT_COLORS.map(color => {
+    const isSelected = accentColor === color.id
+    return (
+      <button
+        onClick={() => setAccentColor(color.id)}
+        style={{ backgroundColor: color.hex }}
+        title={color.name}
+      >
+        {isSelected && <CheckIcon />}
+      </button>
+    )
+  })
+}
 ```
 
 **Features:**
+
 - Circular color buttons
 - Selected state with checkmark
 - Ring border on selected
@@ -336,17 +357,20 @@ const {
 #### Card Transparency Picker
 
 ```javascript
-{TRANSPARENCY_PRESETS.map(preset => (
-  <button
-    onClick={() => setCardTransparency(preset.id)}
-    title={`${Math.round(preset.opacity * 100)}% opacity`}
-  >
-    {preset.name}
-  </button>
-))}
+{
+  TRANSPARENCY_PRESETS.map(preset => (
+    <button
+      onClick={() => setCardTransparency(preset.id)}
+      title={`${Math.round(preset.opacity * 100)}% opacity`}
+    >
+      {preset.name}
+    </button>
+  ))
+}
 ```
 
 **Presets:**
+
 - Opaque (100%)
 - Low Transparency (85%)
 - Medium Transparency (70%)
@@ -354,6 +378,7 @@ const {
 - Glassy (40%)
 
 **Features:**
+
 - Text labels with descriptions
 - Selected state highlighting
 - Hover effects
@@ -364,29 +389,38 @@ const {
 #### Background Selection
 
 ```javascript
-{/* Default Option */}
-<button onClick={() => setBackgroundImage(null)}>
+{
+  /* Default Option */
+}
+;<button onClick={() => setBackgroundImage(null)}>
   <div className="w-full h-full bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]">
     Default
   </div>
 </button>
 
-{/* Golden Gradient */}
-<button onClick={() => setBackgroundImage('golden_gradient')}>
+{
+  /* Golden Gradient */
+}
+;<button onClick={() => setBackgroundImage('golden_gradient')}>
   <div className="w-full h-full bg-gradient-to-br from-amber-100 via-yellow-200 to-amber-300">
     Golden
   </div>
 </button>
 
-{/* Wallpapers */}
-{BACKGROUNDS.map(bg => (
-  <button onClick={() => setBackgroundImage(bg.id)}>
-    <img src={bg.paths.thumb} alt={bg.name} />
-  </button>
-))}
+{
+  /* Wallpapers */
+}
+{
+  BACKGROUNDS.map(bg => (
+    <button onClick={() => setBackgroundImage(bg.id)}>
+      <img src={bg.paths.thumb} alt={bg.name} />
+    </button>
+  ))
+}
 ```
 
 **Features:**
+
 - Default gradient background
 - Golden gradient option
 - Wallpaper thumbnails
@@ -403,11 +437,14 @@ const {
 
 ```javascript
 <button onClick={toggleDark}>
-  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${dark ? 'translate-x-6' : 'translate-x-1'}`} />
+  <span
+    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${dark ? 'translate-x-6' : 'translate-x-1'}`}
+  />
 </button>
 ```
 
 **Features:**
+
 - Toggle switch design
 - Animated thumb
 - Accent color when active
@@ -415,50 +452,18 @@ const {
 
 ---
 
-#### Local AI Assistant Toggle
-
-```javascript
-<button onClick={() => {
-  if (!localAiEnabled) {
-    showGenericConfirm({
-      title: 'Enable AI Assistant?',
-      message: 'This will download a ~700MB AI model (Llama-3.2-1B) to server and may use significant CPU resources. The download will happen in background. Continue?',
-      confirmText: 'Enable AI',
-      cancelText: 'Cancel',
-      danger: false,
-      onConfirm: async () => {
-        setLocalAiEnabled(true)
-        showToast('AI Assistant enabled. Model will download on first use.', 'success')
-      },
-    })
-  } else {
-    setLocalAiEnabled(false)
-    showToast('AI Assistant disabled', 'info')
-  }
-}}>
-  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${localAiEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-</button>
-```
-
-**Features:**
-- Confirmation dialog when enabling
-- Warns about model size (~700MB)
-- CPU usage warning
-- Background download
-- No confirmation when disabling
-- Toast notifications
-
----
-
 #### List View Toggle
 
 ```javascript
 <button onClick={toggleListView}>
-  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${listView ? 'translate-x-6' : 'translate-x-1'}`} />
+  <span
+    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${listView ? 'translate-x-6' : 'translate-x-1'}`}
+  />
 </button>
 ```
 
 **Features:**
+
 - Switch between grid and list view
 - Instant toggle
 - No confirmation needed
@@ -469,11 +474,14 @@ const {
 
 ```javascript
 <button onClick={() => setAlwaysShowSidebarOnWide(!alwaysShowSidebarOnWide)}>
-  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${alwaysShowSidebarOnWide ? 'translate-x-6' : 'translate-x-1'}`} />
+  <span
+    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${alwaysShowSidebarOnWide ? 'translate-x-6' : 'translate-x-1'}`}
+  />
 </button>
 ```
 
 **Features:**
+
 - Keep sidebar visible on wide screens (>700px)
 - Instant toggle
 - No confirmation needed
@@ -493,6 +501,7 @@ style={{
 ```
 
 **Classes:**
+
 - `fixed` - Fixed positioning
 - `top-0 right-0` - Top-right corner
 - `z-50` - High z-index
@@ -506,10 +515,11 @@ style={{
 ### Inline Mode
 
 ```javascript
-className="w-full h-full"
+className = 'w-full h-full'
 ```
 
 **Classes:**
+
 - `w-full` - Full width
 - `h-full` - Full height
 
@@ -522,6 +532,7 @@ className={`relative inline-flex h-6 w-11 items-center rounded-full transition-c
 ```
 
 **Classes:**
+
 - `relative` - Relative positioning
 - `inline-flex` - Inline flex container
 - `h-6 w-11` - Height 24px, width 44px
@@ -561,7 +572,7 @@ className={`inline-block h-4 w-4 transform rounded-full bg-white transition-tran
 ### Focus Management
 
 ```javascript
-className="... focus:outline-none focus:ring-2 focus:ring-accent"
+className = '... focus:outline-none focus:ring-2 focus:ring-accent'
 ```
 
 **Note:** Focus ring handled by global styles or added per element
@@ -580,28 +591,28 @@ className="... focus:outline-none focus:ring-2 focus:ring-accent"
 ```mermaid
 graph TD
     A[User Opens Settings] --> B{Mode?}
-    
+
     B -->|Panel| C[Slide In Animation]
     B -->|Inline| D[Show Inline]
-    
+
     C --> E[Prevent Body Scroll]
     D --> F[No Scroll Prevention]
-    
+
     G[User Changes Setting] --> H{Setting Type}
-    
+
     H -->|Data Management| I[Export/Import Handler]
     H -->|Appearance| J[Update Settings State]
     H -->|UI Preferences| K[Update Preferences State]
-    
+
     I --> L[Show Toast Notification]
     J --> L
     K --> L
-    
+
     M[User Closes Panel] --> N{Mode?}
-    
+
     N -->|Panel| O[Slide Out Animation]
     N -->|Inline| P[Close Handler]
-    
+
     O --> Q[Restore Body Scroll]
 ```
 
@@ -620,10 +631,7 @@ graph TD
 ### Lazy Loading
 
 ```javascript
-<img
-  src={bg.paths.thumb}
-  loading="lazy"
-/>
+<img src={bg.paths.thumb} loading="lazy" />
 ```
 
 **Purpose:** Defer wallpaper thumbnail loading
@@ -641,12 +649,14 @@ graph TD
 ### Panel Mode
 
 **Mobile:**
+
 - Full width (100%)
 - Full height
 - Slide in/out
 - Backdrop overlay
 
 **Desktop (sm breakpoint):**
+
 - Fixed width (384px / 24rem)
 - Full height
 - Slide in/out
@@ -655,6 +665,7 @@ graph TD
 ### Inline Mode
 
 **All Sizes:**
+
 - Full width of container
 - Full height of container
 - No overlay
@@ -670,9 +681,7 @@ graph TD
 import { SettingsPanel } from './components/SettingsPanel'
 
 function App() {
-  return (
-    <SettingsPanel />
-  )
+  return <SettingsPanel />
 }
 ```
 
@@ -681,16 +690,11 @@ function App() {
 ```javascript
 function App() {
   const [open, setOpen] = useState(false)
-  
+
   return (
     <>
-      <button onClick={() => setOpen(true)}>
-        Open Settings
-      </button>
-      <SettingsPanel
-        open={open}
-        onClose={() => setOpen(false)}
-      />
+      <button onClick={() => setOpen(true)}>Open Settings</button>
+      <SettingsPanel open={open} onClose={() => setOpen(false)} />
     </>
   )
 }
@@ -718,32 +722,32 @@ function SettingsPage() {
 describe('SettingsPanel Component', () => {
   it('should render settings sections', () => {
     // Test section rendering
-  });
-  
+  })
+
   it('should export notes on export button click', () => {
     // Test export functionality
-  });
-  
+  })
+
   it('should import notes on file selection', () => {
     // Test import functionality
-  });
-  
+  })
+
   it('should apply theme preset on click', () => {
     // Test theme preset application
-  });
-  
+  })
+
   it('should toggle dark mode', () => {
     // Test dark mode toggle
-  });
-  
+  })
+
   it('should show confirmation when enabling AI', () => {
     // Test AI enable confirmation
-  });
-  
+  })
+
   it('should close panel on close button click', () => {
     // Test panel close
-  });
-});
+  })
+})
 ```
 
 ### Integration Tests
@@ -752,45 +756,45 @@ describe('SettingsPanel Component', () => {
 describe('SettingsPanel Integration', () => {
   it('should complete export flow', () => {
     // Test: click export -> download file -> show toast
-  });
-  
+  })
+
   it('should complete import flow', () => {
     // Test: click import -> select file -> import -> show toast
-  });
-  
+  })
+
   it('should complete theme change flow', () => {
     // Test: click preset -> apply all theme properties
-  });
-});
+  })
+})
 ```
 
 ### E2E Tests (Playwright)
 
 ```javascript
 test('Change accent color', async ({ page }) => {
-  await page.goto('/#/notes');
-  await page.click('[data-testid="settings-button"]');
-  
+  await page.goto('/#/notes')
+  await page.click('[data-testid="settings-button"]')
+
   // Click accent color
-  await page.click('[data-testid="accent-color-purple"]');
-  
+  await page.click('[data-testid="accent-color-purple"]')
+
   // Verify accent color changed
   const accentColor = await page.evaluate(() => {
-    return getComputedStyle(document.documentElement).getPropertyValue('--color-accent');
-  });
-  expect(accentColor).toContain('#8b5cf6');
-});
+    return getComputedStyle(document.documentElement).getPropertyValue('--color-accent')
+  })
+  expect(accentColor).toContain('#8b5cf6')
+})
 
 test('Export notes', async ({ page }) => {
-  await page.goto('/#/notes');
-  await page.click('[data-testid="settings-button"]');
-  
+  await page.goto('/#/notes')
+  await page.click('[data-testid="settings-button"]')
+
   // Click export
-  await page.click('[data-testid="export-notes"]');
-  
+  await page.click('[data-testid="export-notes"]')
+
   // Verify download (check downloads or response)
   // Note: Download verification depends on browser setup
-});
+})
 ```
 
 ---
@@ -800,11 +804,13 @@ test('Export notes', async ({ page }) => {
 ### Issue: Panel not opening
 
 **Possible Causes:**
+
 - settingsPanelOpen state false
 - Handler not provided
 - CSS override
 
 **Solutions:**
+
 1. Verify settingsPanelOpen state
 2. Check setSettingsPanelOpen handler
 3. Inspect transform styles
@@ -814,11 +820,13 @@ test('Export notes', async ({ page }) => {
 ### Issue: Import not working
 
 **Possible Causes:**
+
 - File ref not set
 - File input not triggered
 - Handler error
 
 **Solutions:**
+
 1. Verify refs are set
 2. Check click handler
 3. Test file input directly
@@ -828,11 +836,13 @@ test('Export notes', async ({ page }) => {
 ### Issue: Theme preset not applying
 
 **Possible Causes:**
+
 - Preset data invalid
 - State update error
 - Context not updating
 
 **Solutions:**
+
 1. Verify preset data structure
 2. Check state updates
 3. Test individual properties
@@ -842,11 +852,13 @@ test('Export notes', async ({ page }) => {
 ### Issue: AI confirmation not showing
 
 **Possible Causes:**
+
 - showGenericConfirm not provided
 - GenericConfirm not rendered
 - Handler not called
 
 **Solutions:**
+
 1. Verify showGenericConfirm exists
 2. Check GenericConfirm component
 3. Test confirmation flow
@@ -856,11 +868,13 @@ test('Export notes', async ({ page }) => {
 ### Issue: Body scroll not prevented
 
 **Possible Causes:**
+
 - inline mode enabled
 - useEffect not running
 - CSS override
 
 **Solutions:**
+
 1. Verify inline is false
 2. Check useEffect dependencies
 3. Inspect body overflow

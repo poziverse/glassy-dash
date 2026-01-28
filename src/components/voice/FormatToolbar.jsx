@@ -1,10 +1,24 @@
 import React, { useState } from 'react'
-import { 
-  Bold, Italic, Underline, Code, 
-  Highlighter, Eraser, Type, 
-  List, ListOrdered, Quote,
-  Heading1, Heading2, Heading3,
-  Minus, Plus, X
+import { createRef } from 'react'
+import {
+  Bold,
+  Italic,
+  Underline,
+  Code,
+  Highlighter,
+  Eraser,
+  Type,
+  List,
+  ListOrdered,
+  Quote,
+  Heading1,
+  Heading2,
+  Heading3,
+  Minus,
+  Plus,
+  X,
+  Undo,
+  Redo,
 } from 'lucide-react'
 
 /**
@@ -12,17 +26,23 @@ import {
  * Supports rich text formatting while storing as plain text
  * Uses markdown-like syntax for compatibility
  */
-export default function FormatToolbar({ 
-  value, 
-  onChange, 
+export default function FormatToolbar({
+  value,
+  onChange,
+  textareaRef,
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false,
   className = '',
-  showAdvanced = true 
+  showAdvanced = true,
+  disabled = false,
 }) {
   const [expandedSection, setExpandedSection] = useState(null)
 
   // Format handlers using markdown-style syntax
   const formatSelection = (before, after) => {
-    const textarea = document.activeElement
+    const textarea = textareaRef?.current || document.activeElement
     if (!textarea || textarea.tagName !== 'TEXTAREA') return
 
     const start = textarea.selectionStart
@@ -41,8 +61,8 @@ export default function FormatToolbar({
     }, 0)
   }
 
-  const insertText = (textToInsert) => {
-    const textarea = document.activeElement
+  const insertText = textToInsert => {
+    const textarea = textareaRef?.current || document.activeElement
     if (!textarea || textarea.tagName !== 'TEXTAREA') return
 
     const start = textarea.selectionStart
@@ -59,14 +79,38 @@ export default function FormatToolbar({
     }, 0)
   }
 
-  const toggleSection = (section) => {
+  const toggleSection = section => {
     setExpandedSection(expandedSection === section ? null : section)
   }
 
   return (
-    <div className={`bg-white/5 border border-white/10 rounded-xl p-2 ${className}`}>
-      {/* Basic Formatting */}
-      <div className="flex items-center gap-1 mb-2 pb-2 border-b border-white/10">
+    <div
+      className={`bg-white/5 border border-white/10 rounded-xl p-1 flex items-center gap-0.5 overflow-visible ${className} ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
+    >
+      {/* History Group */}
+      {(onUndo || onRedo) && (
+        <div className="flex items-center gap-0.5 pr-1 mr-1 border-r border-white/10">
+          {onUndo && (
+            <ToolbarButton
+              icon={<Undo size={16} />}
+              tooltip="Undo (Ctrl+Z)"
+              onClick={onUndo}
+              disabled={!canUndo}
+            />
+          )}
+          {onRedo && (
+            <ToolbarButton
+              icon={<Redo size={16} />}
+              tooltip="Redo (Ctrl+Y)"
+              onClick={onRedo}
+              disabled={!canRedo}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Basic Formatting Group */}
+      <div className="flex items-center gap-0.5 pr-1 mr-1 border-r border-white/10">
         <ToolbarButton
           icon={<Bold size={16} />}
           tooltip="Bold (Ctrl+B)"
@@ -91,7 +135,7 @@ export default function FormatToolbar({
           onClick={() => formatSelection('`', '`')}
           shortcut="Ctrl+`"
         />
-        <div className="w-px h-6 bg-white/10 mx-2" />
+        <div className="w-px h-6 bg-white/10 mx-1" />
         <ToolbarButton
           icon={<Highlighter size={16} />}
           tooltip="Highlight (==text==)"
@@ -103,11 +147,11 @@ export default function FormatToolbar({
           onClick={() => {
             const textarea = document.activeElement
             if (!textarea || textarea.tagName !== 'TEXTAREA') return
-            
+
             const start = textarea.selectionStart
             const end = textarea.selectionEnd
             const selectedText = textarea.value.substring(start, end)
-            
+
             // Remove markdown formatting
             const cleanText = selectedText
               .replace(/\*\*(.+?)\*\*/g, '$1')
@@ -115,18 +159,19 @@ export default function FormatToolbar({
               .replace(/__(.+?)__/g, '$1')
               .replace(/`(.+?)`/g, '$1')
               .replace(/==(.+?)==/g, '$1')
-            
-            const newText = textarea.value.substring(0, start) + cleanText + textarea.value.substring(end)
+
+            const newText =
+              textarea.value.substring(0, start) + cleanText + textarea.value.substring(end)
             onChange(newText)
           }}
         />
       </div>
 
-      {/* Advanced Formatting */}
+      {/* Advanced Formatting Group */}
       {showAdvanced && (
-        <>
+        <div className="flex items-center gap-0.5">
           {/* Headings */}
-          <div className="relative mb-2">
+          <div className="relative">
             <ToolbarButton
               icon={<Type size={16} />}
               tooltip="Headings"
@@ -164,7 +209,7 @@ export default function FormatToolbar({
           </div>
 
           {/* Lists */}
-          <div className="relative mb-2">
+          <div className="relative">
             <ToolbarButton
               icon={<List size={16} />}
               tooltip="Lists"
@@ -201,7 +246,7 @@ export default function FormatToolbar({
               onClick={() => formatSelection('\n> ', '')}
             />
           </div>
-        </>
+        </div>
       )}
     </div>
   )
@@ -210,16 +255,19 @@ export default function FormatToolbar({
 /**
  * Individual toolbar button component
  */
-function ToolbarButton({ icon, tooltip, onClick, active = false, shortcut }) {
+function ToolbarButton({ icon, tooltip, onClick, active = false, disabled = false, shortcut }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={`
         p-2 rounded-lg transition-all duration-200
-        ${active 
-          ? 'bg-indigo-600 text-white' 
-          : 'bg-transparent text-gray-400 hover:bg-white/10 hover:text-white'
+        ${
+          active
+            ? 'bg-indigo-600 text-white'
+            : 'bg-transparent text-gray-400 hover:bg-white/10 hover:text-white'
         }
+        ${disabled ? 'opacity-30 cursor-not-allowed' : ''}
       `}
       title={tooltip}
     >
@@ -309,7 +357,10 @@ export function FormattingHelp({ className = '' }) {
         </h3>
         <div className="grid grid-cols-2 gap-2">
           {keyboardShortcuts.map((item, index) => (
-            <div key={index} className="flex items-center justify-between text-sm p-2 rounded bg-white/5">
+            <div
+              key={index}
+              className="flex items-center justify-between text-sm p-2 rounded bg-white/5"
+            >
               <kbd className="px-2 py-1 rounded bg-white/10 text-indigo-300 font-mono text-xs">
                 {item.keys}
               </kbd>
@@ -323,8 +374,8 @@ export function FormattingHelp({ className = '' }) {
       <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-300">
         <p className="font-medium mb-1">💡 Note about Formatting</p>
         <p>
-          All formatting is stored as plain text using markdown-like syntax. 
-          This ensures compatibility and makes transcripts easy to share or export.
+          All formatting is stored as plain text using markdown-like syntax. This ensures
+          compatibility and makes transcripts easy to share or export.
         </p>
       </div>
     </div>

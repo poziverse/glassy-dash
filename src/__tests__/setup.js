@@ -1,5 +1,5 @@
 // Test setup file for Vitest
-import { expect, afterEach, vi } from 'vitest'
+import { expect, afterEach, vi, beforeAll, afterAll } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import '@testing-library/jest-dom'
 
@@ -41,11 +41,15 @@ global.IntersectionObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 }))
 
-// Mock fetch
-// Mock fetch
-if (typeof window !== 'undefined') {
-  global.fetch = vi.fn()
-}
+// Mock fetch - Always mock global fetch to avoid ECONNREFUSED in node environment
+global.fetch = vi.fn().mockImplementation(() =>
+  Promise.resolve({
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve({}),
+    headers: new Headers(),
+  })
+)
 
 // Suppress console errors in tests (optional)
 const originalError = console.error

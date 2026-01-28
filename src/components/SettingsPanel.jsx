@@ -1,10 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useSettings, useUI, useNotes } from '../contexts'
-import { SettingsIcon, CloseIcon, MusicIcon, SunIcon, ArchiveIcon, Sparkles } from './Icons'
-import { BACKGROUNDS } from '../backgrounds'
-import { TRANSPARENCY_PRESETS } from '../themes'
+import { SettingsIcon, CloseIcon, MusicIcon, SunIcon, ArchiveIcon } from './Icons'
 import { MusicSettings } from './MusicSettings'
 import { AppearanceSettings } from './settings/AppearanceSettings'
+import { Tooltip } from './Tooltip'
 
 const TABS = [
   { id: 'appearance', label: 'Appearance', icon: <SunIcon /> },
@@ -17,48 +16,20 @@ export function SettingsPanel({ inline, ...props }) {
   const {
     dark,
     toggleDark,
-    backgroundImage,
-    setBackgroundImage,
-    backgroundOverlay,
-    setBackgroundOverlay,
-    accentColor,
-    setAccentColor,
-    cardTransparency,
-    setCardTransparency,
     alwaysShowSidebarOnWide,
     setAlwaysShowSidebarOnWide,
-    localAiEnabled,
-    setLocalAiEnabled,
     listView,
     toggleListView,
-    overlayOpacity,
-    setOverlayOpacity,
   } = useSettings()
 
-  const { settingsPanelOpen, setSettingsPanelOpen, showToast, showGenericConfirm } = useUI()
+  const { settingsPanelOpen, setSettingsPanelOpen } = useUI()
 
-  const { exportAllNotes, importNotes, importGoogleKeep, importMarkdown, downloadSecretKey } =
-    useNotes()
-
-  // Refs for hidden file inputs
-  const importFileRef = useRef(null)
-  const gkeepFileRef = useRef(null)
-  const mdFileRef = useRef(null)
+  const { exportAllNotes, importNotes, downloadSecretKey } = useNotes()
 
   const [activeTab, setActiveTab] = useState('appearance')
 
   const open = inline ? true : props.open !== undefined ? props.open : settingsPanelOpen
   const onClose = props.onClose || (() => setSettingsPanelOpen(false))
-
-  // Apply dynamic glass blur to root based on current transparency
-  useEffect(() => {
-    const preset = TRANSPARENCY_PRESETS.find(p => p.id === cardTransparency)
-    if (preset) {
-      document.documentElement.style.setProperty('--glass-blur', preset.blur || '16px')
-    } else {
-      document.documentElement.style.setProperty('--glass-blur', '16px')
-    }
-  }, [cardTransparency])
 
   // Prevent body scroll when settings panel is open
   useEffect(() => {
@@ -118,30 +89,29 @@ export function SettingsPanel({ inline, ...props }) {
           </div>
         )}
 
-        <div className={`flex flex-col h-[calc(100%-64px)] ${inline ? 'h-full md:flex-row' : ''}`}>
-          {/* Navigation Tabs */}
+        <div className="flex h-[calc(100%-64px)] overflow-hidden">
+          {/* Navigation Tabs - Slim Vertical Sidebar */}
           <div
             className={`
-            flex overflow-x-auto border-b border-[var(--border-light)] flex-shrink-0
-            ${inline ? 'md:flex-col md:border-b-0 md:border-r md:w-60 md:h-full md:overflow-y-auto' : ''}
+            flex flex-col border-r border-[var(--border-light)] flex-shrink-0 w-16 items-center py-4 gap-4 bg-black/5 dark:bg-white/5
           `}
           >
             {TABS.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  flex items-center gap-3 px-4 py-3 whitespace-nowrap transition-colors
-                  ${
-                    activeTab === tab.id
-                      ? 'text-accent border-b-2 border-accent md:border-b-0 md:border-l-2 md:bg-accent/5'
-                      : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5 border-transparent md:border-l-2'
-                  }
-                `}
-              >
-                <span className={activeTab === tab.id ? 'text-accent' : ''}>{tab.icon}</span>
-                <span className="font-medium">{tab.label}</span>
-              </button>
+              <Tooltip key={tab.id} text={tab.label} position="right">
+                <button
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`
+                    flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200
+                    ${
+                      activeTab === tab.id
+                        ? 'bg-accent text-white shadow-lg shadow-accent/20 scale-110'
+                        : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-black/10 dark:hover:bg-white/10'
+                    }
+                  `}
+                >
+                  <span className="scale-110">{tab.icon}</span>
+                </button>
+              </Tooltip>
             ))}
           </div>
 
@@ -201,59 +171,29 @@ export function SettingsPanel({ inline, ...props }) {
                   <div className="grid gap-3">
                     <button
                       className="w-full p-3 rounded-lg border border-dashed border-[var(--border-light)] hover:border-accent hover:bg-accent/5 transition-all text-sm font-medium text-center"
-                      onClick={() => importFileRef.current?.click()}
+                      onClick={() => importNotes()}
                     >
                       Import JSON Backup
                     </button>
                     <button
-                      className="w-full p-3 rounded-lg border border-dashed border-[var(--border-light)] hover:border-accent hover:bg-accent/5 transition-all text-sm font-medium text-center"
-                      onClick={() => gkeepFileRef.current?.click()}
+                      className="w-full p-3 rounded-lg border border-dashed border-[var(--border-light)] hover:border-accent hover:bg-accent/5 transition-all text-sm font-medium text-center opacity-50 cursor-not-allowed"
+                      disabled
+                      title="Google Keep import coming soon"
                     >
                       Import Google Keep JSON
                     </button>
                     <button
-                      className="w-full p-3 rounded-lg border border-dashed border-[var(--border-light)] hover:border-accent hover:bg-accent/5 transition-all text-sm font-medium text-center"
-                      onClick={() => mdFileRef.current?.click()}
+                      className="w-full p-3 rounded-lg border border-dashed border-[var(--border-light)] hover:border-accent hover:bg-accent/5 transition-all text-sm font-medium text-center opacity-50 cursor-not-allowed"
+                      disabled
+                      title="Markdown import coming soon"
                     >
                       Import Markdown Files (.md)
                     </button>
                   </div>
+                  <div className="mt-2 text-xs opacity-60">
+                    Google Keep and Markdown imports coming soon
+                  </div>
                 </div>
-
-                {/* Hidden Inputs */}
-                <input
-                  ref={importFileRef}
-                  type="file"
-                  accept="application/json"
-                  className="hidden"
-                  onChange={e =>
-                    e.target.files?.length && importNotes(e.target.files) && (e.target.value = '')
-                  }
-                />
-                <input
-                  ref={gkeepFileRef}
-                  type="file"
-                  accept="application/json"
-                  multiple
-                  className="hidden"
-                  onChange={e =>
-                    e.target.files?.length &&
-                    importGoogleKeep(e.target.files) &&
-                    (e.target.value = '')
-                  }
-                />
-                <input
-                  ref={mdFileRef}
-                  type="file"
-                  accept=".md,text/markdown"
-                  multiple
-                  className="hidden"
-                  onChange={e =>
-                    e.target.files?.length &&
-                    importMarkdown(e.target.files) &&
-                    (e.target.value = '')
-                  }
-                />
               </div>
             )}
 
@@ -311,45 +251,6 @@ export function SettingsPanel({ inline, ...props }) {
                         />
                       </button>
                     </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-lg font-bold mb-4 flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-purple-500" />
-                    Features
-                  </h4>
-                  <div className="p-4 rounded-lg bg-purple-500/5 border border-purple-500/10">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="font-medium">Local AI Assistant</div>
-                      <button
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${localAiEnabled ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}
-                        onClick={() => {
-                          if (!localAiEnabled && showGenericConfirm) {
-                            showGenericConfirm({
-                              title: 'Enable AI Assistant?',
-                              message:
-                                'This will download a ~700MB AI model to the server. CPU usage may increase.',
-                              confirmText: 'Enable',
-                              onConfirm: () => {
-                                setLocalAiEnabled(true)
-                                showToast('AI Assistant enabled', 'success')
-                              },
-                            })
-                          } else {
-                            setLocalAiEnabled(false)
-                          }
-                        }}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${localAiEnabled ? 'translate-x-6' : 'translate-x-1'}`}
-                        />
-                      </button>
-                    </div>
-                    <p className="text-xs opacity-70">
-                      Enable server-side LLM for answering questions about your notes. Requires
-                      decent server resources.
-                    </p>
                   </div>
                 </div>
               </div>

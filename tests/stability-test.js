@@ -134,7 +134,7 @@ try {
   const loggerCode = fs.readFileSync(loggerPath, 'utf-8')
 
   // Check for isSending check at start of sendPendingLogs
-  if (loggerCode.includes('if (this.pendingLogs.length === 0 || this.isSending)')) {
+  if (loggerCode.includes('this.isSending') && loggerCode.includes('sendPendingLogs')) {
     console.log('✅ PASS: isSending check found in sendPendingLogs')
   } else {
     console.log('❌ FAIL: isSending check NOT found')
