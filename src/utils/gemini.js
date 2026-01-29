@@ -4,14 +4,16 @@
  * Maintains backward compatibility while enabling new multi-provider features
  */
 
-const { GoogleGenerativeAI } = require('@google/generative-ai')
+// GoogleGenerativeAI import removed - unused and caused frontend error
 
 // Load API key from environment variable for security
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ''
 
 // Warn in development if API key is missing
 if (!API_KEY && typeof window !== 'undefined') {
-  console.warn('[Gemini] VITE_GEMINI_API_KEY not set. Add VITE_GEMINI_API_KEY=your-key to .env file')
+  console.warn(
+    '[Gemini] VITE_GEMINI_API_KEY not set. Add VITE_GEMINI_API_KEY=your-key to .env file'
+  )
 }
 
 /**
@@ -41,10 +43,10 @@ export async function askQuestion(question, notes = []) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-      // Use localStorage token for auth if available
-        ...(localStorage.getItem('auth_token') && { 
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}` 
-        })
+        // Use localStorage token for auth if available
+        ...(localStorage.getItem('auth_token') && {
+          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        }),
       },
       body: JSON.stringify({ question, notes }),
     })
@@ -58,14 +60,14 @@ export async function askQuestion(question, notes = []) {
 
     // New: Provider information is now included
     console.log('[Gemini Client] Response received from provider:', data.provider)
-    
+
     return {
       answer: data.answer,
       citations: data.citations || [],
       model: data.model,
       provider: data.provider, // NEW: Which provider was used
       latency: data.latency,
-      usage: data.usage
+      usage: data.usage,
     }
   } catch (error) {
     console.error('[Gemini Client] askQuestion error:', error)
@@ -84,33 +86,36 @@ export async function askQuestionStream(question, notes = [], onChunk, onComplet
 
     // Note: SSE requires fetch with different configuration
     // For now, we'll use the standard askQuestion and simulate streaming
-    
+
     // Get the full response first (for compatibility)
     const response = await askQuestion(question, notes)
-    
+
     // Simulate streaming by calling onChunk multiple times
     const chunks = response.answer.split(/(?=[.])|(?=\.\.\.\.)|(?=<[^>]+>)/g).filter(c => c.trim())
-    
+
     for (let i = 0; i < chunks.length; i++) {
       const delay = i * 50 // Increasing delay between chunks
       setTimeout(() => {
         onChunk({
           chunk: chunks[i],
           provider: response.provider,
-          isComplete: i === chunks.length - 1
+          isComplete: i === chunks.length - 1,
         })
       }, delay)
     }
-    
+
     // Send complete signal
-    setTimeout(() => {
-      onComplete({
-        content: response.answer,
-        provider: response.provider,
-        isComplete: true
-      })
-    }, chunks.length * 50 + 200)
-    
+    setTimeout(
+      () => {
+        onComplete({
+          content: response.answer,
+          provider: response.provider,
+          isComplete: true,
+        })
+      },
+      chunks.length * 50 + 200
+    )
+
     return response
   } catch (error) {
     console.error('[Gemini Client] askQuestionStream error:', error)
@@ -131,9 +136,9 @@ export async function transformText(text, instruction) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(localStorage.getItem('auth_token') && { 
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}` 
-        })
+        ...(localStorage.getItem('auth_token') && {
+          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        }),
       },
       body: JSON.stringify({ text, instruction }),
     })
@@ -144,13 +149,13 @@ export async function transformText(text, instruction) {
     }
 
     const data = await response.json()
-    
+
     console.log('[Gemini Client] Transform received from provider:', data.provider)
-    
+
     return {
       transformed: data.transformed,
       provider: data.provider, // NEW: Which provider was used
-      latency: data.latency
+      latency: data.latency,
     }
   } catch (error) {
     console.error('[Gemini Client] transformText error:', error)
@@ -170,9 +175,9 @@ export async function generateImage(prompt) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(localStorage.getItem('auth_token') && { 
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}` 
-        })
+        ...(localStorage.getItem('auth_token') && {
+          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        }),
       },
       body: JSON.stringify({ prompt }),
     })
@@ -183,13 +188,13 @@ export async function generateImage(prompt) {
     }
 
     const data = await response.json()
-    
+
     console.log('[Gemini Client] Image generated by provider:', data.provider)
-    
+
     return {
       imageUrl: data.imageUrl,
       provider: data.provider, // NEW: Which provider was used
-      latency: data.latency
+      latency: data.latency,
     }
   } catch (error) {
     console.error('[Gemini Client] generateImage error:', error)
@@ -204,54 +209,67 @@ export async function generateImage(prompt) {
 export async function transcribeAudio(audioBlob, onChunk, onComplete, onError) {
   try {
     console.log('[Gemini Client] Transcribing audio...')
-    
+
     // Convert blob to base64
     const reader = new FileReader()
-    
+
     return new Promise((resolve, reject) => {
-      reader.onload = async (event) => {
-        const base64Audio = event.target.result.split(',')[1]
-        
-        const response = await fetch('/api/ai/transcribe', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(localStorage.getItem('auth_token') && { 
-              'Authorization': `Bearer ${localStorage.getItem('auth_token')}` 
-            })
-          },
-          body: JSON.stringify({
-            audioData: {
-              data: base64Audio,
-              mimeType: audioBlob.type || 'audio/webm'
-            }
-          }),
-        })
+      reader.onload = async event => {
+        try {
+          const base64Audio = event.target.result.split(',')[1]
 
-        if (!response.ok) {
-          const error = await response.json()
-          onError && onError(new Error(error.error || 'Transcription failed'))
-          return
+          const response = await fetch('/api/ai/transcribe', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(localStorage.getItem('auth_token') && {
+                Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+              }),
+            },
+            body: JSON.stringify({
+              audioData: {
+                data: base64Audio,
+                mimeType: audioBlob.type || 'audio/webm',
+              },
+            }),
+          })
+
+          if (!response.ok) {
+            const errorData = await response.json()
+            const error = new Error(errorData.error || 'Transcription failed')
+            onError && onError(error)
+            reject(error)
+            return
+          }
+
+          const data = await response.json()
+
+          console.log('[Gemini Client] Transcription complete, provider:', data.provider)
+
+          const result = {
+            transcript: data.transcript,
+            summary: data.summary,
+            language: data.language,
+            provider: data.provider,
+            latency: data.latency,
+          }
+
+          onComplete && onComplete(result)
+          resolve(result)
+        } catch (error) {
+          console.error('[Gemini Client] Transcription processing error:', error)
+          onError && onError(error)
+          reject(error)
         }
+      }
 
-        const data = await response.json()
-        
-        console.log('[Gemini Client] Transcription complete, provider:', data.provider)
-        
-        onComplete({
-          transcript: data.transcript,
-          summary: data.summary,
-          language: data.language,
-          provider: data.provider,
-          latency: data.latency
-        })
-      }
-      
-      reader.onerror = (event) => {
+      reader.onerror = event => {
         console.error('[Gemini Client] Audio reading failed:', event)
-        onError && onError(new Error('Failed to read audio file'))
+        const error = new Error('Failed to read audio file')
+        onError && onError(error)
+        reject(error)
       }
-      
+
       reader.readAsDataURL(audioBlob)
     })
   } catch (error) {
@@ -285,9 +303,9 @@ export async function getProviders() {
     const response = await fetch('/api/ai/providers', {
       method: 'GET',
       headers: {
-        ...(localStorage.getItem('auth_token') && { 
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}` 
-        })
+        ...(localStorage.getItem('auth_token') && {
+          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        }),
       },
     })
 
@@ -296,10 +314,10 @@ export async function getProviders() {
     }
 
     const data = await response.json()
-    
+
     return {
       active: data.active,
-      registered: data.registered
+      registered: data.registered,
     }
   } catch (error) {
     console.error('[Gemini Client] getProviders error:', error)
@@ -316,9 +334,9 @@ export async function getProviderHealth() {
     const response = await fetch('/api/ai/health', {
       method: 'GET',
       headers: {
-        ...(localStorage.getItem('auth_token') && { 
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}` 
-        })
+        ...(localStorage.getItem('auth_token') && {
+          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        }),
       },
     })
 
@@ -327,9 +345,9 @@ export async function getProviderHealth() {
     }
 
     const data = await response.json()
-    
+
     return {
-      providers: data.providers
+      providers: data.providers,
     }
   } catch (error) {
     console.error('[Gemini Client] getProviderHealth error:', error)
@@ -346,9 +364,9 @@ export async function getAIStatus() {
     const response = await fetch('/api/ai/status', {
       method: 'GET',
       headers: {
-        ...(localStorage.getItem('auth_token') && { 
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}` 
-        })
+        ...(localStorage.getItem('auth_token') && {
+          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        }),
       },
     })
 
@@ -357,12 +375,12 @@ export async function getAIStatus() {
     }
 
     const data = await response.json()
-    
+
     return {
       available: true,
       status: data.status,
       providers: data.providers,
-      metrics: data.metrics
+      metrics: data.metrics,
     }
   } catch (error) {
     console.error('[Gemini Client] getAIStatus error:', error)
@@ -379,7 +397,7 @@ export const GeminiClient = {
   transformText,
   generateImage,
   transcribeAudio,
-  transcribeAudioStream: transcribeAudio // Alias for backward compatibility
+  transcribeAudioStream: transcribeAudio, // Alias for backward compatibility
 }
 
 // Named export for convenience
@@ -399,5 +417,5 @@ export default {
   getProviderHealth,
   getAIStatus,
   GeminiClient,
-  gemini
+  gemini,
 }

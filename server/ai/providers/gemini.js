@@ -22,17 +22,17 @@ class GeminiProvider extends BaseAIProvider {
         SYSTEM_INSTRUCTIONS: true,
         TOOLS: true,
         MULTIMODAL: true,
-        EMBEDDINGS: true
-      }
+        EMBEDDINGS: true,
+      },
     })
-    
+
     // Initialize Gemini client
     this.client = new GoogleGenerativeAI(this.apiKey)
     this.modelName = config.model || 'gemini-2.5-flash'
-    
+
     // Cache model instance
     this.model = null
-    
+
     console.log(`[Gemini Provider] Initialized with model: ${this.modelName}`)
   }
 
@@ -78,12 +78,13 @@ RESPONSE GUIDELINES:
 - Extract actionable items as [SUGGEST_TITLE], [DETECTED_TASK]
 - When suggesting titles, provide 3-5 options
 - Start immediately with value - no "Sure, I can help..." or "I can..."
-- Use JSON mode for tool calls: {"tools": [{"type": "...", "value": "..."}]}
-
-SPECIAL HANDLING:
-- If you don't have enough information, say so honestly
-- If asked to format but no specific instruction, ask for clarification
-- For transcription requests, include transcript and summary in JSON format`
+- ALWAYS use this JSON structure:
+{
+  "text": "Your markdown response here",
+  "tools": [{"type": "SUGGEST_TITLE|DETECTED_TASK|RELATED_NOTE", "value": "..."}]
+}
+- For tool calls, use types: SUGGEST_TITLE, DETECTED_TASK, RELATED_NOTE
+- For formatting/organization, just use the "text" field with Markdown`
   }
 
   /**
@@ -94,43 +95,43 @@ SPECIAL HANDLING:
   extractCitations(response) {
     const citations = []
     const parts = response?.candidates?.[0]?.content?.parts || []
-    
+
     for (const part of parts) {
       // Look for citations in text
       const citationRegex = /\[(.*?)\]\((?:.*?)\)/g
       const matches = part.text?.matchAll(citationRegex) || []
-      
+
       for (const match of matches) {
         citations.push({
           id: match[1],
           title: match[2] || 'Untitled',
-          snippet: part.text?.substring(0, 200)
+          snippet: part.text?.substring(0, 200),
         })
       }
-      
+
       // Look for function calls (tools)
       if (part.executableFunction?.name) {
         const args = part.executableFunction?.args
-        
+
         if (args) {
           const functionCall = {
             type: part.executableFunction.name,
-            args
+            args,
           }
-          
+
           // Extract source from citation in function call
           const sourceMatch = args.text?.match(/\[(.*?)\]\((?:.*?)\)/)
           if (sourceMatch) {
             citations.push({
               id: sourceMatch[1],
               title: sourceMatch[2] || 'Untitled',
-              snippet: args.text?.substring(0, 200)
+              snippet: args.text?.substring(0, 200),
             })
           }
         }
       }
     }
-    
+
     return citations
   }
 
@@ -153,10 +154,8 @@ SPECIAL HANDLING:
         contents: [
           {
             role: 'user',
-            parts: [
-              { text: prompt }
-            ]
-          }
+            parts: [{ text: prompt }],
+          },
         ],
         systemInstruction: this.buildSystemPrompt(),
         generationConfig: {
@@ -164,15 +163,51 @@ SPECIAL HANDLING:
           maxOutputTokens: maxTokens,
           candidateCount: 1,
           responseMimeType: 'application/json', // Request structured output
-        }
+        },
       }
 
       const result = await model.generateContent(generationConfig)
-      
+
       // Parse response
-      const { text, finishReason } = result.response
+      let text = result.response.text()
+      const finishReason = result.response.candidates[0]?.finishReason
       const citations = includeSources ? this.extractCitations(result.response) : []
-      
+
+      // Attempt to parse JSON response if we requested structured output
+      if (generationConfig.generationConfig?.responseMimeType === 'application/json') {
+        try {
+          const parsed = JSON.parse(text)
+
+          // Extract text and tools from structured response
+          let mainText = parsed.text || parsed.content || parsed.message || parsed.answer || ''
+          let tools = parsed.tools || []
+
+          // Handle tool-only responses where text is wrapped in a tool
+          if (Array.isArray(tools)) {
+            const textToolIndex = tools.findIndex(
+              t => t.type === 'text_output' || t.type === 'message'
+            )
+            if (textToolIndex !== -1) {
+              // Create main text from the tool value if mainText is empty
+              if (!mainText) {
+                mainText = tools[textToolIndex].value
+              }
+              // Remove the text tool to avoid duplicate rendering/processing
+              tools.splice(textToolIndex, 1)
+            }
+          }
+
+          // Return valid object structure matching aiStore expectations
+          text = {
+            text: mainText,
+            tools: tools,
+          }
+        } catch (e) {
+          console.warn('[Gemini Provider] Failed to parse JSON response:', e)
+          // Fallback: use raw text, likely still JSON string but better than crashing
+        }
+      }
+
       return {
         content: text,
         citations,
@@ -182,8 +217,8 @@ SPECIAL HANDLING:
         usage: {
           totalTokens: result.response.usageMetadata?.totalTokenCount || 0,
           promptTokens: result.response.usageMetadata?.promptTokenCount || 0,
-          completionTokens: result.response.usageMetadata?.candidatesTokenCount?.[0] || 0
-        }
+          completionTokens: result.response.usageMetadata?.candidatesTokenCount?.[0] || 0,
+        },
       }
     } catch (error) {
       console.error('[Gemini Provider] generateContent error:', error)
@@ -199,6 +234,14 @@ SPECIAL HANDLING:
    * @param {Object} options - Generation options
    * @returns {AsyncGenerator} - Streaming result generator
    */
+  /**
+   * Generate streaming content
+   * @param {string} prompt - The input prompt
+   * @param {Function} onChunk - Callback for each chunk
+   * @param {Function} onComplete - Callback when complete
+   * @param {Object} options - Generation options
+   * @returns {AsyncGenerator} - Streaming result generator
+   */
   async *generateContentStream(prompt, onChunk, onComplete, options = {}) {
     if (!this.isAvailable()) {
       throw new Error('Gemini Provider not configured or not available')
@@ -206,44 +249,90 @@ SPECIAL HANDLING:
 
     const { temperature = 0.3, maxTokens = 4000 } = options
     const model = this.getModel()
+    const isJsonMode =
+      options.response_format?.type === 'json_object' ||
+      this.buildSystemPrompt().includes('application/json')
 
     try {
       const result = await model.generateContentStream({
         contents: [
           {
             role: 'user',
-            parts: [
-              { text: prompt }
-            ]
-          }
+            parts: [{ text: prompt }],
+          },
         ],
         systemInstruction: this.buildSystemPrompt(),
         generationConfig: {
           temperature,
           maxOutputTokens: maxTokens,
           candidateCount: 1,
-          responseMimeType: 'application/json'
-        }
+          responseMimeType: 'application/json',
+        },
       })
 
       let fullResponse = ''
+      let lastEmittedTextLength = 0
 
       for await (const chunk of result.stream) {
         const chunkText = chunk.text()
         fullResponse += chunkText
-        
-        onChunk({
-          content: chunkText,
-          provider: 'gemini',
-          isComplete: false
-        })
+
+        let contentToEmit = chunkText
+
+        // If in JSON mode, try to extract the "text" field content
+        if (fullResponse.trim().startsWith('{')) {
+          try {
+            // Simple regex to extract text value so far
+            // Matches "text": "..."
+            // We need to handle escaped quotes if possible, but for streaming display, simple is okay
+            const match = fullResponse.match(/"text"\s*:\s*"(.*?)(?:"|$)/s)
+            if (match) {
+              const currentText = match[1]
+              // Calculate delta
+              if (currentText.length > lastEmittedTextLength) {
+                contentToEmit = currentText.slice(lastEmittedTextLength)
+                lastEmittedTextLength = currentText.length
+              } else {
+                contentToEmit = '' // No new text content yet
+              }
+            }
+          } catch (e) {
+            // Fallback to raw if logic fails
+          }
+        }
+
+        if (contentToEmit) {
+          onChunk({
+            content: contentToEmit,
+            provider: 'gemini',
+            isComplete: false,
+          })
+        }
       }
 
       const finishReason = await result.response.candidates[0]?.finishReason
       const citations = this.extractCitations(result.response)
-      
+
+      // Parse final JSON safely
+      let finalContent = fullResponse
+      try {
+        const parsed = JSON.parse(fullResponse)
+        // Helper to extract text from various possible keys
+        const extractText = obj => obj.text || obj.content || obj.message || obj.answer || ''
+
+        finalContent = extractText(parsed)
+
+        // If empty text but has tools, use tool value
+        if (!finalContent && parsed.tools && parsed.tools.length > 0) {
+          const textTool = parsed.tools.find(t => t.type === 'text_output' || t.type === 'message')
+          if (textTool) finalContent = textTool.value
+        }
+      } catch (e) {
+        // use raw if parse fails
+      }
+
       onComplete({
-        content: fullResponse,
+        content: finalContent,
         citations,
         provider: 'gemini',
         isComplete: true,
@@ -251,8 +340,8 @@ SPECIAL HANDLING:
         usage: {
           totalTokens: result.response.usageMetadata?.totalTokenCount || 0,
           promptTokens: result.response.usageMetadata?.promptTokenCount || 0,
-          completionTokens: result.response.usageMetadata?.candidatesTokenCount?.[0] || 0
-        }
+          completionTokens: result.response.usageMetadata?.candidatesTokenCount?.[0] || 0,
+        },
       })
     } catch (error) {
       console.error('[Gemini Provider] generateContentStream error:', error)
@@ -260,61 +349,7 @@ SPECIAL HANDLING:
     }
   }
 
-  /**
-   * Generate embeddings
-   * @param {string} content - The content to embed
-   * @param {Object} options - Embedding options
-   * @returns {Promise<Object>} - Embedding result
-   */
-  async generateEmbeddings(content, options = {}) {
-    if (!this.isAvailable()) {
-      throw new Error('Gemini Provider not configured or not available')
-    }
-
-    const model = this.getModel()
-
-    try {
-      // For embeddings, use text-embedding-004 model
-      const embeddingModel = this.client.getGenerativeModel({ model: 'text-embedding-004' })
-      
-      const result = await embeddingModel.embedContent(content)
-      
-      return {
-        embeddings: result.embedding.values,
-        model: 'text-embedding-004',
-        provider: 'gemini',
-        usage: {
-          totalTokens: result.usageMetadata?.totalTokenCount || 0
-        }
-      }
-    } catch (error) {
-      console.error('[Gemini Provider] generateEmbeddings error:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Count tokens
-   * @param {string} content - The content to count tokens for
-   * @param {Object} options - Token counting options
-   * @returns {Promise<number>} - Token count
-   */
-  async countTokens(content, options = {}) {
-    if (!this.isAvailable()) {
-      throw new Error('Gemini Provider not configured or not available')
-    }
-
-    const model = this.getModel()
-
-    try {
-      const result = await model.countTokens({ contents: [{ parts: [{ text: content }] }] })
-      
-      return result.totalTokens || 0
-    } catch (error) {
-      console.error('[Gemini Provider] countTokens error:', error)
-      throw error
-    }
-  }
+  // ... (keep generateEmbeddings and countTokens)
 
   /**
    * Transcribe audio with streaming
@@ -349,77 +384,88 @@ SPECIAL INSTRUCTIONS:
 - Preserve technical terms and proper nouns
 - Note any filler words, hesitation, or unclear speech
 - If the audio is very short (<5s), just provide a brief summary
-
-The transcription should be streaming and displayed in real-time as it's being generated.`
+- The transcription should be streaming and displayed in real-time as it's being generated.`
 
       const generationConfig = {
         contents: [
           {
             inlineData: {
               data: Buffer.isBuffer(audioData) ? audioData.toString('base64') : audioData.data,
-              mimeType: audioData.mimeType || 'audio/webm'
-            }
+              mimeType: audioData.mimeType || 'audio/webm',
+            },
           },
           {
-            text: prompt
-          }
+            text: prompt,
+          },
         ],
         generationConfig: {
           temperature: 0.1, // Low temperature for accurate transcription
           maxOutputTokens: 8192, // Large token limit for full transcription
-          responseMimeType: 'application/json' // Request JSON output
-        }
+          responseMimeType: 'application/json', // Request JSON output
+        },
       }
 
       const result = await model.generateContentStream(generationConfig)
-      
-      // Parse streaming JSON
-      let fullTranscript = ''
-      let fullSummary = []
-      let fullLanguage = ''
-      
+
+      // Accumulate raw response
+      let fullRawText = ''
+      let lastTranscriptLength = 0
+
       for await (const chunk of result.stream) {
         const chunkText = chunk.text()
-        
-        try {
-          const parsed = JSON.parse(chunkText)
-          
-          if (parsed.transcript) {
-            fullTranscript += parsed.transcript
-          }
-          if (parsed.summary) {
-            if (Array.isArray(parsed.summary)) {
-              fullSummary = fullSummary.concat(parsed.summary)
-            } else {
-              fullSummary.push(parsed.summary)
-            }
-          }
-          
-          if (parsed.language) {
-            fullLanguage = parsed.language
-          }
-          
-          onChunk({
-            transcript: fullTranscript,
-            summary: fullSummary,
-            language: fullLanguage,
-            provider: 'gemini',
-            isComplete: false
-          })
-        } catch (e) {
-          // JSON may be incomplete, continue
+        fullRawText += chunkText
+
+        // Try to extract transcript for streaming update
+        // We use regex because JSON isn't valid until the end
+        const transcriptMatch = fullRawText.match(/"transcript"\s*:\s*"(.*?)(?:"|$)/s)
+        const summaryMatch = fullRawText.match(/"summary"\s*:\s*\[(.*?)\]/s)
+        const languageMatch = fullRawText.match(/"language"\s*:\s*"(.*?)"/)
+
+        let transcript = ''
+        if (transcriptMatch) {
+          transcript = transcriptMatch[1] // Raw extracted text (might be escaped)
         }
+
+        // Since onChunk for transcription usually replaces the content,
+        // passing the accumulating transcript is fine.
+        // Note: The UI might expect a delta or full. Logic seems to imply full update based on previous code.
+
+        onChunk({
+          transcript: transcript,
+          // summaries are hard to parse partially, ignore for stream
+          language: languageMatch ? languageMatch[1] : '',
+          provider: 'gemini',
+          isComplete: false,
+        })
       }
-      
+
+      let finalTranscript = ''
+      let finalSummary = []
+      let finalLanguage = ''
+
+      try {
+        const parsed = JSON.parse(fullRawText)
+        finalTranscript = parsed.transcript || ''
+        if (parsed.summary) {
+          finalSummary = Array.isArray(parsed.summary) ? parsed.summary : [parsed.summary]
+        }
+        finalLanguage = parsed.language || ''
+      } catch (e) {
+        // If parse fails, rely on regex fallback or raw text
+        console.warn('Final JSON parse failed during transcription', e)
+        const match = fullRawText.match(/"transcript"\s*:\s*"(.*?)"/s)
+        if (match) finalTranscript = match[1]
+      }
+
       onComplete({
-        transcript: fullTranscript,
-        summary: fullSummary,
-        language: fullLanguage,
+        transcript: finalTranscript,
+        summary: finalSummary,
+        language: finalLanguage,
         provider: 'gemini',
         isComplete: true,
         usage: {
-          totalTokens: result.response.usageMetadata?.totalTokenCount || 0
-        }
+          totalTokens: result.response.usageMetadata?.totalTokenCount || 0,
+        },
       })
     } catch (error) {
       console.error('[Gemini Provider] transcribeAudio error:', error)
@@ -448,12 +494,12 @@ No text in image.`
 
       const encodedPrompt = encodeURIComponent(pollinationsPrompt)
       const imageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=1024&height=768&nologo=true&seed=${Date.now()}`
-      
+
       return {
         imageUrl,
         provider: 'pollinations', // Will be 'zai' when implemented
         model: this.modelName,
-        isComplete: true
+        isComplete: true,
       }
     } catch (error) {
       console.error('[Gemini Provider] generateImage error:', error)
@@ -468,25 +514,25 @@ No text in image.`
   async healthCheck() {
     try {
       const startTime = Date.now()
-      
+
       // Simple connectivity check
       await this.generateContent('ping', {
-        maxTokens: 10
+        maxTokens: 10,
       })
-      
+
       const latency = Date.now() - startTime
-      
+
       return {
         status: 'healthy',
         latency,
         model: this.modelName,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }
     } catch (error) {
       return {
         status: 'unhealthy',
         error: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }
     }
   }

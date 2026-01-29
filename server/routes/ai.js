@@ -477,7 +477,7 @@ router.get('/health', auth, async (req, res) => {
     const results = await Promise.all(healthPromises)
 
     // Add router's internal health (environment providers)
-    results.push(...metrics)
+    results.push(...Object.values(metrics))
 
     res.json({ 
       providers: results

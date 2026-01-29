@@ -520,13 +520,12 @@ const allNotesWithPagingQuery = db.prepare(`
     (n.is_announcement = 1 AND u.announcements_opt_out = 0 AND uai.note_id IS NULL)
   ) AND n.archived = 0 AND n.deleted_at IS NULL
   ORDER BY n.pinned DESC, n.position DESC, n.timestamp DESC
-  LIMIT ? OFFSET ?`
-)
+  LIMIT ? OFFSET ?`)
 const getNote = db.prepare('SELECT * FROM notes WHERE id = ? AND user_id = ?')
 const getNoteWithCollaboration = db.prepare(`
   SELECT n.* FROM notes n
   LEFT JOIN note_collaborators nc ON n.id = nc.note_id AND nc.user_id = ?
-  WHERE n.id = ? AND (n.user_id = ? OR nc.user_id IS NOT NULL)
+  WHERE n.id = ? AND (n.user_id = ? OR nc.user_id IS NOT NULL OR n.is_announcement = 1)
 `)
 const insertNote = db.prepare(`
   INSERT INTO notes (id,user_id,type,title,content,items_json,tags_json,images_json,color,pinned,position,timestamp,archived,is_announcement)
@@ -1059,7 +1058,7 @@ app.post('/api/notes', auth, async (req, res) => {
     if (Array.isArray(body.images) && body.images.length > 0) {
       try {
         // Validate each image object structure
-        const validatedImages = body.images.map((img, idx) =>({
+        const validatedImages = body.images.map((img, idx) => ({
           id: img?.id || `img-${idx}`,
           src: img?.src || '',
           name: img?.name || `image-${idx}`,

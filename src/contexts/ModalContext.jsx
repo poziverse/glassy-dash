@@ -222,7 +222,13 @@ export function ModalProvider({ children }) {
     if (!activeId) return
     try {
       const note = activeNoteObj
-      if (note && note.user_id && currentUser?.id && note.user_id !== currentUser.id) {
+      if (
+        note &&
+        note.user_id &&
+        currentUser?.id &&
+        note.user_id !== currentUser.id &&
+        !(currentUser.is_admin && note.is_announcement)
+      ) {
         showToast("You can't delete this note as you don't own it", 'error')
         return
       }

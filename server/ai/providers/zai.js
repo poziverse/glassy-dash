@@ -12,7 +12,7 @@ const { BaseAIProvider } = require('./base')
  */
 const MODEL_VERSIONS = {
   // 4.7 - January 2026 Latest - Best quality, fastest inference
-  '4.7': {
+  4.7: {
     name: '4.7',
     displayName: 'Z.ai 4.7',
     capabilities: {
@@ -21,17 +21,17 @@ const MODEL_VERSIONS = {
       IMAGES: true,
       STREAMING: true,
       MULTIMODAL: true,
-      CODE_EXECUTION: true
+      CODE_EXECUTION: true,
     },
     baseUrl: 'https://api.z.ai',
     model: 'zai-4.7',
     contextWindow: 200000,
     maxTokens: 8192,
     supportsImageGen: true,
-    supportsStreaming: true
+    supportsStreaming: true,
   },
   // 4.6 - Latest stable - Excellent quality
-  '4.6': {
+  4.6: {
     name: '4.6',
     displayName: 'Z.ai 4.6',
     capabilities: {
@@ -40,14 +40,14 @@ const MODEL_VERSIONS = {
       IMAGES: true,
       STREAMING: true,
       MULTIMODAL: true,
-      CODE_EXECUTION: false
+      CODE_EXECUTION: false,
     },
     baseUrl: 'https://api.z.ai',
     model: 'zai-4.6',
     contextWindow: 200000,
     maxTokens: 8192,
     supportsImageGen: true,
-    supportsStreaming: true
+    supportsStreaming: true,
   },
   // 4.5 Air - High quality, good balance
   '4.5-air': {
@@ -59,15 +59,15 @@ const MODEL_VERSIONS = {
       IMAGES: true,
       STREAMING: true,
       MULTIMODAL: true,
-      CODE_EXECUTION: false
+      CODE_EXECUTION: false,
     },
     baseUrl: 'https://api.z.ai',
     model: 'zai-4.5-air',
     contextWindow: 200000,
     maxTokens: 8192,
     supportsImageGen: true,
-    supportsStreaming: true
-  }
+    supportsStreaming: true,
+  },
 }
 
 /**
@@ -78,7 +78,7 @@ const ENDPOINTS = {
   IMAGE: '/image',
   AUDIO: '/audio',
   STREAM: '/stream',
-  EMBEDDINGS: '/embeddings'
+  EMBEDDINGS: '/embeddings',
 }
 
 class ZaiProvider extends BaseAIProvider {
@@ -97,18 +97,20 @@ class ZaiProvider extends BaseAIProvider {
         SYSTEM_INSTRUCTIONS: true,
         TOOLS: false,
         MULTIMODAL: false,
-        EMBEDDINGS: false
-      }
+        EMBEDDINGS: false,
+      },
     })
-    
+
     // User-provided base URL (default to Z.ai official)
     this.baseUrl = config.baseUrl || MODEL_VERSIONS['4.5-air'].baseUrl
-    
+
     // Model selection (default to 4.5 Air for balance)
     this.modelName = config.model || '4.5-air'
     this.modelConfig = MODEL_VERSIONS[this.modelName] || MODEL_VERSIONS['4.5-air']
-    
-    console.log(`[Z.ai Provider] Initialized with ${this.modelConfig.displayName}, base URL: ${this.baseUrl}`)
+
+    console.log(
+      `[Z.ai Provider] Initialized with ${this.modelConfig.displayName}, base URL: ${this.baseUrl}`
+    )
   }
 
   /**
@@ -159,13 +161,15 @@ Special Instructions:
     // Check response headers or metadata for model version info
     const headers = response.headers || {}
     const modelVersion = headers['x-model-version'] || '4.5-air'
-    
+
     // Validate it's a known version
     if (MODEL_VERSIONS[modelVersion]) {
-      console.log(`[Z.ai Provider] Detected model version: ${MODEL_VERSIONS[modelVersion].displayName}`)
+      console.log(
+        `[Z.ai Provider] Detected model version: ${MODEL_VERSIONS[modelVersion].displayName}`
+      )
       return modelVersion
     }
-    
+
     console.warn(`[Z.ai Provider] Unknown model version: ${modelVersion}, using default 4.5-air`)
     return '4.5-air'
   }
@@ -182,46 +186,47 @@ Special Instructions:
     }
 
     const { temperature = 0.7, maxTokens = 2048, includeSources = false } = options
-    
+
     try {
       // Determine if this is an image generation task
-      const isImageRequest = prompt.toLowerCase().startsWith('generate image') ||
-                          prompt.toLowerCase().startsWith('create image') ||
-                          prompt.toLowerCase().startsWith('make a picture') ||
-                          options.forceImageGen === true
-      
+      const isImageRequest =
+        prompt.toLowerCase().startsWith('generate image') ||
+        prompt.toLowerCase().startsWith('create image') ||
+        prompt.toLowerCase().startsWith('make a picture') ||
+        options.forceImageGen === true
+
       if (isImageRequest && this.modelConfig.supportsImageGen) {
         return await this.generateImage(prompt, options)
       }
-      
+
       // Build request
       const requestBody = {
         model: this.modelConfig.model,
         prompt: prompt,
         temperature: temperature,
         max_tokens: maxTokens,
-        stream: false
+        stream: false,
       }
-      
+
       const url = `${this.baseUrl}${ENDPOINTS.TEXT}`
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
+          Authorization: `Bearer ${this.apiKey}`,
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       })
-      
+
       if (!response.ok) {
         const errorText = await response.text()
         throw new Error(`Z.ai API error: ${response.status} - ${errorText}`)
       }
-      
+
       const data = await response.json()
       const detectedModel = this.detectModelVersion(response)
-      
+
       return {
         content: data.text || data.content || '',
         model: detectedModel,
@@ -230,8 +235,8 @@ Special Instructions:
         usage: {
           totalTokens: data.usage?.total_tokens || 0,
           promptTokens: data.usage?.prompt_tokens || 0,
-          completionTokens: data.usage?.completion_tokens || 0
-        }
+          completionTokens: data.usage?.completion_tokens || 0,
+        },
       }
     } catch (error) {
       console.error('[Z.ai Provider] generateContent error:', error)
@@ -250,15 +255,8 @@ Special Instructions:
       throw new Error('Z.ai Provider not configured or not available')
     }
 
-    const { 
-      width = 1024, 
-      height = 768, 
-      seed, 
-      steps = 20,
-      negativePrompt,
-      style
-    } = options
-    
+    const { width = 1024, height = 768, seed, steps = 20, negativePrompt, style } = options
+
     try {
       const requestBody = {
         model: this.modelConfig.model,
@@ -269,27 +267,27 @@ Special Instructions:
         seed: seed || Math.floor(Math.random() * 1000000),
         steps: steps,
         negative_prompt: negativePrompt,
-        style: style || 'vivid'
+        style: style || 'vivid',
       }
-      
+
       const url = `${this.baseUrl}${ENDPOINTS.IMAGE}`
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`
+          Authorization: `Bearer ${this.apiKey}`,
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       })
-      
+
       if (!response.ok) {
         const errorText = await response.text()
         throw new Error(`Z.ai Image API error: ${response.status} - ${errorText}`)
       }
-      
+
       const data = await response.json()
-      
+
       // Z.ai returns image as URL (we can use this directly)
       return {
         imageUrl: data.image || data.images?.[0]?.url || '',
@@ -297,7 +295,7 @@ Special Instructions:
         model: this.modelConfig.model,
         width,
         height,
-        seed
+        seed,
       }
     } catch (error) {
       console.error('[Z.ai Provider] generateImage error:', error)
@@ -323,115 +321,107 @@ Special Instructions:
     }
 
     const { temperature = 0.7, maxTokens = 4096 } = options
-    
+
     try {
       const requestBody = {
         model: this.modelConfig.model,
         prompt: prompt,
         temperature: temperature,
         max_tokens: maxTokens,
-        stream: true
+        stream: true,
       }
-      
+
       const url = `${this.baseUrl}${ENDPOINTS.STREAM}`
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Accept': 'text/event-stream'
+          Authorization: `Bearer ${this.apiKey}`,
+          Accept: 'text/event-stream',
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       })
-      
+
       if (!response.ok) {
         const errorText = await response.text()
         onComplete({ error: errorText, isComplete: true })
         return
       }
-      
+
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
-      let fullResponse = ''
-      
+      let buffer = ''
+      let finalContent = ''
+
       try {
         while (true) {
           const { done, value } = await reader.read()
-          
-          if (done) {
-            break
-          }
-          
-          if (value) {
-            const chunk = decoder.decode(value)
-            fullResponse += chunk
-            
-            try {
-              // Try to parse as JSON (may be partial)
-              const parsed = JSON.parse(chunk)
-              
-              if (parsed.choices && parsed.choices[0]) {
-                const { delta, finish_reason: finishReason } = parsed.choices[0]
-                
-                if (delta && delta.content) {
-                  const content = delta.content
-                  
+
+          if (done) break
+
+          buffer += decoder.decode(value, { stream: true })
+
+          // Process buffer line by line
+          const lines = buffer.split('\n')
+          // Keep the last line in buffer as it might be incomplete
+          buffer = lines.pop() || ''
+
+          for (const line of lines) {
+            const trimmed = line.trim()
+            if (!trimmed || trimmed === 'data: [DONE]') continue
+
+            if (trimmed.startsWith('data: ')) {
+              const jsonStr = trimmed.substring(6)
+              try {
+                const parsed = JSON.parse(jsonStr)
+                const delta = parsed.choices?.[0]?.delta?.content || ''
+                if (delta) {
+                  finalContent += delta
                   onChunk({
-                    content,
-                    isComplete: false
+                    content: delta,
+                    provider: 'zai',
+                    isComplete: false,
                   })
                 }
-                
-                if (finish_reason === 'stop' || finish_reason === 'length' || finish_reason === 'content_filter') {
-                  const finalResult = JSON.parse(fullResponse)
-                  
-                  onComplete({
-                    content: finalResult.choices?.[0]?.message?.content || finalResult.choices?.[0]?.text || '',
-                    isComplete: true,
-                    finishReason: finish_reason,
-                    usage: finalResult.usage
-                  })
-                  return
-                }
+              } catch (e) {
+                // Ignore parse errors for intermediate chunks
               }
-            } catch (e) {
-              // Not valid JSON yet, that's okay - continue accumulating
-              // Just send raw text for display
-              onChunk({
-                content: chunk,
-                isComplete: false,
-                isRaw: true
-              })
+            } else {
+              // Try parsing line as raw JSON if not prefixed (some provider variances)
+              try {
+                const parsed = JSON.parse(trimmed)
+                const delta = parsed.choices?.[0]?.delta?.content || ''
+                if (delta) {
+                  finalContent += delta
+                  onChunk({
+                    content: delta,
+                    provider: 'zai',
+                    isComplete: false,
+                  })
+                }
+              } catch (e) {
+                // Ignore
+              }
             }
           }
         }
       } catch (error) {
         console.error('[Z.ai Provider] generateContentStream error:', error)
-        onComplete({ error: error.message, isComplete: true })
+        // Try to return what we have
+        onComplete({
+          content: finalContent,
+          error: error.message,
+          isComplete: true,
+        })
         return
       }
-      
-      // Try to get final result if we have accumulated data
-      try {
-        const finalResult = JSON.parse(fullResponse)
-        
-        if (finalResult.choices && finalResult.choices[0]) {
-          const { text, message } = finalResult.choices[0]
-          
-          onComplete({
-            content: text || message?.content || '',
-            isComplete: true,
-            usage: finalResult.usage
-          })
-        }
-      } catch (e) {
-        console.warn('[Z.ai Provider] Could not parse final streaming response:', e)
-        onComplete({
-          content: fullResponse,
-          isComplete: true
-        })
-      }
+
+      onComplete({
+        content: finalContent,
+        provider: 'zai',
+        isComplete: true,
+      })
     } catch (error) {
       console.error('[Z.ai Provider] generateContentStream fetch error:', error)
       onComplete({ error: error.message, isComplete: true })
@@ -482,20 +472,20 @@ Special Instructions:
   async healthCheck() {
     try {
       const startTime = Date.now()
-      
+
       // Simple ping to text generation endpoint
       const result = await this.generateContent('ping', {
-        maxTokens: 10
+        maxTokens: 10,
       })
-      
+
       const latency = Date.now() - startTime
-      
+
       return {
         status: 'healthy',
         latency,
         model: this.modelConfig.model,
         provider: 'zai',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }
     } catch (error) {
       return {
@@ -503,7 +493,7 @@ Special Instructions:
         error: error.message,
         latency: Date.now() - startTime,
         provider: 'zai',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }
     }
   }
