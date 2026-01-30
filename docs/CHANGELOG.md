@@ -6,6 +6,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.2.0] - 2026-01-29
+
+### Removed
+
+- 🏗️ **Infrastructure Simplified**
+  - **Uninstall Dokploy**: Removed Dokploy as the primary deployment orchestrator
+  - **Decommissioned Traefik**: Removed `dokploy-traefik` and related network configurations
+  - **Cleaned Documentation**: Updated all deployment guides to reflect standard Docker deployment without proprietary PaaS dependencies
+
+### Added
+
+- 🛡️ **Improved Deployment Process**
+  - Updated `DEPLOYMENT_PROCESS.md` and `QUICK_REFERENCE.md` for standard Docker usage
+  - Re-focused architecture on Cloudflare Tunnel/direct port mapping for simplicity
+
+---
+
+## [1.1.9] - 2026-01-29
+
+### Added
+
+- 🔍 **Amazing Search Experience**
+  - **Fuzzy Search**: Integrated `Fuse.js` for typo-tolerant searching across titles, content, and checklists
+  - **Relevance Ranking**: Results are intelligently sorted by match quality (Title > Content)
+  - **Visual Highlighting**: Search terms are properly highlighted in note titles and preview text using the new `HighlightText` component
+  - **Smooth Animations**: Note list filtering now features fluid layout transitions and enter/exit animations via `framer-motion`
+
+- 🧩 **New Components**
+  - `HighlightText.jsx`: Reusable component for handling text highlighting based on match indices
+
+### Fixed
+
+- 🐛 **Search Filtering**: Fixed issue where search input didn't correctly filter the `pinned` and `others` lists
+- 🐛 **UI/UX**: Resolved `ReferenceError` in `NotesView` and fixed component import issues
+- 🧹 **Code Quality**: Removed unused imports (`useAdmin`, `useAuthStore`, etc.) from note viewing components
+
+---
+
 ## [1.1.8] - 2026-01-28
 
 ### Added

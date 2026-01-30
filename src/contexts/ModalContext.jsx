@@ -160,59 +160,64 @@ export function ModalProvider({ children }) {
     [openNoteStore, token, setAddModalCollaborators]
   )
 
-  const saveModal = useCallback(async () => {
-    if (!activeId || isSaving) return
-    const base = {
-      id: activeId,
-      title: mTitle.trim(),
-      tags: mTagList,
-      images: mImages,
-      color: mColor,
-      transparency: mTransparency,
-      pinned: !!activeNoteObj?.pinned,
-    }
-    const payload =
-      mType === 'text'
-        ? { ...base, type: 'text', content: mBody, items: [] }
-        : mType === 'checklist'
-          ? { ...base, type: 'checklist', content: '', items: mItems }
-          : mType === 'youtube' || mType === 'music'
-            ? { ...base, type: mType, content: mBody, items: [] }
-            : { ...base, type: 'draw', content: JSON.stringify(mDrawingData), items: [] }
+  const saveModal = useCallback(
+    async (shouldClose = false) => {
+      if (!activeId || isSaving) return
+      const base = {
+        id: activeId,
+        title: mTitle.trim(),
+        tags: mTagList,
+        images: mImages,
+        color: mColor,
+        transparency: mTransparency,
+        pinned: !!activeNoteObj?.pinned,
+      }
+      const payload =
+        mType === 'text'
+          ? { ...base, type: 'text', content: mBody, items: [] }
+          : mType === 'checklist'
+            ? { ...base, type: 'checklist', content: '', items: mItems }
+            : mType === 'youtube' || mType === 'music'
+              ? { ...base, type: mType, content: mBody, items: [] }
+              : { ...base, type: 'draw', content: JSON.stringify(mDrawingData), items: [] }
 
-    try {
-      setIsSaving(true)
-      await updateNote(activeId, payload)
-      closeNoteStore() // Force close after successful save
-    } catch (_e) {
-      showToast('Could not save your changes. Please try again.', 'error')
-    } finally {
-      setIsSaving(false)
-    }
-  }, [
-    activeId,
-    activeNoteObj,
-    isSaving,
-    mTitle,
-    mTagList,
-    mImages,
-    mColor,
-    mTransparency,
-    mType,
-    mBody,
-    mItems,
-    mDrawingData,
-    updateNote,
-    closeNoteStore,
-    showToast,
-    setIsSaving,
-  ])
+      try {
+        setIsSaving(true)
+        await updateNote(activeId, payload)
+        if (shouldClose) {
+          closeNoteStore() // Only close if explicitly requested
+        }
+      } catch (_e) {
+        showToast('Could not save your changes. Please try again.', 'error')
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [
+      activeId,
+      activeNoteObj,
+      isSaving,
+      mTitle,
+      mTagList,
+      mImages,
+      mColor,
+      mTransparency,
+      mType,
+      mBody,
+      mItems,
+      mDrawingData,
+      updateNote,
+      closeNoteStore,
+      showToast,
+      setIsSaving,
+    ]
+  )
 
-  const closeModal = useCallback(() => {
+  const closeModal = useCallback(async () => {
     // Autosave on close if there are changes
     const { modalHasChanges } = useModalStore.getState()
     if (modalHasChanges && !isSaving) {
-      saveModal()
+      await saveModal(true) // Save and close
     } else {
       closeNoteStore()
     }
@@ -251,9 +256,12 @@ export function ModalProvider({ children }) {
         const start = el.selectionStart ?? val.length
         const end = el.selectionEnd ?? val.length
 
-        // Construct markdown image
-        // ![icon:star](/api/icons/lucide/star.svg)
-        const textToInsert = `![icon:${payload}](/api/icons/lucide/${payload}.svg)`
+        // Determine if it's an emoji or a Lucide icon name (alphanumeric)
+        const isEmoji = !/^[a-zA-Z0-9]+$/.test(payload)
+
+        const textToInsert = isEmoji
+          ? payload
+          : `![icon:${payload}](/api/icons/lucide/${payload}.svg)`
 
         const newText = val.slice(0, start) + textToInsert + val.slice(end)
         setMBody(newText)
@@ -451,23 +459,29 @@ export function ModalProvider({ children }) {
   const onMChecklistDragStart = useCallback(
     (e, itemId) => {
       setChecklistDragId(itemId)
-      e.dataTransfer.setData(
-        'application/json',
-        JSON.stringify({ source: 'checklist-modal', id: itemId })
-      )
+      if (e?.dataTransfer) {
+        e.dataTransfer.setData(
+          'application/json',
+          JSON.stringify({ source: 'checklist-modal', id: itemId })
+        )
+      }
     },
     [setChecklistDragId]
   )
 
   const onMChecklistDragOver = useCallback(e => {
-    e.preventDefault()
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault()
+    }
   }, [])
 
   const onMChecklistDrop = useCallback(
     (e, targetId) => {
-      e.preventDefault()
+      if (e && typeof e.preventDefault === 'function') {
+        e.preventDefault()
+      }
       try {
-        const data = JSON.parse(e.dataTransfer.getData('application/json') || '{}')
+        const data = JSON.parse(e?.dataTransfer?.getData('application/json') || '{}')
         if (data.source !== 'checklist-modal') return
         const sourceId = data.id
         if (String(sourceId) === String(targetId)) return
@@ -480,7 +494,9 @@ export function ModalProvider({ children }) {
         const [removed] = items.splice(sourceIdx, 1)
         items.splice(targetIdx, 0, removed)
         setMItems(items)
-      } catch (_err) {}
+      } catch (_err) {
+        // Fallback for drop errors
+      }
       setChecklistDragId(null)
     },
     [mItems, setMItems, setChecklistDragId]

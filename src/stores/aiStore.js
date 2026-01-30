@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { api } from '../lib/api'
 
 /**
  * AI Assistant Store
@@ -53,21 +54,11 @@ export const useAiStore = create((set, get) => ({
     store.setLoading(true)
 
     try {
-      const token = localStorage.getItem('glassy-dash-token')
-      const response = await fetch('/api/ai/ask', {
+      const data = await api('/ai/ask', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ question, notes }),
+        body: { question, notes },
       })
 
-      if (!response.ok) {
-        throw new Error('AI request failed')
-      }
-
-      const data = await response.json()
       // Support both legacy string response and new object response
       const answerText = typeof data.answer === 'object' ? data.answer.text : data.answer
       const tools = data.tools || (typeof data.answer === 'object' ? data.answer.tools : [])
@@ -89,27 +80,16 @@ export const useAiStore = create((set, get) => ({
     store.setLoading(true)
 
     try {
-      const token = localStorage.getItem('glassy-dash-token')
       // Use standard notes creation endpoint
-      const response = await fetch('/api/notes', {
+      const data = await api('/notes', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+        body: {
           title: 'AI Insight', // Default title
           content: content,
           type: 'text',
           tags: ['ai-generated'],
-        }),
+        },
       })
-
-      if (!response.ok) {
-        throw new Error('Failed to create note')
-      }
-
-      const data = await response.json()
 
       // Notify user
       store.addMessage('assistant', `✓ Saved to notes as "${data.title}"`)
@@ -130,21 +110,11 @@ export const useAiStore = create((set, get) => ({
     // Let the component handle local loading state
 
     try {
-      const token = localStorage.getItem('glassy-dash-token')
-      const response = await fetch('/api/ai/transform', {
+      const data = await api('/ai/transform', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ text, instruction }),
+        body: { text, instruction },
       })
 
-      if (!response.ok) {
-        throw new Error('Transformation failed')
-      }
-
-      const data = await response.json()
       return data.transformed
     } catch (error) {
       console.error('Transform error:', error)
@@ -155,19 +125,11 @@ export const useAiStore = create((set, get) => ({
   // Generate Image
   generateImage: async prompt => {
     try {
-      const token = localStorage.getItem('glassy-dash-token')
-      const response = await fetch('/api/ai/generate-image', {
+      const data = await api('/ai/generate-image', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ prompt }),
+        body: { prompt },
       })
 
-      if (!response.ok) throw new Error('Image generation failed')
-
-      const data = await response.json()
       return data.imageUrl
     } catch (error) {
       console.error('Image Gen Error:', error)

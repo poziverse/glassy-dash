@@ -11,6 +11,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:-please-change-in-production}
       - DB_FILE=/app/data/notes.db
       - ADMIN_EMAILS=${ADMIN_EMAILS:-admin}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-${VITE_GEMINI_API_KEY}}
     volumes:
       - ./data:/app/data
     healthcheck:

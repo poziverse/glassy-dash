@@ -4,6 +4,9 @@ import { SettingsIcon, CloseIcon, MusicIcon, SunIcon, ArchiveIcon } from './Icon
 import { MusicSettings } from './MusicSettings'
 import { AppearanceSettings } from './settings/AppearanceSettings'
 import { Tooltip } from './Tooltip'
+import { Globe, Copy, Check } from 'lucide-react'
+import { toast } from 'react-hot-toast'
+import { useAuthStore } from '../stores/authStore'
 
 const TABS = [
   { id: 'appearance', label: 'Appearance', icon: <SunIcon /> },
@@ -27,8 +30,72 @@ export function SettingsPanel({ inline, ...props }) {
   const { exportAllNotes, importNotes, downloadSecretKey } = useNotes()
 
   const [activeTab, setActiveTab] = useState('appearance')
+  const { currentUser, login } = useAuthStore()
+  const [slugInput, setSlugInput] = useState('')
+  const [slugLoading, setSlugLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  // Initialize slug input from currentUser
+  useEffect(() => {
+    if (currentUser?.slug) {
+      setSlugInput(currentUser.slug)
+    }
+  }, [currentUser])
+
+  const handleSaveSlug = async () => {
+    if (slugLoading) return
+    const newSlug = slugInput.trim()
+
+    // Basic validation
+    if (newSlug && !/^[a-z0-9-]{3,30}$/.test(newSlug)) {
+      toast.error('Slug must be 3-30 chars, alphanumeric with dashes.')
+      return
+    }
+
+    setSlugLoading(true)
+    try {
+      const res = await fetch('/api/users/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${useAuthStore.getState().token}`,
+        },
+        body: JSON.stringify({ slug: newSlug || '' }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Failed to update')
+      }
+
+      const data = await res.json()
+
+      // Update local user state properly
+      // We re-use the existing token but update the user object
+      const updatedUser = { ...currentUser, slug: data.slug }
+      login(updatedUser, useAuthStore.getState().token)
+
+      toast.success(data.slug ? 'Public URL claimed!' : 'Public URL removed')
+    } catch (e) {
+      toast.error(e.message)
+    } finally {
+      setSlugLoading(false)
+    }
+  }
+
+  const copyUrl = () => {
+    if (!currentUser?.slug) return
+    const url = `${window.location.host}/#/w/${currentUser.slug}` // Use full URL in real app, here construct relative for now or just host
+    // Actually window.location.origin is better
+    const fullUrl = `${window.location.origin}/#/w/${currentUser.slug}`
+    navigator.clipboard.writeText(fullUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+    toast.success('URL copied to clipboard')
+  }
 
   const open = inline ? true : props.open !== undefined ? props.open : settingsPanelOpen
+
   const onClose = props.onClose || (() => setSettingsPanelOpen(false))
 
   // Prevent body scroll when settings panel is open
@@ -100,6 +167,7 @@ export function SettingsPanel({ inline, ...props }) {
               <Tooltip key={tab.id} text={tab.label} position="right">
                 <button
                   onClick={() => setActiveTab(tab.id)}
+                  aria-label={tab.label}
                   className={`
                     flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200
                     ${
@@ -211,6 +279,7 @@ export function SettingsPanel({ inline, ...props }) {
                       <button
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${dark ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'}`}
                         onClick={toggleDark}
+                        aria-label="Toggle Dark Mode"
                       >
                         <span
                           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${dark ? 'translate-x-6' : 'translate-x-1'}`}
@@ -228,6 +297,7 @@ export function SettingsPanel({ inline, ...props }) {
                       <button
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${listView ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'}`}
                         onClick={toggleListView}
+                        aria-label="Toggle List View"
                       >
                         <span
                           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${listView ? 'translate-x-6' : 'translate-x-1'}`}
@@ -245,12 +315,79 @@ export function SettingsPanel({ inline, ...props }) {
                       <button
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${alwaysShowSidebarOnWide ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'}`}
                         onClick={() => setAlwaysShowSidebarOnWide(!alwaysShowSidebarOnWide)}
+                        aria-label="Toggle Persistent Sidebar"
                       >
                         <span
                           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${alwaysShowSidebarOnWide ? 'translate-x-6' : 'translate-x-1'}`}
                         />
                       </button>
                     </div>
+                  </div>
+                </div>
+                {/* Public Profile Section */}
+                <div className="mt-8 pt-8 border-t border-[var(--border-light)]">
+                  <h4 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-blue-500" />
+                    Public Window
+                  </h4>
+                  <p className="text-sm opacity-80 mb-4">
+                    Claim a unique URL to share your selected notes publicly. Only notes marked as
+                    "Public" will be visible.
+                  </p>
+
+                  <div className="flex flex-col gap-3">
+                    <label className="text-xs font-semibold uppercase opacity-60">
+                      Personal URL Slug
+                    </label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-2.5 text-gray-500 text-sm select-none">
+                          .../#/w/
+                        </span>
+                        <input
+                          type="text"
+                          value={slugInput}
+                          onChange={e =>
+                            setSlugInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
+                          }
+                          placeholder="unique-name"
+                          className="w-full bg-black/5 dark:bg-white/5 border border-[var(--border-light)] rounded-lg py-2 pl-20 pr-3 focus:outline-none focus:ring-2 focus:ring-accent"
+                        />
+                      </div>
+                      <button
+                        onClick={handleSaveSlug}
+                        disabled={slugLoading || slugInput === (currentUser?.slug || '')}
+                        className="px-4 py-2 bg-accent text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 transition-all"
+                      >
+                        {slugLoading ? 'Saving...' : 'Save'}
+                      </button>
+                    </div>
+
+                    {currentUser?.slug && (
+                      <div className="flex items-center gap-3 mt-2 bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg text-sm text-blue-600 dark:text-blue-400">
+                        <div className="flex-1 truncate font-mono select-all">
+                          {window.location.host}/#/w/{currentUser.slug}
+                        </div>
+                        <button
+                          onClick={copyUrl}
+                          className="p-1.5 hover:bg-blue-500/10 rounded-md transition-colors"
+                          title="Copy URL"
+                          aria-label="Copy public URL"
+                        >
+                          {copied ? <Check size={16} /> : <Copy size={16} />}
+                        </button>
+                        <a
+                          href={`#/w/${currentUser.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 hover:bg-blue-500/10 rounded-md transition-colors"
+                          title="Open Link"
+                          aria-label="Open public window"
+                        >
+                          <Globe size={16} />
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

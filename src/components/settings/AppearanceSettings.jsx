@@ -50,6 +50,7 @@ export function AppearanceSettings() {
               !currentUser?.announcements_opt_out ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'
             }`}
             onClick={handleAnnouncementsToggle}
+            aria-label="Toggle Admin Announcements"
           >
             <span
               className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
@@ -85,7 +86,7 @@ export function AppearanceSettings() {
                   <img
                     src={BACKGROUNDS.find(b => b.id === preset.backgroundId)?.paths?.thumb}
                     className="w-full h-full object-cover opacity-80"
-                    alt={preset.name}
+                    alt=""
                     onError={e => {
                       e.target.style.display = 'none'
                     }}
@@ -129,6 +130,7 @@ export function AppearanceSettings() {
                   onChange={e => setOverlayOpacity(parseFloat(e.target.value))}
                   className="w-24 h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-[var(--color-accent)]"
                   title={`Opacity: ${Math.round(overlayOpacity * 100)}%`}
+                  aria-label="Background Overlay Opacity"
                 />
               )}
               <button
@@ -136,6 +138,7 @@ export function AppearanceSettings() {
                   backgroundOverlay ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'
                 }`}
                 onClick={() => setBackgroundOverlay(!backgroundOverlay)}
+                aria-label="Toggle Background Overlay Theme"
               >
                 <span
                   className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
@@ -244,6 +247,7 @@ export function AppearanceSettings() {
             <button
               key={color.id}
               onClick={() => setAccentColor(color.id)}
+              aria-label={`Set accent color to ${color.name}`}
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                 accentColor === color.id
                   ? 'ring-2 ring-offset-2 ring-accent scale-110'
@@ -266,6 +270,7 @@ export function AppearanceSettings() {
             <button
               key={preset.id}
               onClick={() => setCardTransparency(preset.id)}
+              aria-label={`Set card transparency to ${preset.name}`}
               className={`px-3 py-1.5 rounded border text-xs transition-all ${
                 cardTransparency === preset.id
                   ? 'border-accent bg-accent/10 text-accent font-bold'

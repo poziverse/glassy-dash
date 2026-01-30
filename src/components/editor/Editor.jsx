@@ -3,6 +3,7 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import Underline from '@tiptap/extension-underline'
 import {
   Bold,
   Italic,
@@ -21,6 +22,9 @@ import {
   Minus,
 } from 'lucide-react'
 import AiBubbleMenu from './AiBubbleMenu'
+import { ContextMenu, ContextMenuItem, ContextMenuSeparator } from '../ContextMenu'
+import { Sparkles, ALargeSmall, CheckCheck, FileText } from 'lucide-react'
+import { useState } from 'react'
 
 // Toolbar Button Component
 const ToolbarButton = ({ onClick, isActive, disabled, title, children }) => (
@@ -49,6 +53,7 @@ const GlassyEditor = ({ content, onChange, editable = true }) => {
           levels: [1, 2, 3],
         },
       }),
+      Underline,
       Placeholder.configure({
         placeholder: "Type '/' for commands, or just start writing...",
       }),
@@ -72,12 +77,19 @@ const GlassyEditor = ({ content, onChange, editable = true }) => {
     }
   }, [content, editor])
 
+  const [menuPos, setMenuPos] = useState(null)
+
   if (!editor) {
     return null
   }
 
+  const handleContextMenu = e => {
+    e.preventDefault()
+    setMenuPos({ x: e.clientX, y: e.clientY })
+  }
+
   return (
-    <div className="relative flex flex-col h-full">
+    <div className="relative flex flex-col h-full" onContextMenu={handleContextMenu}>
       {/* Glass Toolbar */}
       <div
         className="sticky top-0 z-10 flex flex-wrap items-center gap-1 p-2 mb-4 rounded-xl border border-white/10 shadow-lg"
@@ -291,6 +303,46 @@ const GlassyEditor = ({ content, onChange, editable = true }) => {
       <div className="flex-1">
         <EditorContent editor={editor} />
       </div>
+
+      {/* Context Menu */}
+      {menuPos && (
+        <ContextMenu
+          position={menuPos}
+          onClose={() => setMenuPos(null)}
+          dark={true} // Generally dark in this UI
+        >
+          <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            AI Assistant
+          </div>
+          <ContextMenuItem
+            icon={<Sparkles size={16} />}
+            label="Summarize"
+            onClick={() => {
+              // Placeholder
+              setMenuPos(null)
+            }}
+            dark={true}
+          />
+          <ContextMenuItem
+            icon={<FileText size={16} />}
+            label="Continue writing"
+            onClick={() => {
+              // Placeholder
+              setMenuPos(null)
+            }}
+            dark={true}
+          />
+          <ContextMenuItem
+            icon={<CheckCheck size={16} />}
+            label="Fix spelling & grammar"
+            onClick={() => {
+              // Placeholder
+              setMenuPos(null)
+            }}
+            dark={true}
+          />
+        </ContextMenu>
+      )}
     </div>
   )
 }

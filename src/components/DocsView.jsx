@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useSettingsStore } from '../stores/settingsStore'
 import { bgFor } from '../themes'
 import DashboardLayout from './DashboardLayout'
@@ -27,7 +27,10 @@ import {
   CheckSquare,
   Square,
   Pin,
+  Edit,
 } from 'lucide-react'
+import { ContextMenu, ContextMenuItem, ContextMenuSeparator } from './ContextMenu'
+import { safeUserMarkdown } from '../utils/safe-markdown'
 
 export default function DocsView() {
   const currentUser = useAuthStore(state => state.currentUser)
@@ -46,10 +49,8 @@ export default function DocsView() {
     permanentDeleteDoc,
     clearTrash,
     setActiveDoc,
-    moveDocToFolder,
     togglePin,
     bulkDeleteDocs,
-    bulkMoveDocs,
   } = useDocsStore()
 
   const { activeFolderId, getFolder } = useDocsFolderStore()
@@ -59,8 +60,6 @@ export default function DocsView() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [toastMessage, setToastMessage] = useState(null)
   const [deletingDocId, setDeletingDocId] = useState(null)
-  const [editingDocId, setEditingDocId] = useState(null)
-  const [editTitle, setEditTitle] = useState('')
   const [showTrash, setShowTrash] = useState(false)
 
   // New features state
@@ -70,6 +69,7 @@ export default function DocsView() {
   const [selectedDocIds, setSelectedDocIds] = useState([])
   const [isSelectionMode, setIsSelectionMode] = useState(false)
   const [error, setError] = useState(null)
+  const [contextMenu, setContextMenu] = useState(null) // { x, y, docId }
 
   // Derived state
   const activeDoc = docs?.find(d => d.id === activeDocId)
@@ -201,25 +201,13 @@ export default function DocsView() {
     }
   }
 
-  const startEditTitle = doc => {
-    setEditingDocId(doc.id)
-    setEditTitle(doc.title || 'Untitled')
-  }
-
-  const saveEditedTitle = async () => {
-    if (editingDocId) {
-      try {
-        setError(null)
-        updateDoc(editingDocId, { title: editTitle })
-        setEditingDocId(null)
-        setEditTitle('')
-        setToastMessage('Title updated')
-        setTimeout(() => setToastMessage(null), 3000)
-      } catch (error) {
-        logger.error('docs_update_title_failed', { docId: editingDocId, title: editTitle }, error)
-        setError('Failed to update title. Please try again.')
-      }
-    }
+  const handleContextMenu = (e, docId) => {
+    e.preventDefault()
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      docId,
+    })
   }
 
   return (
@@ -262,6 +250,7 @@ export default function DocsView() {
               <div className="flex items-center gap-4 bg-black/20 p-2 border-b border-white/10 backdrop-blur-md">
                 <button
                   onClick={() => setActiveDoc(null)}
+                  data-testid="back-to-docs"
                   className="p-2 hover:bg-white/10 rounded-lg text-gray-300 transition-colors"
                   title="Back to Docs"
                 >
@@ -271,6 +260,7 @@ export default function DocsView() {
                   type="text"
                   value={activeDoc.title}
                   onChange={e => updateDoc(activeDoc.id, { title: e.target.value })}
+                  data-testid="doc-title-input"
                   placeholder="Untitled Document"
                   className="bg-transparent border-none outline-none text-lg font-semibold text-gray-100 placeholder-gray-500 flex-1"
                 />
@@ -279,6 +269,7 @@ export default function DocsView() {
                 </span>
                 <button
                   onClick={() => showDeleteConfirm(activeDoc.id)}
+                  data-testid="delete-doc-button"
                   className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                 >
                   <Trash2 size={18} />
@@ -298,6 +289,7 @@ export default function DocsView() {
                     <GlassyEditor
                       content={activeDoc.content}
                       onChange={content => updateDoc(activeDoc.id, { content })}
+                      data-testid="doc-editor"
                     />
                   </div>
                 </div>
@@ -422,6 +414,7 @@ export default function DocsView() {
                   {!showTrash && viewMode === 'grid' && (
                     <button
                       onClick={handleCreate}
+                      data-testid="create-doc-button"
                       className="group relative flex flex-col items-center justify-center p-6 rounded-2xl border border-dashed border-white/20 bg-white/5 hover:bg-white/10 hover:border-indigo-500/50 transition-all duration-300 h-[220px]"
                     >
                       <div className="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
@@ -435,6 +428,7 @@ export default function DocsView() {
                   {!showTrash && viewMode === 'list' && (
                     <button
                       onClick={handleCreate}
+                      data-testid="create-doc-button"
                       className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-white/20 bg-white/5 hover:bg-white/10 hover:border-indigo-500/50 transition-colors w-full text-left"
                     >
                       <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
@@ -447,6 +441,8 @@ export default function DocsView() {
                   {filteredDocs.map(doc => (
                     <div
                       key={doc.id}
+                      data-testid="doc-card"
+                      data-doc-id={doc.id}
                       onClick={() => {
                         if (isSelectionMode) toggleSelection(doc.id)
                         else if (!showTrash) setActiveDoc(doc.id)
@@ -460,6 +456,7 @@ export default function DocsView() {
                             : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10 hover:shadow-xl'
                         }
                       `}
+                      onContextMenu={e => handleContextMenu(e, doc.id)}
                     >
                       {/* Selection Checkbox */}
                       {isSelectionMode && (
@@ -492,13 +489,16 @@ export default function DocsView() {
                         <h3 className="font-bold text-gray-100 truncate mb-1">
                           {doc.title || 'Untitled'}
                         </h3>
-                        <p
-                          className={`text-sm text-gray-400 ${viewMode === 'grid' ? 'line-clamp-4' : 'line-clamp-1'}`}
-                        >
-                          {doc.content
-                            ? doc.content.replace(/<[^>]*>/g, '').substring(0, 150)
-                            : 'No content...'}
-                        </p>
+                        <div
+                          className={`text-sm text-gray-400 prose-sm prose-invert max-w-none prose-p:leading-relaxed prose-p:my-0 ${viewMode === 'grid' ? 'line-clamp-4' : 'line-clamp-1'}`}
+                          dangerouslySetInnerHTML={{
+                            __html: safeUserMarkdown(doc.content || '')
+                              .replace(/<img[^>]*>/g, '') // Remove images from previews
+                              .replace(/<h[1-6][^>]*>.*?<\/h[1-6]>/g, s =>
+                                s.replace(/<h[1-6]/g, '<p').replace(/<\/h[1-6]>/g, '</p>')
+                              ), // Convert headers to paragraphs for preview
+                          }}
+                        />
                       </div>
 
                       {/* Footer/Meta */}
@@ -602,6 +602,77 @@ export default function DocsView() {
           )}
         </div>
       </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <ContextMenu
+          position={{ x: contextMenu.x, y: contextMenu.y }}
+          onClose={() => setContextMenu(null)}
+          dark={dark}
+        >
+          {showTrash ? (
+            <>
+              <ContextMenuItem
+                icon={<RotateCcw size={16} />}
+                label="Restore"
+                onClick={() => {
+                  handleRestore(contextMenu.docId)
+                  setContextMenu(null)
+                }}
+              />
+              <ContextMenuItem
+                icon={<Trash2 size={16} />}
+                label="Delete Permanently"
+                danger
+                onClick={() => {
+                  handlePermanentDelete(contextMenu.docId)
+                  setContextMenu(null)
+                }}
+              />
+            </>
+          ) : (
+            <>
+              <ContextMenuItem
+                icon={<Edit size={16} />}
+                label="Open / Rename"
+                onClick={() => {
+                  const doc = docs.find(d => d.id === contextMenu.docId)
+                  if (doc) {
+                    setActiveDoc(doc.id)
+                    // Optional: could trigger rename state here if we had a quick rename
+                  }
+                  setContextMenu(null)
+                }}
+              />
+              <ContextMenuItem
+                icon={
+                  <Pin
+                    size={16}
+                    className={
+                      docs.find(d => d.id === contextMenu.docId)?.pinned ? 'fill-current' : ''
+                    }
+                  />
+                }
+                label={docs.find(d => d.id === contextMenu.docId)?.pinned ? 'Unpin' : 'Pin'}
+                onClick={() => {
+                  togglePin(contextMenu.docId)
+                  setContextMenu(null)
+                }}
+              />
+              <ContextMenuSeparator dark={dark} />
+              <ContextMenuItem
+                icon={<Trash2 size={16} />}
+                label="Move to Trash"
+                danger
+                onClick={() => {
+                  showDeleteConfirm(contextMenu.docId)
+                  setContextMenu(null)
+                }}
+              />
+            </>
+          )}
+        </ContextMenu>
+      )}
     </DashboardLayout>
   )
 }

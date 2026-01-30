@@ -1,7 +1,7 @@
 import React, { createContext, useState, useCallback, useContext, useEffect } from 'react'
 import { AuthContext } from './AuthContext'
 import { useCollaboration } from '../hooks/useCollaboration'
-import { uid, mdForDownload, sanitizeFilename, downloadText } from '../utils/helpers'
+import { downloadText } from '../utils/helpers'
 import { api } from '../lib/api'
 import logger from '../utils/logger'
 import { exportNotesToJson, importNotesFromJson, exportSecretKey } from '../utils/fileSystem'
@@ -43,13 +43,17 @@ export function NotesProvider({ children }) {
   const {
     data: notesData,
     isLoading: notesLoading,
-    refetch: refetchNotes,
+    refetch: _refetchNotes,
   } = useNotesQuery(queryOptions)
-  const { data: trashData, isLoading: trashLoading, refetch: refetchTrash } = useTrash(queryOptions)
+  const {
+    data: trashData,
+    isLoading: trashLoading,
+    refetch: _refetchTrash,
+  } = useTrash(queryOptions)
   const {
     data: archivedData,
     isLoading: archivedLoading,
-    refetch: refetchArchived,
+    refetch: _refetchArchived,
   } = useArchived(queryOptions)
 
   // Mutation hooks
@@ -144,7 +148,7 @@ export function NotesProvider({ children }) {
     keys.forEach(k => {
       try {
         localStorage.removeItem(k)
-      } catch (e) {}
+      } catch (_) {}
     })
   }, [userId])
 
@@ -154,11 +158,12 @@ export function NotesProvider({ children }) {
     queryClient.invalidateQueries({ queryKey: notesKeys.all })
   }, [queryClient])
 
-  const { sseConnected, isOnline } = useCollaboration({
-    token,
-    tagFilter,
-    onNotesUpdated: handleNotesUpdated,
-  })
+  const { sseConnected, isOnline, activeUsers, reportPresence, broadcastTyping, typingUsers } =
+    useCollaboration({
+      token,
+      tagFilter,
+      onNotesUpdated: handleNotesUpdated,
+    })
 
   // Operations
   const toggleArchiveNote = useCallback(
@@ -346,12 +351,16 @@ export function NotesProvider({ children }) {
   )
 
   const reorderNotes = useCallback(
-    async noteIds => {
+    async ({ pinnedIds, otherIds }) => {
       try {
-        await reorderNotesMutation.mutateAsync(noteIds)
+        await reorderNotesMutation.mutateAsync({ pinnedIds, otherIds })
         invalidateNotesCache()
       } catch (e) {
-        logger.error('reorder_notes_failed', { count: noteIds.length }, e)
+        logger.error(
+          'reorder_notes_failed',
+          { pinned: pinnedIds?.length, others: otherIds?.length },
+          e
+        )
         throw e
       }
     },
@@ -360,40 +369,79 @@ export function NotesProvider({ children }) {
 
   // Drag and drop handlers
   const onDragStart = useCallback((e, noteId) => {
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', String(noteId))
+    if (e?.dataTransfer) {
+      e.stopPropagation()
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', String(noteId))
+    }
   }, [])
 
   const onDragOver = useCallback(e => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
+    if (e && typeof e.preventDefault === 'function') {
+      e.stopPropagation()
+      e.preventDefault()
+    }
+    if (e?.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move'
+    }
   }, [])
 
   const onDragLeave = useCallback(e => {
-    e.preventDefault()
+    // Only handle if actually leaving the element (not moving to child)
+    if (e && typeof e.preventDefault === 'function' && 
+        e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) {
+      e.preventDefault()
+    }
   }, [])
 
   const onDrop = useCallback(
     async (e, targetNoteId) => {
-      e.preventDefault()
-      const draggedId = e.dataTransfer.getData('text/plain')
+      if (e && typeof e.preventDefault === 'function') {
+        e.stopPropagation()
+        e.preventDefault()
+      }
+      
+      // Get dragged ID with fallback
+      let draggedId = null
+      try {
+        draggedId = e?.dataTransfer?.getData('text/plain')
+      } catch (err) {
+        logger.warn('drag_data_retrieval_failed', {}, err)
+        return
+      }
 
-      if (draggedId && draggedId !== String(targetNoteId)) {
-        const allNotes = [...pinned, ...others]
-        const draggedIdx = allNotes.findIndex(n => String(n.id) === draggedId)
-        const targetIdx = allNotes.findIndex(n => String(n.id) === String(targetNoteId))
+      if (draggedId && String(draggedId) !== String(targetNoteId)) {
+        const draggedNote = [...pinned, ...others].find(n => String(n.id) === draggedId)
+        const targetNote = [...pinned, ...others].find(n => String(n.id) === String(targetNoteId))
 
-        if (draggedIdx === -1 || targetIdx === -1) return
+        if (!draggedNote || !targetNote) return
 
-        const reorderedNotes = [...allNotes]
-        const [draggedNote] = reorderedNotes.splice(draggedIdx, 1)
-        reorderedNotes.splice(targetIdx, 0, draggedNote)
+        let newPinnedNotes = [...pinned]
+        let newOtherNotes = [...others]
 
-        const noteIds = reorderedNotes.map(n => String(n.id))
+        // Remove from current
+        newPinnedNotes = newPinnedNotes.filter(n => String(n.id) !== draggedId)
+        newOtherNotes = newOtherNotes.filter(n => String(n.id) !== draggedId)
+
+        const willBePinned = !!targetNote.pinned
+        const updatedNote = { ...draggedNote, pinned: willBePinned }
+
+        // Insert into target
+        if (willBePinned) {
+          const idx = newPinnedNotes.findIndex(n => String(n.id) === String(targetNoteId))
+          if (idx !== -1) newPinnedNotes.splice(idx, 0, updatedNote)
+          else newPinnedNotes.push(updatedNote)
+        } else {
+          const idx = newOtherNotes.findIndex(n => String(n.id) === String(targetNoteId))
+          if (idx !== -1) newOtherNotes.splice(idx, 0, updatedNote)
+          else newOtherNotes.push(updatedNote)
+        }
+
+        const pinnedIds = newPinnedNotes.map(n => String(n.id))
+        const otherIds = newOtherNotes.map(n => String(n.id))
+
         try {
-          // Optimistically update the store if possible,
-          // but since reorder is complex let's just wait for the API
-          await reorderNotes(noteIds)
+          await reorderNotes({ pinnedIds, otherIds })
         } catch (e) {
           logger.error('drop_reorder_failed', { from: draggedId, to: targetNoteId }, e)
         }
@@ -403,7 +451,9 @@ export function NotesProvider({ children }) {
   )
 
   const onDragEnd = useCallback(e => {
-    e.preventDefault()
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault()
+    }
   }, [])
 
   // Export/Import functions
@@ -436,12 +486,12 @@ export function NotesProvider({ children }) {
 
       // Import notes via API
       await api('/notes/import', { method: 'POST', token, body: { notes: notesArr } })
-      
+
       // Refresh notes
       if (window.queryClient) {
         window.queryClient.invalidateQueries({ queryKey: ['notes'] })
       }
-      
+
       logger.info('notes_imported', { count: notesArr.length })
       return notesArr.length
     } catch (error) {
@@ -515,6 +565,10 @@ export function NotesProvider({ children }) {
     downloadSecretKey: downloadSecretKeyFn,
     sseConnected,
     isOnline,
+    activeUsers,
+    reportPresence,
+    broadcastTyping,
+    typingUsers,
   }
 
   return <NotesContext.Provider value={value}>{children}</NotesContext.Provider>

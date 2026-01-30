@@ -389,13 +389,18 @@ SPECIAL INSTRUCTIONS:
       const generationConfig = {
         contents: [
           {
-            inlineData: {
-              data: Buffer.isBuffer(audioData) ? audioData.toString('base64') : audioData.data,
-              mimeType: audioData.mimeType || 'audio/webm',
-            },
-          },
-          {
-            text: prompt,
+            role: 'user',
+            parts: [
+              {
+                inlineData: {
+                  data: Buffer.isBuffer(audioData) ? audioData.toString('base64') : audioData.data,
+                  mimeType: audioData.mimeType || 'audio/webm',
+                },
+              },
+              {
+                text: prompt,
+              },
+            ],
           },
         ],
         generationConfig: {
@@ -430,24 +435,27 @@ SPECIAL INSTRUCTIONS:
         // passing the accumulating transcript is fine.
         // Note: The UI might expect a delta or full. Logic seems to imply full update based on previous code.
 
-        onChunk({
-          transcript: transcript,
-          // summaries are hard to parse partially, ignore for stream
-          language: languageMatch ? languageMatch[1] : '',
-          provider: 'gemini',
-          isComplete: false,
-        })
+        if (onChunk) {
+          onChunk({
+            transcript: transcript,
+            // summaries are hard to parse partially, ignore for stream
+            language: languageMatch ? languageMatch[1] : '',
+            provider: 'gemini',
+            isComplete: false,
+          })
+        }
       }
 
       let finalTranscript = ''
-      let finalSummary = []
+      let finalSummary = ''
       let finalLanguage = ''
 
       try {
         const parsed = JSON.parse(fullRawText)
         finalTranscript = parsed.transcript || ''
         if (parsed.summary) {
-          finalSummary = Array.isArray(parsed.summary) ? parsed.summary : [parsed.summary]
+          const summaryArray = Array.isArray(parsed.summary) ? parsed.summary : [parsed.summary]
+          finalSummary = summaryArray.join('\n')
         }
         finalLanguage = parsed.language || ''
       } catch (e) {
@@ -457,16 +465,21 @@ SPECIAL INSTRUCTIONS:
         if (match) finalTranscript = match[1]
       }
 
-      onComplete({
+      const completeResult = {
         transcript: finalTranscript,
         summary: finalSummary,
         language: finalLanguage,
         provider: 'gemini',
         isComplete: true,
         usage: {
-          totalTokens: result.response.usageMetadata?.totalTokenCount || 0,
+          totalTokens: (await result.response).usageMetadata?.totalTokenCount || 0,
         },
-      })
+      }
+
+      if (onComplete) {
+        onComplete(completeResult)
+      }
+      return completeResult
     } catch (error) {
       console.error('[Gemini Provider] transcribeAudio error:', error)
       throw error

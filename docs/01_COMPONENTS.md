@@ -21,6 +21,7 @@ App (Root)
 ├── DashboardLayout
 │   ├── Sidebar
 │   ├── NotesView
+│   │   └── MasonryLayout (New)
 │   ├── DocsView
 │   │   └── GlassyEditor
 │   │       └── EditorToolbar (New)
@@ -112,6 +113,19 @@ App (Root)
 - Collapsible menu
 
 **File:** `GLASSYDASH/src/components/Sidebar.jsx`
+
+#### MasonryLayout (New)
+
+**Purpose:** Responsive masonry layout engine for arranging note cards in optimal vertical columns.
+
+**Key Responsibilities:**
+
+- Dynamic column calculation based on screen width
+- "Round-robin" item distribution for visual ordering (left-to-right)
+- Flexible height handling for variable content
+- Integration with Framer Motion for layout animations
+
+**File:** `GLASSYDASH/src/components/MasonryLayout.jsx`
 
 ---
 
@@ -456,6 +470,19 @@ App (Root)
 
 **File:** `GLASSYDASH/src/components/BugReportWidget.jsx`
 
+#### HighlightText (New)
+
+**Purpose:** Renders text segments with highlighted matches from search results.
+
+**Key Responsibilities:**
+
+- Parses matches indices (from Fuse.js or regex)
+- Renders `mark` tags for matched substrings
+- Handles sorting of indices to prevent overlap errors
+- Memoized rendering for performance
+
+**File:** `GLASSYDASH/src/components/HighlightText.jsx`
+
 ---
 
 ---
@@ -489,15 +516,17 @@ App (Root)
 
 #### MusicPlayerCard
 
-**Purpose:** Full-featured HTML5 audio player for music notes (Single Track or Album Playlist).
+**Purpose:** Full-featured HTML5 audio player for self-hosted music services (Jellyfin, Navidrome, Swing Music, Subsonic).
 
-**Key Responsibilities:**
+**Key Responsibilities (Updated Jan 29, 2026):**
 
-- Audio streaming (proxied)
-- Cover art display
-- Playback controls (seek, volume, next/prev)
-- Playlist management & auto-play
-- Keyboard shortcuts
+- **Audio Engine:** Proxied streaming with Range request support
+- **Visualizer:** Real-time audio frequency visualization using Web Audio API
+- **Lyrics:** Synchronized LRC lyrics display with seek-on-click
+- **Compact Mode:** Mini-player state for unobtrusive listening
+- **Remote Control:** Casting support to other Jellyfin clients
+- **Playlists:** Album track management and auto-play
+- **Keyboard Shortcuts:** Space (Play/Pause), Arrows (Skip)
 
 **File:** `GLASSYDASH/src/components/MusicPlayerCard.jsx`
 
@@ -769,11 +798,16 @@ Components should include appropriate ARIA attributes:
 - [Utils Documentation](./04_UTILS.md) - Utility functions
 - [App.jsx.md](./components/App.jsx.md) - App component details
 - [NotesView.md](./components/NotesView.md) - NotesView details
+- [Contexts Documentation](./02_CONTEXTS.md) - Context provider details
+- [Hooks Documentation](./03_HOOKS.md) - Custom hooks
+- [Utils Documentation](./04_UTILS.md) - Utility functions
+- [App.jsx.md](./components/App.jsx.md) - App component details
+- [NotesView.md](./components/NotesView.md) - NotesView details
 - [NoteCard.md](./components/NoteCard.md) - NoteCard details
 - [Modal.md](./components/Modal.md) - Modal details
 
 ---
 
-**Component Count:** 22  
-**Documented Components:** 22 (100% overview)  
+**Component Count:** 23
+**Documented Components:** 23 (100% overview)
 **Last Updated:** January 28, 2026

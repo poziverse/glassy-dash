@@ -112,24 +112,56 @@ async function run() {
     return
   }
 
-  // 5. Fetch Collaborators for the Announcement
-  console.log(`\nAttempting to fetch collaborators for note ${noteId} as Regular User...`)
-  const collabRes = await fetch(`${API_URL}/notes/${noteId}/collaborators`, {
+  // 5. Fetch Collaborators for the Announcement (Public/System Note)
+  console.log(`\nAttempting to fetch collaborators for Announcement ${noteId} as Regular User...`)
+  let collabRes = await fetch(`${API_URL}/notes/${noteId}/collaborators`, {
     method: 'GET',
-    headers: {
-      Authorization: `Bearer ${userToken}`,
-    },
+    headers: { Authorization: `Bearer ${userToken}` },
+  })
+
+  if (collabRes.ok) {
+    console.log('✅ PASS: Can view collaborators of Announcement')
+  } else {
+    console.log(`❌ FAIL: Cannot view collaborators of Announcement (${collabRes.status})`)
+  }
+
+  // 6. Create Private Note as Admin and Add Regular User as Collaborator
+  const privateNoteBody = {
+    type: 'text',
+    title: 'Private Shared Note',
+    content: 'Secret content',
+  }
+  const privRes = await fetch(`${API_URL}/notes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+    body: JSON.stringify(privateNoteBody),
+  })
+  const privData = await privRes.json()
+  const privId = privData.id
+  console.log(`\nCreated Private Note: ${privId}`)
+
+  // Add collaborator
+  const addRes = await fetch(`${API_URL}/notes/${privId}/collaborate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+    body: JSON.stringify({ username: userEmail }),
+  })
+  if (addRes.ok) console.log(`✓ Added ${userEmail} as collaborator`)
+  else console.error('Failed to add collaborator:', await addRes.text())
+
+  // 7. Fetch Collaborators as Regular User (This is the suspected failure point)
+  console.log(`Attemping to fetch collaborators for Shared Private Note as Collaborator...`)
+  collabRes = await fetch(`${API_URL}/notes/${privId}/collaborators`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${userToken}` },
   })
 
   if (collabRes.status === 404) {
-    console.log('❌ FAIL: Received 404 Not Found (Issue Reproduced)')
+    console.log('❌ REPRODUCED: Received 404 Not Found for Shared Note')
   } else if (collabRes.ok) {
-    console.log('✅ SUCCESS: Received 200 OK')
-    const data = await collabRes.json()
-    console.log('   Collaborators:', data)
+    console.log('✅ SUCCESS: Received 200 OK for Shared Note')
   } else {
-    console.log(`❓ UNEXPECTED: Received ${collabRes.status} ${collabRes.statusText}`)
-    console.log(await collabRes.text())
+    console.log(`❓ UNEXPECTED: ${collabRes.status}`)
   }
 }
 

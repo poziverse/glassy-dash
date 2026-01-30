@@ -12,20 +12,57 @@ test.describe('Critical User Flows', () => {
 
   test.beforeEach(async ({ page }) => {
     // Navigate to home before each test
-    await page.goto('/')
+    await page.goto('/', { waitUntil: 'networkidle' })
+    await page.waitForSelector('body', { state: 'attached' })
+    await page.waitForTimeout(500)
   })
 
   test('Complete Authentication and Note Lifecycle', async ({ page }) => {
     // 1. REGISTER
-    await page.goto('/register')
-    await page.fill('input[name="name"]', user.name)
-    await page.fill('input[name="email"]', user.email)
-    await page.fill('input[name="password"]', user.password)
-    await page.fill('input[name="confirmPassword"]', user.password)
-    await page.click('button[type="submit"]')
+    await page.goto('/#/register', { waitUntil: 'networkidle' })
+    await page.waitForSelector('body', { state: 'attached' })
+    
+    // Wait for form to be ready
+    await page.waitForTimeout(500)
+    
+    // Use actual selectors from AuthViews.jsx
+    const nameInput = page.locator('input[placeholder="Name"]').or(
+      page.locator('input[placeholder*="name" i]')
+    ).first()
+    
+    const emailInput = page.locator('input[placeholder="Username"]').or(
+      page.locator('input[autoComplete="username"]')
+    ).or(
+      page.locator('input[placeholder*="username" i]')
+    ).first()
+    
+    const passwordInput = page.locator('input[placeholder="Password (min 6 chars)"]').or(
+      page.locator('input[type="password"]').first()
+    ).or(
+      page.locator('input[placeholder*="password" i]')
+    ).nth(0)
+    
+    const confirmInput = page.locator('input[placeholder="Confirm password"]').or(
+      page.locator('input[type="password"]').nth(1)
+    ).or(
+      page.locator('input[placeholder*="confirm" i]')
+    ).first()
+    
+    await nameInput.fill(user.name)
+    await emailInput.fill(user.email)
+    await passwordInput.fill(user.password)
+    await confirmInput.fill(user.password)
+    
+    const submitButton = page.locator('button:has-text("Create Account")').or(
+      page.locator('button[type="submit"]')
+    ).or(
+      page.locator('button:has-text("Create")')
+    ).first()
+    
+    await submitButton.click()
 
-    // Verify redirect to home/dashboard and presence of user info
-    await expect(page).toHaveURL('/')
+    // Verify redirect to notes (actual redirect destination)
+    await expect(page).toHaveURL('/#/notes', { timeout: 10000 })
     await expect(page.locator('text=Welcome')).toBeVisible()
 
     // 2. CREATE NOTE
@@ -33,11 +70,35 @@ test.describe('Critical User Flows', () => {
     const noteContent = 'This is a test note for stability verification.'
 
     // Open new note input (assuming a "Take a note..." or equivalent input area)
-    // Adjust selector based on actual UI implementation
-    await page.click('[placeholder="Take a note..."]')
-    await page.fill('[placeholder="Title"]', noteTitle)
-    await page.fill('[placeholder="Take a note..."]', noteContent)
-    await page.click('text=Close') // Or click outside to save
+    // Try multiple selector patterns
+    const noteInput = page.locator('[placeholder="Take a note..."]').or(
+      page.locator('[placeholder*="Take a note" i]')
+    ).or(
+      page.locator('button:has-text("New Note")')
+    ).first()
+    
+    await noteInput.click()
+    
+    const titleInput = page.locator('[placeholder="Title"]').or(
+      page.locator('input[placeholder*="title" i]')
+    ).first()
+    
+    await titleInput.fill(noteTitle)
+    
+    const contentInput = page.locator('[placeholder="Take a note..."]').or(
+      page.locator('textarea[placeholder*="note" i]')
+    ).first()
+    
+    await contentInput.fill(noteContent)
+    
+    // Try multiple close/save patterns
+    const closeButton = page.locator('text=Close').or(
+      page.locator('button[aria-label*="close" i]')
+    ).or(
+      page.locator('button:has-text("Save")')
+    ).first()
+    
+    await closeButton.click()
 
     // Verify note is visible
     await expect(page.locator(`text=${noteTitle}`)).toBeVisible()
@@ -46,8 +107,16 @@ test.describe('Critical User Flows', () => {
     // 3. EDIT NOTE
     await page.click(`text=${noteTitle}`)
     const updatedContent = noteContent + ' - UPDATED'
-    await page.fill('[aria-label="Note content"]', updatedContent) // Adjust selector
-    await page.click('text=Close')
+    
+    const editContent = page.locator('[aria-label="Note content"]').or(
+      page.locator('textarea[aria-label*="content" i]')
+    ).or(
+      page.locator('[contenteditable="true"]')
+    ).first()
+    
+    await editContent.fill(updatedContent)
+    
+    await closeButton.click()
 
     await expect(page.locator(`text=${updatedContent}`)).toBeVisible()
 
@@ -85,8 +154,12 @@ test.describe('Critical User Flows', () => {
     await expect(page.locator(`text=${noteTitle}`)).toBeVisible()
 
     // 8. LOGOUT
-    await page.click(`text=${user.name.charAt(0)}`) // User avatar/menu
+    const userAvatar = page.locator(`text=${user.name.charAt(0)}`).or(
+      page.locator('button[aria-label*="user" i]')
+    ).first()
+    
+    await userAvatar.click()
     await page.click('text=Logout')
-    await expect(page).toHaveURL('/login')
+    await expect(page).toHaveURL('/#/login')
   })
 })

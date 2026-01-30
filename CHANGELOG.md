@@ -6,12 +6,19 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Masonry Layout**: New flexible- Flexible Masonry layout with glassmorphism designe (`MasonryLayout.jsx`) replacing rigid grid system
+  - Dynamic column calculation based on screen size
+  - "Round-robin" distribution for visual order
+  - Flexible card heights (removed fixed row heights)
+  - Smooth animations using Framer Motion
+- **NoteCard**: Updated styles to allow natural height expansion
+
 - **Error Handling Architecture**: Comprehensive Phase 2 implementation with robust error recovery
 - **Retry Logic**: `retryOperation()` utility with exponential backoff for transient failures
 - **API Layer**: All API endpoints now use automatic retry (3 attempts, 1s delay)
 - **Audio Recording**: Automatic retry for failed recordings (3 attempts, 1s delay)
 - **Transcription**: Retry wrapper for audio transcription failures
-- **Error UI Components**: 
+- **Error UI Components**:
   - `NetworkError.jsx`: Connectivity issues with troubleshooting tips
   - `AuthError.jsx`: Session expiration handling
   - `AudioError.jsx`: Microphone/recording issues with solutions
@@ -34,7 +41,7 @@ All notable changes to this project will be documented in this file.
 
 ### Improved
 
-- **Testing Infrastructure**: 
+- **Testing Infrastructure**:
   - **Performance Tests** (`audio-performance.test.js`): Audio processing benchmarks, memory leak detection
   - **Error Scenario Tests** (`error-scenarios.test.js`): Coverage of 13+ failure modes
   - **Accessibility Tests** (`voice-studio-a11y.test.js`): WCAG 2.1 AA compliance
@@ -42,7 +49,6 @@ All notable changes to this project will be documented in this file.
 - **Documentation**: Updated README with error handling, testing, and troubleshooting sections
 - **Voice Studio Reliability**: Enhanced error handling, audio quality validation, undo/redo
 - **Keyboard Shortcuts**: Space (record), Escape (stop), S (save), G (gallery), C (clear)
-
 
 ### Added
 

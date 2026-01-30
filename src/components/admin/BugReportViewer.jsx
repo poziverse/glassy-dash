@@ -38,7 +38,7 @@ export default function BugReportViewer({ token }) {
 
   const updateStatus = async (id, status) => {
     try {
-      await api(`/api/bug-reports/${id}`, {
+      await api(`/bug-reports/${id}`, {
         method: 'PATCH',
         token,
         body: { status },
@@ -52,7 +52,7 @@ export default function BugReportViewer({ token }) {
 
   const deleteReport = async id => {
     try {
-      await api(`/api/bug-reports/${id}`, {
+      await api(`/bug-reports/${id}`, {
         method: 'DELETE',
         token,
       })

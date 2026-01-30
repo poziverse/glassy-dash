@@ -39,13 +39,15 @@ export async function askQuestion(question, notes = []) {
   try {
     console.log('[Gemini Client] Asking question:', question.substring(0, 50))
 
+    const token = localStorage.getItem('glassy-dash-token')
+
     const response = await fetch('/api/ai/ask', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         // Use localStorage token for auth if available
-        ...(localStorage.getItem('auth_token') && {
-          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        ...(token && {
+          Authorization: `Bearer ${token}`,
         }),
       },
       body: JSON.stringify({ question, notes }),
@@ -132,12 +134,14 @@ export async function transformText(text, instruction) {
   try {
     console.log('[Gemini Client] Transforming text:', instruction.substring(0, 30))
 
+    const token = localStorage.getItem('glassy-dash-token')
+
     const response = await fetch('/api/ai/transform', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(localStorage.getItem('auth_token') && {
-          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        ...(token && {
+          Authorization: `Bearer ${token}`,
         }),
       },
       body: JSON.stringify({ text, instruction }),
@@ -171,12 +175,14 @@ export async function generateImage(prompt) {
   try {
     console.log('[Gemini Client] Generating image:', prompt.substring(0, 50))
 
+    const token = localStorage.getItem('glassy-dash-token')
+
     const response = await fetch('/api/ai/generate-image', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(localStorage.getItem('auth_token') && {
-          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        ...(token && {
+          Authorization: `Bearer ${token}`,
         }),
       },
       body: JSON.stringify({ prompt }),
@@ -205,73 +211,90 @@ export async function generateImage(prompt) {
 /**
  * Transcribe audio with streaming
  * Updated: Now uses provider router for audio transcription
+ * Accepts either a Blob or base64 string
  */
-export async function transcribeAudio(audioBlob, onChunk, onComplete, onError) {
+export async function transcribeAudio(audioInput, onChunk, onComplete, onError) {
   try {
     console.log('[Gemini Client] Transcribing audio...')
 
-    // Convert blob to base64
-    const reader = new FileReader()
+    let base64Audio
+    let mimeType = 'audio/webm'
 
-    return new Promise((resolve, reject) => {
-      reader.onload = async event => {
-        try {
-          const base64Audio = event.target.result.split(',')[1]
+    // Handle both Blob and base64 string inputs
+    if (typeof audioInput === 'string') {
+      // Already a base64 string
+      base64Audio = audioInput
+    } else {
+      // It's a Blob, need to convert to base64
+      const reader = new FileReader()
 
-          const response = await fetch('/api/ai/transcribe', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(localStorage.getItem('auth_token') && {
-                Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
-              }),
-            },
-            body: JSON.stringify({
-              audioData: {
-                data: base64Audio,
-                mimeType: audioBlob.type || 'audio/webm',
-              },
-            }),
-          })
-
-          if (!response.ok) {
-            const errorData = await response.json()
-            const error = new Error(errorData.error || 'Transcription failed')
-            onError && onError(error)
-            reject(error)
-            return
-          }
-
-          const data = await response.json()
-
-          console.log('[Gemini Client] Transcription complete, provider:', data.provider)
-
-          const result = {
-            transcript: data.transcript,
-            summary: data.summary,
-            language: data.language,
-            provider: data.provider,
-            latency: data.latency,
-          }
-
-          onComplete && onComplete(result)
-          resolve(result)
-        } catch (error) {
-          console.error('[Gemini Client] Transcription processing error:', error)
-          onError && onError(error)
-          reject(error)
+      base64Audio = await new Promise((resolve, reject) => {
+        reader.onload = event => {
+          const result = event.target.result
+          const base64 = result.split(',')[1]
+          resolve(base64)
         }
-      }
 
-      reader.onerror = event => {
-        console.error('[Gemini Client] Audio reading failed:', event)
-        const error = new Error('Failed to read audio file')
-        onError && onError(error)
-        reject(error)
-      }
+        reader.onerror = event => {
+          console.error('[Gemini Client] Audio reading failed:', event)
+          reject(new Error('Failed to read audio file'))
+        }
 
-      reader.readAsDataURL(audioBlob)
+        reader.readAsDataURL(audioInput)
+      })
+
+      mimeType = audioInput.type || 'audio/webm'
+    }
+
+    const token = localStorage.getItem('glassy-dash-token')
+
+    const response = await fetch('/api/ai/transcribe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && {
+          Authorization: `Bearer ${token}`,
+        }),
+      },
+      body: JSON.stringify({
+        audioData: {
+          data: base64Audio,
+          mimeType: mimeType,
+        },
+      }),
     })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      const error = new Error(errorData.error || 'Transcription failed')
+      onError && onError(error)
+      throw error
+    }
+
+    const data = await response.json()
+
+    console.log('[Gemini Client] Transcription complete, provider:', data.provider)
+
+    const result = {
+      transcript: data.transcript,
+      summary: data.summary,
+      language: data.language,
+      provider: data.provider,
+      latency: data.latency,
+    }
+
+    // Call onChunk for compatibility with streaming expectations
+    if (onChunk) {
+      onChunk({
+        transcript: data.transcript,
+        summary: data.summary,
+        provider: data.provider,
+        isComplete: true,
+      })
+    }
+
+    onComplete && onComplete(result)
+    return result
   } catch (error) {
     console.error('[Gemini Client] transcribeAudio error:', error)
     onError && onError(error)
@@ -300,11 +323,13 @@ export function isStreamingAvailable() {
  */
 export async function getProviders() {
   try {
+    const token = localStorage.getItem('glassy-dash-token')
+
     const response = await fetch('/api/ai/providers', {
       method: 'GET',
       headers: {
-        ...(localStorage.getItem('auth_token') && {
-          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        ...(token && {
+          Authorization: `Bearer ${token}`,
         }),
       },
     })
@@ -331,11 +356,13 @@ export async function getProviders() {
  */
 export async function getProviderHealth() {
   try {
+    const token = localStorage.getItem('glassy-dash-token')
+
     const response = await fetch('/api/ai/health', {
       method: 'GET',
       headers: {
-        ...(localStorage.getItem('auth_token') && {
-          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        ...(token && {
+          Authorization: `Bearer ${token}`,
         }),
       },
     })
@@ -361,11 +388,13 @@ export async function getProviderHealth() {
  */
 export async function getAIStatus() {
   try {
+    const token = localStorage.getItem('glassy-dash-token')
+
     const response = await fetch('/api/ai/status', {
       method: 'GET',
       headers: {
-        ...(localStorage.getItem('auth_token') && {
-          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+        ...(token && {
+          Authorization: `Bearer ${token}`,
         }),
       },
     })

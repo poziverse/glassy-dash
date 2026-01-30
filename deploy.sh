@@ -57,20 +57,20 @@ else
 fi
 
 # --- Step 2: Transfer to VM ---
-log "🚀 Transferring tarball to VM ($VM_HOST)..."
-scp "$TARBALL" "$VM_HOST:~/" || error "Failed to transfer to VM"
-success "Tarball uploaded to VM"
+log "🚀 Transferring tarball and configs to VM ($VM_HOST)..."
+scp "$TARBALL" "docker-compose.prod.yml" ".env" "docker_manage.sh" "$VM_HOST:~/" || error "Failed to transfer files to VM"
+success "Files uploaded to VM"
 
 # --- Step 3: Load Image and Restart ---
 log "🐳 Loading image and restarting container on VM..."
-ssh "$VM_HOST" "sudo docker load -i ~/$TARBALL" || error "Failed to load image on VM"
-ssh "$VM_HOST" "sudo ./docker_manage.sh prod-compose" || error "Failed to restart container on VM"
+ssh -t "$VM_HOST" "sudo docker load -i ~/$TARBALL" || error "Failed to load image on VM"
+ssh -t "$VM_HOST" "sudo ./docker_manage.sh prod-compose" || error "Failed to restart container on VM"
 success "Container restarted on VM"
 
 # --- Step 4: Health Check ---
 log "🩺 Verifying health endpoint..."
 # We run curl on the VM to check localhost:3001
-HEALTH_RESULT=$(ssh "$VM_HOST" "curl -sf $HEALTH_URL" 2>/dev/null || echo "FAILED")
+HEALTH_RESULT=$(ssh -t "$VM_HOST" "curl -sf $HEALTH_URL" 2>/dev/null || echo "FAILED")
 
 if [[ "$HEALTH_RESULT" == *"ok"* ]] || [[ "$HEALTH_RESULT" == *"healthy"* ]]; then
   success "Health check passed!"

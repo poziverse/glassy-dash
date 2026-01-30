@@ -7,6 +7,9 @@ import { useAuthStore } from '../stores/authStore'
  * Handles connection, reconnection, polling fallback, and online/offline events
  */
 export function useCollaboration({ token, tagFilter, onNotesUpdated }) {
+  // Presence state
+  const [activeUsers, setActiveUsers] = useState([])
+  const activeUsersRef = useRef([])
   const [sseConnected, setSseConnected] = useState(false)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
 
@@ -24,6 +27,18 @@ export function useCollaboration({ token, tagFilter, onNotesUpdated }) {
   useEffect(() => {
     onNotesUpdatedRef.current = onNotesUpdated
   }, [onNotesUpdated])
+  // Clean up stale users periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now()
+      const valid = activeUsersRef.current.filter(u => now - u.timestamp < 60000) // 1 min timeout
+      if (valid.length !== activeUsersRef.current.length) {
+        activeUsersRef.current = valid
+        setActiveUsers(valid)
+      }
+    }, 10000)
+    return () => clearInterval(interval)
+  }, [])
 
   const connectSSE = useCallback(() => {
     // Stop if no token is provided
@@ -63,6 +78,31 @@ export function useCollaboration({ token, tagFilter, onNotesUpdated }) {
           }
         } catch (err) {
           console.error('Error parsing note_updated event:', err)
+        }
+      })
+
+      es.addEventListener('user_presence', e => {
+        try {
+          const msg = JSON.parse(e.data || '{}')
+          const { noteId, userId, user, status } = msg
+
+          // Only if relevant to current view?
+          //Actually this hook is generic, so we store presence.
+          //Ideally we should filter by current active Note if possible?
+          //But this hook is used in NoteCard list too?
+          //If tagFilter is present, maybe we don't care about specific presence logic
+          //unless we expose it.
+          //For now, let's just expose the raw presence data.
+
+          if (userId && user) {
+            const now = Date.now()
+            const existing = activeUsersRef.current.filter(u => u.userId !== userId)
+            const updated = [...existing, { userId, user, noteId, status, timestamp: now }]
+            activeUsersRef.current = updated
+            setActiveUsers(updated)
+          }
+        } catch (err) {
+          console.error('Error parsing user_presence:', err)
         }
       })
 
@@ -167,5 +207,76 @@ export function useCollaboration({ token, tagFilter, onNotesUpdated }) {
     }
   }, [token, connectSSE])
 
-  return { sseConnected, isOnline }
+  // Typing state
+  const [typingUsers, setTypingUsers] = useState([])
+  const typingTimeoutsRef = useRef({})
+
+  const broadcastTyping = useCallback(
+    async noteId => {
+      if (!token || !noteId) return
+      try {
+        await fetch(`/api/notes/${noteId}/typing`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      } catch (e) {
+        console.error(e)
+      }
+    },
+    [token]
+  )
+
+  useEffect(() => {
+    if (!esRef.current) return
+
+    const handleTyping = e => {
+      try {
+        const { userId, userName, noteId } = JSON.parse(e.data || '{}')
+        // Add user to typing list
+        setTypingUsers(prev => {
+          if (prev.find(u => u.userId === userId)) return prev
+          return [...prev, { userId, userName, noteId }]
+        })
+
+        // Clear existing timeout for this user
+        if (typingTimeoutsRef.current[userId]) {
+          clearTimeout(typingTimeoutsRef.current[userId])
+        }
+
+        // Remove after 3 seconds
+        typingTimeoutsRef.current[userId] = setTimeout(() => {
+          setTypingUsers(prev => prev.filter(u => u.userId !== userId))
+          delete typingTimeoutsRef.current[userId]
+        }, 3000)
+      } catch (err) {
+        console.error('Error parsing user_typing:', err)
+      }
+    }
+
+    esRef.current.addEventListener('user_typing', handleTyping)
+    return () => {
+      if (esRef.current) esRef.current.removeEventListener('user_typing', handleTyping)
+    }
+  }, [sseConnected]) // Re-attach if connection cycling happens, though esRef is stable-ish
+
+  const reportPresence = useCallback(
+    async (noteId, status = 'viewing') => {
+      if (!token || !noteId) return
+      try {
+        await fetch(`/api/notes/${noteId}/presence`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status }),
+        })
+      } catch (e) {
+        console.error('Report presence error:', e)
+      }
+    },
+    [token]
+  )
+
+  return { sseConnected, isOnline, activeUsers, reportPresence, broadcastTyping, typingUsers }
 }

@@ -24,7 +24,7 @@ ssh -t glassy-jump "scp ~/glassy-dash.tar.gz pozi@192.168.122.45:~/"
 ssh glassy-vm
 gunzip -c glassy-dash.tar.gz | sudo docker load
 docker stop glassy-dash-prod && docker rm glassy-dash-prod
-docker run -d --name glassy-dash-prod --network dokploy-network \
+docker run -d --name glassy-dash-prod \
   --restart unless-stopped -p 3001:8080 \
   -e NODE_ENV=production -e API_PORT=8080 \
   -e JWT_SECRET='glassy-dash-prod-secret-2025' \
@@ -145,18 +145,6 @@ df -h ~/.GLASSYDASH
 docker ps -s | grep glassy
 ```
 
-### Traefik Logs
-
-```bash
-ssh glassy-vm
-
-# View traefik logs
-docker logs dokploy-traefik -f
-
-# Search for errors
-docker logs dokploy-traefik | grep -i error
-```
-
 ---
 
 ## 🐛 Troubleshooting
@@ -167,16 +155,13 @@ docker logs dokploy-traefik | grep -i error
 # Check container
 docker ps | grep glassy-dash-prod
 
-# Check network
-docker inspect glassy-dash-prod | grep NetworkMode
-
 # Restart if needed
 docker restart glassy-dash-prod
 
-# Re-deploy if network issue
+# Re-deploy if needed
 ssh glassy-vm
 docker stop glassy-dash-prod && docker rm glassy-dash-prod
-docker run -d --name glassy-dash-prod --network dokploy-network \
+docker run -d --name glassy-dash-prod \
   --restart unless-stopped -p 3001:8080 \
   -e NODE_ENV=production -e API_PORT=8080 \
   -e JWT_SECRET='glassy-dash-prod-secret-2025' \
@@ -229,7 +214,6 @@ sqlite3 ~/.GLASSYDASH/notes.db "SELECT id, email, name FROM users;"
 |------|-------|
 | **Jump Host** | 104.225.217.232 (poziverse) |
 | **Target VM** | 192.168.122.45 (pozi) |
-| **Container Network** | dokploy-network |
 | **Container Name** | glassy-dash-prod |
 
 ### Database
@@ -261,7 +245,6 @@ sqlite3 ~/.GLASSYDASH/notes.db "SELECT id, email, name FROM users;"
 **Version:** 1.1.3
 **Commit:** 195f044
 **Docker Image:** glassy-dash:latest (2.11GB)
-**Traefik:** dokploy-traefik (v3.5.0)
 **Health Status:** ✅ All systems operational
 
 ---

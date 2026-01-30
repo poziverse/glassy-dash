@@ -6,7 +6,7 @@
 
 ## 📋 Overview
 
-This document explains the complete deployment process for GlassyDash to production (dash.0rel.com). It covers the methodology, infrastructure, step-by-step procedures, and best practices.
+This document explains the complete deployment process for GlassyDash to production (your-domain.com). It covers the methodology, infrastructure, step-by-step procedures, and best practices.
 
 **Target Audience:** DevOps Engineers, System Administrators
 **Infrastructure Complexity:** Medium (nested VM with jump host)
@@ -25,20 +25,20 @@ This document explains the complete deployment process for GlassyDash to product
          │ HTTPS (443)
          ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  Cloudflare DNS (dash.0rel.com)                 │
+│  Cloudflare DNS (your-domain.com)                 │
 └─────────────────────┬───────────────────────────────────┘
                       │ HTTPS (443)
                       ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  Jump Host (104.225.217.232)                    │
-│  - User: poziverse                                │
+│  Jump Host (<JUMP_HOST_IP>)                    │
+│  - User: <JUMP_USER>                                │
 │  - Purpose: SSH bastion only                       │
 └─────────────────────┬───────────────────────────────────┘
                       │ SSH Tunnel (Port Forwarding)
                       ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  Production VM (192.168.122.45) - glassy-vm      │
-│  - User: pozi                                     │
+│  Production VM (<PROD_VM_IP>) - glassy-vm      │
+│  - User: <PROD_USER>                                     │
 │  - OS: Linux 6.6                                 │
 │  - Docker: Running                                  │
 └─────────────────────┬───────────────────────────────────┘
@@ -47,19 +47,18 @@ This document explains the complete deployment process for GlassyDash to product
         │                           │
         ↓                           ↓
 ┌──────────────────┐      ┌──────────────────┐
-│ dokploy-traefik │      │ glassy-dash-prod│
-│ (v3.5.0)       │      │ (Application)    │
-│ - Port: 80,443  │      │ - Port: 8080     │
-│ - SSL: Let's    │      │ - Network:        │
-│   Encrypt       │      │   dokploy-network│
+│ Cloudflare Tunnel│      │ glassy-dash-prod │
+│ (cloudflared)    │      │ (Application)    │
+│ - Port: 443      │      │ - Port: 8080     │
+│ - SSL: Managed   │      │ - Port Map: 3001 │
 └──────────────────┘      └──────────────────┘
         │                           │
         └──────────┬────────────────┘
-                   │ HTTP (8080)
+                   │ HTTP (3001)
                    ↓
            ┌──────────────────┐
-           │ GlassyDash App  │
-           │ (v1.1.3)       │
+           │ GlassyDash App   │
+           │ (v1.1.6)         │
            └──────────────────┘
 ```
 
@@ -67,11 +66,11 @@ This document explains the complete deployment process for GlassyDash to product
 
 | Component          | Role                    | Details                                  |
 | ------------------ | ----------------------- | ---------------------------------------- |
-| **Cloudflare DNS** | DNS Resolution          | Points dash.0rel.com to jump host        |
-| **Jump Host**      | SSH Bastion             | 104.225.217.232 (poziverse)              |
-| **Production VM**  | Application Host        | 192.168.122.45 (pozi)                    |
+| **Cloudflare DNS** | DNS Resolution          | Points your-domain.com to jump host      |
+| **Jump Host**      | SSH Bastion             | <JUMP_HOST_IP> (<JUMP_USER>)             |
+| **Production VM**  | Application Host        | <PROD_VM_IP> (<PROD_USER>)               |
 | **Docker**         | Container Orchestration | Manages application containers           |
-| **Traefik**        | Reverse Proxy           | SSL termination, routing, load balancing |
+| **Cloudflare Tunnel**| Reverse Proxy         | SSL termination, routing, secure access  |
 | **SQLite**         | Database                | Persistent data storage                  |
 
 ### Why This Architecture?
@@ -83,7 +82,7 @@ This document explains the complete deployment process for GlassyDash to product
 
 2. **Scalability**
    - Docker containers easy to scale
-   - Traefik handles multiple services
+   - Cloudflare handles routing
    - Volume mounts separate data from code
 
 3. **Flexibility**
@@ -128,7 +127,7 @@ This document explains the complete deployment process for GlassyDash to product
                        ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  Phase 2: Transport to Jump Host                      │
-│  1. SCP image to jump host (104.225.217.232)        │
+│  1. SCP image to jump host (<JUMP_HOST_IP>)        │
 │  2. Verify transfer complete                          │
 └──────────────────────┬────────────────────────────────────┘
                        │
@@ -174,7 +173,7 @@ This document explains the complete deployment process for GlassyDash to product
 
 **Network Access:**
 
-- SSH access to jump host (104.225.217.232)
+- SSH access to jump host (<JUMP_HOST_IP>)
 - Network connectivity to production VM
 - SSH keys properly configured
 
@@ -321,6 +320,12 @@ glassy-dash   latest   <image_id>   2.11GB   5 minutes ago
 #### Step 2.1: Copy to Jump Host
 
 ```bash
+ssh <JUMP_USER>@<JUMP_HOST_IP>
+```
+
+**If you have an SSH alias configured:**
+
+```bash
 scp glassy-dash.tar.gz glassy-jump:~/
 ```
 
@@ -338,9 +343,9 @@ glassy-dash.tar.gz                    100%  300MB   5:00
 
 **Troubleshooting:**
 
-- **If SSH config not found:** Use full host: `scp glassy-dash.tar.gz poziverse@104.225.217.232:~/`
+- **If SSH config not found:** Use full host: `scp glassy-dash.tar.gz <JUMP_USER>@<JUMP_HOST_IP>:~/`
 - **If transfer fails:** Check network connectivity, verify SSH keys
-- **SSH Key Passphrase:** You will be prompted for the SSH key passphrase (`Maplewood2025`).
+- **SSH Key Passphrase:** You will be prompted for the SSH key passphrase (`<SSH_KEY_PASSPHRASE>`).
 - **If slow:** Try during off-peak hours
 
 #### Step 2.2: Verify Transfer
@@ -352,7 +357,7 @@ ssh glassy-jump "ls -lh ~/glassy-dash.tar.gz"
 **Expected Output:**
 
 ```
--rw-r--r-- 1 poziverse poziverse 300M Jan 26 20:00 glassy-dash.tar.gz
+-rw-r--r-- 1 <JUMP_USER> <JUMP_USER> 300M Jan 26 20:00 glassy-dash.tar.gz
 ```
 
 ### Phase 3: Transport to Production VM (5-10 minutes)
@@ -360,7 +365,7 @@ ssh glassy-jump "ls -lh ~/glassy-dash.tar.gz"
 #### Step 3.1: Transfer to Production VM
 
 ```bash
-ssh -t glassy-jump "scp ~/glassy-dash.tar.gz pozi@192.168.122.45:~/"
+ssh -t glassy-jump "scp ~/glassy-dash.tar.gz <PROD_USER>@<PROD_VM_IP>:~/"
 ```
 
 **What This Does:**
@@ -381,7 +386,7 @@ glassy-dash.tar.gz                    100%  300MB   5:00
 - Cannot SSH directly to production VM
 - Must proxy through jump host
 - Security isolation
-- **Note:** You will be prompted for the SSH key passphrase (`Maplewood2025`) and the VM password (`pozi`).
+- **Note:** You will be prompted for the SSH key passphrase (`<SSH_KEY_PASSPHRASE>`) and the VM password (`<PROD_VM_PASSWORD>`).
 
 #### Step 3.2: Verify Transfer
 
@@ -392,7 +397,7 @@ ssh glassy-vm "ls -lh ~/glassy-dash.tar.gz"
 **Expected Output:**
 
 ```
--rw-r--r-- 1 pozi pozi 300M Jan 26 20:10 glassy-dash.tar.gz
+-rw-r--r-- 1 <PROD_USER> <PROD_USER> 300M Jan 26 20:10 glassy-dash.tar.gz
 ```
 
 ### Phase 4: Deploy on Production VM (5-10 minutes)
@@ -406,9 +411,9 @@ ssh glassy-vm
 **Expected Output:**
 
 ```
-Warning: Permanently added '104.225.217.232' (ED25519) to the list of known hosts.
-Warning: Permanently added '192.168.122.45' (ED25519) to the list of known hosts.
-pozi@192.168.122.45:~$
+Warning: Permanently added '<JUMP_HOST_IP>' (ED25519) to the list of known hosts.
+Warning: Permanently added '<PROD_VM_IP>' (ED25519) to the list of known hosts.
+<PROD_USER>@<PROD_VM_IP>:~$
 ```
 
 #### Step 4.2: Verify Transfer Complete
@@ -510,12 +515,11 @@ glassy-dash-prod
 ```bash
 sudo docker run -d \
   --name glassy-dash-prod \
-  --network dokploy-network \
   --restart unless-stopped \
   -p 3001:8080 \
   -e NODE_ENV=production \
   -e API_PORT=8080 \
-  -e JWT_SECRET='glassy-dash-prod-secret-2025' \
+  -e JWT_SECRET='<YOUR_JWT_SECRET>' \
   -e DB_FILE=/app/data/notes.db \
   -e ADMIN_EMAILS='admin' \
   -e ALLOW_REGISTRATION=false \
@@ -525,26 +529,25 @@ sudo docker run -d \
 
 **Breakdown of Flags:**
 
-| Flag                    | Value                        | Purpose                           |
-| ----------------------- | ---------------------------- | --------------------------------- |
-| `-d`                    | -                            | Run in detached mode (background) |
-| `--name`                | glassy-dash-prod             | Container name                    |
-| `--network`             | dokploy-network              | Join Traefik network              |
-| `--restart`             | unless-stopped               | Auto-restart on reboot            |
-| `-p`                    | 3001:8080                    | Map host 3001 to container 8080   |
-| `-e NODE_ENV`           | production                   | Production mode                   |
-| `-e API_PORT`           | 8080                         | API server port                   |
-| `-e JWT_SECRET`         | glassy-dash-prod-secret-2025 | JWT signing key                   |
-| `-e DB_FILE`            | /app/data/notes.db           | Database path                     |
-| `-e ADMIN_EMAILS`       | admin                        | Default admin                     |
-| `-e ALLOW_REGISTRATION` | false                        | Disable signup                    |
-| `-v`                    | ~/.GLASSYDASH:/app/data      | Volume mount for persistence      |
+| Flag                    | Value                   | Purpose                           |
+| ----------------------- | ----------------------- | --------------------------------- |
+| `-d`                    | -                       | Run in detached mode (background) |
+| `--name`                | glassy-dash-prod        | Container name                    |
+| `--restart`             | unless-stopped          | Auto-restart on reboot            |
+| `-p`                    | 3001:8080               | Map host 3001 to container 8080   |
+| `-e NODE_ENV`           | production              | Production mode                   |
+| `-e API_PORT`           | 8080                    | API server port                   |
+| `-e JWT_SECRET`         | <YOUR_JWT_SECRET>       | JWT signing key                   |
+| `-e DB_FILE`            | /app/data/notes.db      | Database path                     |
+| `-e ADMIN_EMAILS`       | admin                   | Default admin                     |
+| `-e ALLOW_REGISTRATION` | false                   | Disable signup                    |
+| `-v`                    | ~/.GLASSYDASH:/app/data | Volume mount for persistence      |
 
-**Critical Flag:** `--network dokploy-network`
+**Critical Fix:**
 
-- Must join dokploy-network
-- Allows Traefik to discover container
-- Without this, external routing fails
+- Port 3001 must be exposed for external access
+- Volume mount ensures data persistence
+- No special network required for basic setup
 
 **Expected Output:**
 
@@ -591,7 +594,7 @@ docker logs glassy-dash-prod --tail 20
 
 - Database errors: Check volume mount, file permissions
 - Port errors: Verify port 3001 not in use
-- Network errors: Check dokploy-network membership
+- Network errors: Verify container is running and listening on 8080
 
 #### Step 5.2: Test Local Health Endpoint
 
@@ -624,37 +627,34 @@ curl http://localhost:3001/api/monitoring/health
 #### Step 5.3: Test External Health Endpoint
 
 ```bash
-curl https://dash.0rel.com/api/monitoring/health
+curl https://your-domain.com/api/monitoring/health
 ```
 
 **Expected Output:** Same as local health check
 
 **If 502 Bad Gateway:**
 
-- Traefik not routing to container
-- Check container is on dokploy-network
-- Restart Traefik if needed
+- Application container is down or not responding
+- Verify port 3001 is accessible on the host
+- Check reverse proxy/tunnel configuration
 
-#### Step 5.4: Check Traefik Discovery
+#### Step 5.4: Check Container Connectivity
 
 ```bash
-docker logs dokploy-traefik | grep glassy-dash
+docker ps | grep glassy-dash-prod
 ```
 
 **Expected Output:**
 
 ```
-time="..." level=info msg="Configuration received from provider docker..."
-time="..." level=info msg="Creating middleware..."
-time="..." level=info msg="Creating router..."
-time="..." level=info msg="Creating service..."
+<container_id>   glassy-dash:latest   "..."   Up ...   0.0.0.0:3001->8080/tcp   glassy-dash-prod
 ```
 
 **If No Output:**
 
-- Container not on dokploy-network
-- Traefik not discovering container
-- Restart container with correct network
+- Container failed to start
+- Check `docker logs glassy-dash-prod` for errors
+- Ensure port 3001 is not blocked by firewall
 
 #### Step 5.5: Monitor Startup (2-5 minutes)
 
@@ -675,7 +675,7 @@ docker logs -f glassy-dash-prod
 
 ```bash
 # In browser
-https://dash.0rel.com
+https://your-domain.com
 ```
 
 **Expected:**
@@ -704,14 +704,15 @@ Password: admin
 
 ### Environment Variables
 
-| Variable             | Value                        | Description                                     |
-| -------------------- | ---------------------------- | ----------------------------------------------- |
-| `NODE_ENV`           | production                   | Node environment mode                           |
-| `API_PORT`           | 8080                         | Internal API port                               |
-| `JWT_SECRET`         | glassy-dash-prod-secret-2025 | JWT signing secret (CHANGE THIS IN PRODUCTION!) |
-| `DB_FILE`            | /app/data/notes.db           | SQLite database file path                       |
-| `ADMIN_EMAILS`       | admin                        | Default admin email addresses                   |
-| `ALLOW_REGISTRATION` | false                        | Enable/disable user registration                |
+| Variable             | Value              | Description                                     |
+| -------------------- | ------------------ | ----------------------------------------------- |
+| `NODE_ENV`           | production         | Node environment mode                           |
+| `API_PORT`           | 8080               | Internal API port                               |
+| `JWT_SECRET`         | <YOUR_JWT_SECRET>  | JWT signing secret (CHANGE THIS IN PRODUCTION!) |
+| `DB_FILE`            | /app/data/notes.db | SQLite database file path                       |
+| `ADMIN_EMAILS`       | admin              | Default admin email addresses                   |
+| `ALLOW_REGISTRATION` | false              | Enable/disable user registration                |
+| `GEMINI_API_KEY`     | -                  | AI Provider Key (or use `VITE_GEMINI_API_KEY`)  |
 
 ### Volume Mounts
 
@@ -730,10 +731,9 @@ Password: admin
 
 | Network           | Purpose                           |
 | ----------------- | --------------------------------- |
-| `dokploy-network` | Traefik discovery network         |
-| `bridge`          | Default Docker network (not used) |
+| `bridge`          | Default Docker network            |
 
-**Critical:** Container MUST be on `dokploy-network` for Traefik routing.
+**Note:** Standard bridge network is sufficient when using port mapping.
 
 ### Port Mappings
 
@@ -754,27 +754,20 @@ Password: admin
 
 **Symptoms:**
 
-- dash.0rel.com returns 502
+- your-domain.com returns 502
 - Local localhost:3001 works
 
 **Root Cause:**
-Container not on dokploy-network, Traefik can't route
+Application container is down or port 3001 is obscured.
 
 **Solution:**
 
 ```bash
-# Check network
-docker inspect glassy-dash-prod | grep NetworkMode
+# Check if container is running
+docker ps | grep glassy-dash-prod
 
-# If not dokploy-network, redeploy:
-docker stop glassy-dash-prod && docker rm glassy-dash-prod
-docker run -d --name glassy-dash-prod --network dokploy-network \
-  --restart unless-stopped -p 3001:8080 \
-  -e NODE_ENV=production -e API_PORT=8080 \
-  -e JWT_SECRET='glassy-dash-prod-secret-2025' \
-  -e DB_FILE=/app/data/notes.db -e ADMIN_EMAILS='admin' \
-  -e ALLOW_REGISTRATION=false \
-  -v ~/.GLASSYDASH:/app/data glassy-dash:latest
+# Restart container
+docker restart glassy-dash-prod
 ```
 
 ### Issue 2: Container Exits Immediately
@@ -788,21 +781,41 @@ docker run -d --name glassy-dash-prod --network dokploy-network \
 
 - Database file permission error
 - Volume mount path incorrect
-- Port conflict
+- Volume mount path incorrect
+- Port conflict (3001 in use)
 
 **Solution:**
 
-```bash
-# Check logs
-docker logs glassy-dash-prod
+1. **Check Logs:**
 
-# If permission error:
-sudo chown -R pozi:pozi ~/.GLASSYDASH
+   ```bash
+   docker logs glassy-dash-prod
+   ```
+
+2. **Fix Port Conflict:**
+   If port 3001 is in use by a zombie process or another service:
+
+   ```bash
+   # Use the management script to cleanup ports
+   ./docker_manage.sh stop
+
+   # Or manually identify and kill the process
+   sudo ss -tulpn | grep 3001
+   sudo kill -9 <PID>
+   ```
+
+3. **Fix Permissions:**
+   ```bash
+   sudo chown -R <PROD_USER>:<PROD_USER> ~/.GLASSYDASH
+   ```
 
 # If port conflict:
+
 netstat -tlnp | grep 3001
+
 # Find and stop conflicting process
-```
+
+````
 
 ### Issue 3: Database Not Found
 
@@ -824,43 +837,16 @@ docker inspect glassy-dash-prod | grep -A 10 Mounts
 
 # If mount missing or wrong:
 docker stop glassy-dash-prod && docker rm glassy-dash-prod
-docker run -d --name glassy-dash-prod --network dokploy-network \
+docker run -d --name glassy-dash-prod \
   --restart unless-stopped -p 3001:8080 \
   -e NODE_ENV=production -e API_PORT=8080 \
-  -e JWT_SECRET='glassy-dash-prod-secret-2025' \
+  -e JWT_SECRET='<YOUR_JWT_SECRET>' \
   -e DB_FILE=/app/data/notes.db -e ADMIN_EMAILS='admin' \
   -e ALLOW_REGISTRATION=false \
   -v ~/.GLASSYDASH:/app/data glassy-dash:latest
-```
+````
 
-### Issue 4: Traefik Not Discovering Container
-
-**Symptoms:**
-
-- 502 Bad Gateway
-- Traefik logs show no entries for glassy-dash
-
-**Root Cause:**
-
-- Container not on dokploy-network
-- Traefik restart needed
-
-**Solution:**
-
-```bash
-# Check container network
-docker inspect glassy-dash-prod | grep NetworkMode
-
-# Should show: "NetworkMode": "dokploy-network"
-
-# Restart Traefik
-docker restart dokploy-traefik
-
-# Wait 30 seconds, then test
-curl https://dash.0rel.com/api/monitoring/health
-```
-
-### Issue 5: Transfer Fails
+### Issue 4: Transfer Fails
 
 **Symptoms:**
 
@@ -903,7 +889,7 @@ ssh -v glassy-jump  # Verbose mode
 docker ps | grep glassy-dash
 
 # Check health endpoint
-curl -s https://dash.0rel.com/api/monitoring/health | jq .
+curl -s https://your-domain.com/api/monitoring/health | jq .
 
 # Check logs for errors
 docker logs glassy-dash-prod --since 24h | grep -i error
@@ -959,21 +945,20 @@ docker logs glassy-dash-prod --tail 1000 > ~/glassy-dash-$(date +%Y%m).log
 
 - [ ] Transfer to jump host: `scp glassy-dash.tar.gz glassy-jump:~/`
 - [ ] Verify transfer complete on jump host
-- [ ] Transfer to production VM: `ssh -t glassy-jump "scp ~/glassy-dash.tar.gz pozi@192.168.122.45:~/"`
+- [ ] Transfer to production VM: `ssh -t glassy-jump "scp ~/glassy-dash.tar.gz <PROD_USER>@<PROD_VM_IP>:~/"`
 - [ ] Verify transfer complete on production VM
 - [ ] Load Docker image: `gunzip -c glassy-dash.tar.gz | sudo docker load`
 - [ ] Verify image loaded: `docker images | grep glassy-dash`
 - [ ] Stop old container: `docker stop glassy-dash-prod && docker rm glassy-dash-prod`
 - [ ] Start new container with correct flags
-- [ ] Verify container is running: `docker ps | grep glassy-dash`
+- [ ] Verify container is running: `docker ps | grep glassy-dash-prod`
 
 ### Post-Deployment
 
 - [ ] Check container logs for errors: `docker logs glassy-dash-prod --tail 50`
 - [ ] Test local health: `curl http://localhost:3001/api/monitoring/health`
-- [ ] Test external health: `curl https://dash.0rel.com/api/monitoring/health`
-- [ ] Verify Traefik discovery: `docker logs dokploy-traefik | grep glassy-dash`
-- [ ] Test application in browser: https://dash.0rel.com
+- [ ] Test external health: `curl https://your-domain.com/api/monitoring/health`
+- [ ] Test application in browser: https://your-domain.com
 - [ ] Test login with default credentials
 - [ ] Monitor for 5-10 minutes for stability
 - [ ] Document any issues encountered
@@ -996,10 +981,10 @@ docker stop glassy-dash-prod && docker rm glassy-dash-prod
 docker images | grep glassy-dash
 
 # Start previous version
-docker run -d --name glassy-dash-prod --network dokploy-network \
+docker run -d --name glassy-dash-prod \
   --restart unless-stopped -p 3001:8080 \
   -e NODE_ENV=production -e API_PORT=8080 \
-  -e JWT_SECRET='glassy-dash-prod-secret-2025' \
+  -e JWT_SECRET='<YOUR_JWT_SECRET>' \
   -e DB_FILE=/app/data/notes.db -e ADMIN_EMAILS='admin' \
   -e ALLOW_REGISTRATION=false \
   -v ~/.GLASSYDASH:/app/data glassy-dash:previous-version
@@ -1020,7 +1005,7 @@ cp ~/.GLASSYDASH/backups/notes-YYYYMMDD-HHMMSS.db ~/.GLASSYDASH/notes.db
 docker start glassy-dash-prod
 
 # Verify health
-curl https://dash.0rel.com/api/monitoring/health
+curl https://your-domain.com/api/monitoring/health
 ```
 
 ### Full Rollback (Build Previous Version)
@@ -1036,20 +1021,20 @@ docker save glassy-dash:rollback | gzip > glassy-dash-rollback.tar.gz
 
 # 3. Transfer and deploy (follow standard deployment process)
 scp glassy-dash-rollback.tar.gz glassy-jump:~/
-ssh -t glassy-jump "scp ~/glassy-dash-rollback.tar.gz pozi@192.168.122.45:~/"
+ssh -t glassy-jump "scp ~/glassy-dash-rollback.tar.gz <PROD_USER>@<PROD_VM_IP>:~/"
 ssh glassy-vm
 gunzip -c glassy-dash-rollback.tar.gz | sudo docker load
 docker stop glassy-dash-prod && docker rm glassy-dash-prod
-docker run -d --name glassy-dash-prod --network dokploy-network \
+docker run -d --name glassy-dash-prod \
   --restart unless-stopped -p 3001:8080 \
   -e NODE_ENV=production -e API_PORT=8080 \
-  -e JWT_SECRET='glassy-dash-prod-secret-2025' \
+  -e JWT_SECRET='<YOUR_JWT_SECRET>' \
   -e DB_FILE=/app/data/notes.db -e ADMIN_EMAILS='admin' \
   -e ALLOW_REGISTRATION=false \
   -v ~/.GLASSYDASH:/app/data glassy-dash:rollback
 
 # 4. Verify
-curl https://dash.0rel.com/api/monitoring/health
+curl https://your-domain.com/api/monitoring/health
 ```
 
 ---
@@ -1100,10 +1085,10 @@ This deployment process provides a reliable, repeatable method for deploying Gla
 
 1. **Local Build:** Faster, uses local resources
 2. **Two-Stage Transfer:** Necessary for nested VM architecture
-3. **Docker Network:** Critical for Traefik routing
+3. **Port Mapping:** Reliable access to application
 4. **Health Verification:** Confirms successful deployment
 5. **Documentation:** Enables future deployments
 
-**Process Version:** 1.0
-**Last Updated:** January 26, 2026
-**GlassyDash Version:** 1.1.3
+**Process Version:** 1.1
+**Last Updated:** January 29, 2026
+**GlassyDash Version:** 1.1.6

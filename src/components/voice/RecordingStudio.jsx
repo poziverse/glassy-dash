@@ -45,6 +45,7 @@ export default function RecordingStudio() {
     pauseRecording,
     resumeRecording,
     setTranscript,
+    updateTranscript,
     undoTranscript,
     redoTranscript,
     setSummary,
@@ -59,7 +60,7 @@ export default function RecordingStudio() {
   // Local state
   const [timer, setTimer] = useState('00:00')
   const [localTranscript, setLocalTranscript] = useState(currentTranscript)
-  const [localDuration, setLocalDuration] = useState(0)
+  const [localDuration, setLocalDuration] = useState(recordingDuration)
   const [isPlaying, setIsPlaying] = useState(false)
   const [playbackRate, setPlaybackRate] = useState(1.0)
   const audioRef = useRef(null)
@@ -74,11 +75,19 @@ export default function RecordingStudio() {
   const timerIntervalRef = useRef(null)
   const streamRef = useRef(null)
   const audioElementRef = useRef(null)
+  const lastProcessedTranscriptRef = useRef(null)
+  const lastProcessedSummaryRef = useRef(null)
+  const lastProcessedStateRef = useRef(null)
 
   // Sync transcript from store
   useEffect(() => {
     setLocalTranscript(currentTranscript)
   }, [currentTranscript])
+
+  // Sync duration from store (for editing)
+  useEffect(() => {
+    setLocalDuration(recordingDuration)
+  }, [recordingDuration])
 
   // Duration tracking effect
   useEffect(() => {
@@ -90,6 +99,24 @@ export default function RecordingStudio() {
     }
     return () => clearInterval(interval)
   }, [recordingState])
+
+  // Sync local duration to store during recording
+  useEffect(() => {
+    if (recordingState === 'recording') {
+      setRecordingDuration(localDuration)
+    }
+  }, [localDuration, recordingState, setRecordingDuration])
+
+  // Debounce transcript history updates from user typing
+  useEffect(() => {
+    if (recordingState !== 'reviewing') return
+    const debounceTimer = setTimeout(() => {
+      if (localTranscript !== currentTranscript) {
+        setTranscript(localTranscript)
+      }
+    }, 800)
+    return () => clearTimeout(debounceTimer)
+  }, [localTranscript, currentTranscript, recordingState, setTranscript])
 
   // Timer display effect
   useEffect(() => {
@@ -186,16 +213,26 @@ export default function RecordingStudio() {
             base64Audio,
             // onChunk - partial results
             chunk => {
-              if (chunk.transcript) {
+              // Use refs to prevent redundant updates
+              if (chunk.transcript && chunk.transcript !== lastProcessedTranscriptRef.current) {
                 logger.debug('transcription_chunk_received', {
                   transcriptLength: chunk.transcript.length,
                 })
-                setTranscript(chunk.transcript)
-                if (chunk.summary) {
-                  logger.debug('transcription_summary_received', {
-                    summaryLength: chunk.summary.length,
-                  })
-                  setSummary(chunk.summary)
+                lastProcessedTranscriptRef.current = chunk.transcript
+                updateTranscript(chunk.transcript)
+                
+                if (chunk.summary && chunk.summary !== lastProcessedSummaryRef.current) {
+                  const normalizedSummary = Array.isArray(chunk.summary)
+                    ? chunk.summary.join('\n')
+                    : chunk.summary
+                  
+                  if (normalizedSummary !== lastProcessedSummaryRef.current) {
+                    logger.debug('transcription_summary_received', {
+                      summaryLength: normalizedSummary.length,
+                    })
+                    lastProcessedSummaryRef.current = normalizedSummary
+                    setSummary(normalizedSummary)
+                  }
                 }
               }
             },
@@ -203,17 +240,35 @@ export default function RecordingStudio() {
             result => {
               logger.info('transcription_complete', {
                 transcriptLength: result?.transcript?.length,
-                summaryLength: result?.summary?.length,
+                summaryLength: typeof result?.summary === 'string' 
+                  ? result.summary.length 
+                  : (Array.isArray(result?.summary) ? result.summary.length : 0),
               })
               if (result && result.transcript) {
-                setTranscript(result.transcript)
-                setSummary(result.summary || 'No summary available')
-                // Transition to reviewing state to dismiss the spinner
-                setRecordingState('reviewing')
+                // Only update state if values have changed
+                if (result.transcript !== currentTranscript) {
+                  setTranscript(result.transcript)
+                }
+                
+                const rawSummary = result.summary || 'No summary available'
+                const summary = Array.isArray(rawSummary) ? rawSummary.join('\n') : rawSummary
+                
+                if (summary !== currentSummary) {
+                  setSummary(summary)
+                }
+                
+                // Transition to reviewing state to dismiss spinner
+                if (recordingState !== 'reviewing' && recordingState !== lastProcessedStateRef.current) {
+                  lastProcessedStateRef.current = 'reviewing'
+                  setRecordingState('reviewing')
+                }
               } else {
                 logger.warn('transcription_failed_no_result', {})
                 setError('Transcription failed. Please try again.')
-                setRecordingState('idle')
+                if (recordingState !== 'idle' && recordingState !== lastProcessedStateRef.current) {
+                  lastProcessedStateRef.current = 'idle'
+                  setRecordingState('idle')
+                }
               }
             },
             // onError - error handling
@@ -221,7 +276,10 @@ export default function RecordingStudio() {
               logger.error('transcription_stream_error', {}, err)
               console.error('Streaming transcription error:', err)
               setError('Failed to transcribe audio. Please try again.')
-              setRecordingState('idle')
+              if (recordingState !== 'idle' && recordingState !== lastProcessedStateRef.current) {
+                lastProcessedStateRef.current = 'idle'
+                setRecordingState('idle')
+              }
             }
           ),
         {

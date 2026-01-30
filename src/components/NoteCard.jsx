@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react'
-import { motion } from 'framer-motion'
 import { PinFilled, PinOutline } from './Icons'
 import { DrawingPreview } from './DrawingPreview'
 import { ChecklistRow } from './ChecklistRow'
@@ -9,7 +8,6 @@ import { useModal } from '../contexts/ModalContext'
 import { useNotes } from '../contexts/NotesContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useSettings } from '../contexts/SettingsContext'
-import { useUI } from '../contexts/UIContext'
 import { bgFor } from '../themes'
 import { safeUserMarkdown } from '../utils/safe-markdown'
 
@@ -45,11 +43,11 @@ export function NoteCard({
   selected = false,
   onToggleSelect = () => {},
   disablePin = false,
-  onDragStart,
-  onDragOver,
-  onDragLeave,
-  onDrop,
-  onDragEnd,
+  onDragStart = () => {},
+  onDragOver = () => {},
+  onDragLeave = () => {},
+  onDrop = () => {},
+  onDragEnd = () => {},
 }) {
   const { openNote } = useModal()
   const { togglePin, updateChecklistItem } = useNotes()
@@ -79,30 +77,37 @@ export function NoteCard({
   const group = n.pinned ? 'pinned' : 'others'
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      whileHover={{
-        scale: 1.02,
-        transition: { type: 'spring', stiffness: 400, damping: 17 },
-      }}
-      whileTap={{ scale: 0.98 }}
+    <div
       draggable={!multiMode}
       onDragStart={e => {
-        if (!multiMode) onDragStart(n.id, e)
+        if (!multiMode) {
+          e.stopPropagation()
+          onDragStart(e, n.id)
+        }
       }}
       onDragOver={e => {
-        if (!multiMode) onDragOver(n.id, group, e)
+        if (!multiMode) {
+          e.stopPropagation()
+          onDragOver(e, n.id, group)
+        }
       }}
       onDragLeave={e => {
-        if (!multiMode) onDragLeave(e)
+        if (!multiMode && e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) {
+          onDragLeave(e)
+        }
       }}
       onDrop={e => {
-        if (!multiMode) onDrop(n.id, group, e)
+        if (!multiMode) {
+          e.stopPropagation()
+          e.preventDefault()
+          onDrop(e, n.id, group)
+        }
       }}
       onDragEnd={e => {
-        if (!multiMode) onDragEnd(e)
+        if (!multiMode) {
+          // Don't preventDefault - let drag complete naturally
+          onDragEnd(e)
+        }
       }}
       onClick={e => {
         if (multiMode) {
@@ -303,6 +308,6 @@ export function NoteCard({
           )}
         </div>
       )}
-    </motion.div>
+    </div>
   )
 }

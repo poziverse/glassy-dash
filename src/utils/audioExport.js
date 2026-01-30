@@ -27,7 +27,10 @@ export function exportToText(recording) {
     lines.push('-'.repeat(30))
     lines.push('SUMMARY')
     lines.push('-'.repeat(30))
-    lines.push(recording.summary)
+    const summaryText = Array.isArray(recording.summary) 
+      ? recording.summary.join('\n') 
+      : recording.summary;
+    lines.push(summaryText)
     lines.push('')
   }
 

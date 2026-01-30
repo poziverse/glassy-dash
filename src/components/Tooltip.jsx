@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useId, cloneElement } from 'react';
 
 /**
  * Tooltip Component
@@ -14,6 +14,20 @@ export function Tooltip({ children, text, position = 'top' }) {
   const [isVisible, setIsVisible] = useState(false);
   const tooltipRef = useRef(null);
   const containerRef = useRef(null);
+  const id = useId();
+
+  // Clone children to add accessibility and focus handlers
+  const trigger = cloneElement(children, {
+    'aria-describedby': isVisible ? id : undefined,
+    onFocus: (e) => {
+      setIsVisible(true);
+      if (children.props.onFocus) children.props.onFocus(e);
+    },
+    onBlur: (e) => {
+      setIsVisible(false);
+      if (children.props.onBlur) children.props.onBlur(e);
+    },
+  });
 
   return (
     <div 
@@ -21,12 +35,11 @@ export function Tooltip({ children, text, position = 'top' }) {
       className="relative inline-flex"
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}
-      onFocus={() => setIsVisible(true)}
-      onBlur={() => setIsVisible(false)}
     >
-      {children}
+      {trigger}
       {isVisible && (
         <div
+          id={id}
           ref={tooltipRef}
           className={`absolute z-50 px-2 py-1 text-xs font-medium text-white bg-gray-900 rounded-md shadow-lg whitespace-nowrap transition-opacity duration-200 ${
             position === 'top' ? 'bottom-full mb-2' : 

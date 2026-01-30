@@ -98,6 +98,32 @@ export const MUSIC_SERVICES = {
         coverArt: song.coverArt,
       }))
     },
+
+    /**
+     * Get lyrics for a song (Subsonic)
+     */
+    async getLyrics(serverUrl, songId, { token, salt }) {
+      const params = new URLSearchParams({
+        id: songId,
+        t: token,
+        s: salt,
+        c: 'glassydash',
+        v: '1.16.1',
+        f: 'json',
+      })
+      const targetUrl = `${serverUrl}/rest/getLyrics?${params}`
+      try {
+        const res = await fetch(`/api/music/proxy?url=${encodeURIComponent(targetUrl)}`)
+        // Subsonic returns JSON with lyrics inside
+        const data = await res.json()
+        const lyrics = data['subsonic-response']?.lyrics?.value
+        // If it's structured lyrics (LRC), Subsonic might return it as text or inside data
+        // If simple text, return it.
+        return lyrics || null
+      } catch (e) {
+        return null
+      }
+    },
   },
 
   jellyfin: {
@@ -175,6 +201,171 @@ export const MUSIC_SERVICES = {
         duration: Math.floor((item.RunTimeTicks || 0) / 10000000),
       }))
     },
+
+    async getLyrics(serverUrl, songId, { apiKey }) {
+      // 1. Try standard Lyric endpoint (10.9+)
+      // Note: Endpoint might be /Audio/{Id}/Lyrics or similar. 3rd party plugins inject it differently.
+      // Based on research, commonly it is GET /Audio/{ItemId}/Lyrics if native or via plugin.
+
+      const tryEndpoints = [
+        `${serverUrl}/Audio/${songId}/Lyrics?api_key=${apiKey}`,
+        `${serverUrl}/Items/${songId}/Lyrics?api_key=${apiKey}`, // Potential variant
+      ]
+
+      for (const url of tryEndpoints) {
+        try {
+          const res = await fetch(`/api/music/proxy?url=${encodeURIComponent(url)}`)
+          if (res.ok) {
+            // Might return Lyrics object or text
+            const contentType = res.headers.get('content-type')
+            if (contentType && contentType.includes('json')) {
+              const data = await res.json()
+              // Common format: { Lyrics: [{Text, Start}], Metadata: {} } or raw text
+              if (Array.isArray(data.Lyrics)) {
+                // Convert to LRC string for our player
+                return data.Lyrics.map(l => {
+                  const min = Math.floor(l.Start / 600000000)
+                  const sec = ((l.Start % 600000000) / 10000000).toFixed(2)
+                  return `[${String(min).padStart(2, '0')}:${String(sec).padStart(5, '0')}]${l.Text}`
+                }).join('\n')
+              }
+            } else {
+              // Assume raw LRC/Text
+              return await res.text()
+            }
+          }
+        } catch (e) {}
+      }
+      return null
+    },
+
+    /**
+     * Get available Cast Sessions (Remote Control)
+     */
+    async getSessions(serverUrl, { apiKey }) {
+      const targetUrl = `${serverUrl}/Sessions?api_key=${apiKey}`
+      try {
+        const res = await fetch(`/api/music/proxy?url=${encodeURIComponent(targetUrl)}`)
+        const data = await res.json()
+        // Filter for controllable clients that are NOT us
+        return data.filter(s => s.Capabilities && s.Capabilities.SupportsPersistentIdentifier)
+      } catch (e) {
+        console.error('Failed to get sessions', e)
+        return []
+      }
+    },
+
+    /**
+     * Send Cast Command
+     */
+    async castCommand(serverUrl, sessionId, command, payload = {}, { apiKey }) {
+      let endpoint = ''
+      if (command === 'Play') {
+        // Play specific item
+        // payload: { ItemIds: [], StartPositionTicks: 0 }
+        const query = new URLSearchParams({
+          api_key: apiKey,
+          ItemIds: payload.ItemIds.join(','),
+          StartPositionTicks: 0,
+          PlayCommand: 'PlayNow',
+        })
+        endpoint = `${serverUrl}/Sessions/${sessionId}/Playing?${query}`
+      } else if (command === 'Pause' || command === 'Unpause') {
+        endpoint = `${serverUrl}/Sessions/${sessionId}/Playing/${command}?api_key=${apiKey}`
+      } else if (command === 'Stop') {
+        endpoint = `${serverUrl}/Sessions/${sessionId}/Playing/Stop?api_key=${apiKey}`
+      } else if (command === 'NextTrack') {
+        endpoint = `${serverUrl}/Sessions/${sessionId}/Playing/NextTrack?api_key=${apiKey}`
+      }
+
+      if (endpoint) {
+        // We use POST via our updated proxy
+        // Some commands are POST with empty body, others might need body.
+        // Jellyfin commands often just need query params but use POST method.
+        await fetch(`/api/music/proxy?url=${encodeURIComponent(endpoint)}`, {
+          method: 'POST',
+        })
+      }
+    },
+  },
+
+  swingmusic: {
+    name: 'Swing Music',
+    icon: '🎷',
+    description: 'Self-hosted music (Native API)',
+    authType: 'swingmusic', // needs custom handling? or just apiKey logic
+
+    // Swing Music often token based. Let's assume passed in 'credentials'
+    getStreamUrl(serverUrl, trackId, { accessToken }) {
+      // Swing Music native stream
+      return `${serverUrl}/api/stream/${trackId}?token=${accessToken}`
+    },
+
+    getCoverArt(serverUrl, coverHash, { accessToken }, size = 300) {
+      // Swing Music often uses hash for covers
+      return `${serverUrl}/api/img/covers/${coverHash}?token=${accessToken}`
+    },
+
+    async search(serverUrl, query, { accessToken }) {
+      const targetUrl = `${serverUrl}/api/search?q=${encodeURIComponent(query)}&token=${accessToken}`
+      const res = await fetch(`/api/music/proxy?url=${encodeURIComponent(targetUrl)}`)
+      const data = await res.json()
+
+      // Swing Music Search Response Format (Approximated)
+      // { tracks: [], albums: [] }
+      return {
+        songs: (data.tracks || []).map(t => ({
+          id: t.filepath || t.trackhash, // Swing uses filepath or hash
+          title: t.title,
+          artist: t.artist,
+          album: t.album,
+          albumId: t.albumhash,
+          duration: t.duration,
+          coverArt: t.image_hash || t.albumhash,
+        })),
+        albums: (data.albums || []).map(a => ({
+          id: a.albumhash,
+          title: a.title,
+          artist: a.artist,
+          coverArt: a.image_hash || a.albumhash,
+          year: a.date,
+        })),
+      }
+    },
+
+    async getAlbumTracks(serverUrl, albumHash, { accessToken }) {
+      const targetUrl = `${serverUrl}/api/album/${albumHash}/tracks?token=${accessToken}`
+      const res = await fetch(`/api/music/proxy?url=${encodeURIComponent(targetUrl)}`)
+      const data = await res.json()
+      const tracks = data.tracks || data || [] // Check format
+
+      return tracks.map(t => ({
+        id: t.filepath || t.trackhash,
+        title: t.title,
+        artist: t.artist,
+        album: t.album,
+        albumId: albumHash,
+        duration: t.duration,
+        coverArt: t.image_hash,
+      }))
+    },
+
+    async getLyrics(serverUrl, trackId, { accessToken }) {
+      const targetUrl = `${serverUrl}/api/lyrics/${trackId}?token=${accessToken}`
+      try {
+        const res = await fetch(`/api/music/proxy?url=${encodeURIComponent(targetUrl)}`)
+        // Might return JSON { lyrics: "..." } or text
+        const contentType = res.headers.get('content-type')
+        if (contentType && contentType.includes('json')) {
+          const data = await res.json()
+          return data.lyrics || data.text || null
+        } else {
+          return await res.text()
+        }
+      } catch {
+        return null
+      }
+    },
   },
 
   subsonic: {
@@ -187,6 +378,7 @@ export const MUSIC_SERVICES = {
     getCoverArt: (...args) => MUSIC_SERVICES.navidrome.getCoverArt(...args),
     search: (...args) => MUSIC_SERVICES.navidrome.search(...args),
     getAlbumTracks: (...args) => MUSIC_SERVICES.navidrome.getAlbumTracks(...args),
+    getLyrics: (...args) => MUSIC_SERVICES.navidrome.getLyrics(...args),
   },
 
   ampache: {
@@ -248,6 +440,10 @@ export const MUSIC_SERVICES = {
         albumId: song.album?.id,
         duration: song.time || 0,
       }))
+    },
+
+    async getLyrics() {
+      return null
     },
   },
 }

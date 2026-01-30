@@ -248,7 +248,8 @@ Fetch metadata for a YouTube video.
 - **POST** `/music/subsonic-auth`: Generate auth token.
 - **GET** `/music/stream`: Proxy audio stream.
 - **GET** `/music/cover`: Proxy cover art.
-- **POST** `/music/test-connection`: Test server connection.
+- **ALL** `/music/proxy`: Generic proxy (GET/POST/DELETE) for specialized calls (Lyrics, Casting).
+- **POST** `/music/test-connection`: Test server connection (Supports Swing Music, Jellyfin, Subsonic).
 
 ---
 

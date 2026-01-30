@@ -51,11 +51,24 @@ check_running_mode() {
     fi
 }
 
+# Function to cleanup port 3001 explicitly
+cleanup_port() {
+    echo -e "${YELLOW}🧹 Checking port 3001 conflicts...${NC}"
+    # Find any container mapped to port 3001
+    CONFLICT_ID=$(docker ps --format "{{.ID}} {{.Ports}}" | grep ":3001->" | awk '{print $1}')
+    if [ ! -z "$CONFLICT_ID" ]; then
+        echo -e "${YELLOW}Found container $CONFLICT_ID using port 3001. Stopping...${NC}"
+        docker stop $CONFLICT_ID || true
+        docker rm $CONFLICT_ID || true
+    fi
+}
+
 # Function to stop all containers
 stop_all() {
     echo -e "${YELLOW}🛑 Stopping all GLASSYDASH containers...${NC}"
     docker stop glassy-dash-dev 2>/dev/null || true
     docker stop glassy-dash-prod 2>/dev/null || true
+    cleanup_port
     echo -e "${GREEN}✅ All containers stopped${NC}"
 }
 

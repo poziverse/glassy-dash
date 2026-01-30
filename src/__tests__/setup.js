@@ -1,5 +1,5 @@
 // Test setup file for Vitest
-import { expect, afterEach, vi, beforeAll, afterAll } from 'vitest'
+import { afterEach, vi, beforeAll, afterAll } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import '@testing-library/jest-dom'
 
@@ -41,6 +41,16 @@ global.IntersectionObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 }))
 
+// Mock ResizeObserver
+global.ResizeObserver = class ResizeObserver {
+  constructor(cb) {
+    this.cb = cb
+  }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
 // Mock fetch - Always mock global fetch to avoid ECONNREFUSED in node environment
 global.fetch = vi.fn().mockImplementation(() =>
   Promise.resolve({
@@ -50,6 +60,22 @@ global.fetch = vi.fn().mockImplementation(() =>
     headers: new Headers(),
   })
 )
+
+// Mock IndexedDB
+const indexedDB = {
+  open: vi.fn().mockImplementation(() => ({
+    result: {
+      createObjectStore: vi.fn(),
+      transaction: vi.fn(),
+    },
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    onerror: null,
+    onsuccess: null,
+  })),
+  deleteDatabase: vi.fn(),
+}
+global.indexedDB = indexedDB
 
 // Suppress console errors in tests (optional)
 const originalError = console.error

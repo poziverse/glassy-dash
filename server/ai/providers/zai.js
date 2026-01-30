@@ -378,11 +378,13 @@ Special Instructions:
                 const delta = parsed.choices?.[0]?.delta?.content || ''
                 if (delta) {
                   finalContent += delta
-                  onChunk({
-                    content: delta,
-                    provider: 'zai',
-                    isComplete: false,
-                  })
+                  if (onChunk) {
+                    onChunk({
+                      content: delta,
+                      provider: 'zai',
+                      isComplete: false,
+                    })
+                  }
                 }
               } catch (e) {
                 // Ignore parse errors for intermediate chunks
@@ -394,11 +396,13 @@ Special Instructions:
                 const delta = parsed.choices?.[0]?.delta?.content || ''
                 if (delta) {
                   finalContent += delta
-                  onChunk({
-                    content: delta,
-                    provider: 'zai',
-                    isComplete: false,
-                  })
+                  if (onChunk) {
+                    onChunk({
+                      content: delta,
+                      provider: 'zai',
+                      isComplete: false,
+                    })
+                  }
                 }
               } catch (e) {
                 // Ignore
@@ -409,22 +413,28 @@ Special Instructions:
       } catch (error) {
         console.error('[Z.ai Provider] generateContentStream error:', error)
         // Try to return what we have
-        onComplete({
-          content: finalContent,
-          error: error.message,
-          isComplete: true,
-        })
+        if (onComplete) {
+          onComplete({
+            content: finalContent,
+            error: error.message,
+            isComplete: true,
+          })
+        }
         return
       }
 
-      onComplete({
-        content: finalContent,
-        provider: 'zai',
-        isComplete: true,
-      })
+      if (onComplete) {
+        onComplete({
+          content: finalContent,
+          provider: 'zai',
+          isComplete: true,
+        })
+      }
     } catch (error) {
       console.error('[Z.ai Provider] generateContentStream fetch error:', error)
-      onComplete({ error: error.message, isComplete: true })
+      if (onComplete) {
+        onComplete({ error: error.message, isComplete: true })
+      }
       return
     }
   }

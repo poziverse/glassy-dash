@@ -21,6 +21,7 @@ import DocsView from './components/DocsView'
 import VoiceWorkspace from './components/voice/VoiceWorkspace'
 import SettingsView from './components/SettingsView'
 import { BugReportWidget } from './components/BugReportWidget'
+import { WindowView } from './components/WindowView'
 
 export default function App() {
   const { currentUser } = useAuthStore()
@@ -48,6 +49,7 @@ export default function App() {
     try {
       const result = await login.mutateAsync({ email, password })
       useAuthStore.getState().login(result.user, result.token)
+      window.location.hash = '#/notes'
       return { ok: true, user: result.user }
     } catch (error) {
       return { ok: false, error: error.message }
@@ -58,6 +60,7 @@ export default function App() {
     try {
       const result = await register.mutateAsync({ name, email, password })
       useAuthStore.getState().login(result.user, result.token)
+      window.location.hash = '#/notes'
       return { ok: true, user: result.user }
     } catch (error) {
       return { ok: false, error: error.message }
@@ -68,6 +71,7 @@ export default function App() {
     try {
       const result = await secretKeyLogin.mutateAsync(key)
       useAuthStore.getState().login(result.user, result.token)
+      window.location.hash = '#/notes'
       return { ok: true, user: result.user }
     } catch (error) {
       return { ok: false, error: error.message }
@@ -150,6 +154,9 @@ export default function App() {
         />
       )
     }
+  } else if (route.startsWith('#/w/')) {
+    const slug = route.replace('#/w/', '')
+    currentView = <WindowView slug={slug} />
   } else {
     // Authenticated
     if (route === '#/admin') {

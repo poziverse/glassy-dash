@@ -2,12 +2,40 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Logging System E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
-    // Login as test user
-    await page.goto('/#/login')
-    await page.fill('input[type="email"]', 'admin')
-    await page.fill('input[type="password"]', 'admin')
-    await page.click('button[type="submit"]')
-    await page.waitForURL('/#/notes')
+    // Wait for app to be ready
+    await page.goto('/#/login', { waitUntil: 'networkidle' })
+    
+    // Wait for React to mount
+    await page.waitForSelector('body', { state: 'attached' })
+    await page.waitForTimeout(500)
+    
+    // Use actual selectors from AuthViews.jsx - login uses "Username" placeholder
+    const emailInput = page.locator('input[placeholder="Username"]').or(
+      page.locator('input[autoComplete="username"]')
+    ).or(
+      page.locator('input[placeholder*="username" i]')
+    ).first()
+    
+    await emailInput.fill('admin')
+    
+    // Password input with "Password" placeholder
+    const passwordInput = page.locator('input[placeholder="Password"]').or(
+      page.locator('input[type="password"]')
+    ).or(
+      page.locator('input[placeholder*="password" i]')
+    ).first()
+    
+    await passwordInput.fill('admin')
+    
+    // Submit button with "Sign In" text (capital I)
+    const submitButton = page.locator('button:has-text("Sign In")').or(
+      page.locator('button[type="submit"]')
+    ).or(
+      page.locator('button:has-text("Sign")')
+    ).first()
+    
+    await submitButton.click()
+    await page.waitForURL('/#/notes', { timeout: 10000 })
   })
 
   test('should log user login event', async ({ page, request }) => {

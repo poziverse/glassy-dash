@@ -2,7 +2,8 @@ import { useNotesStore } from '../stores/notesStore'
 import { useAuthStore } from '../stores/authStore'
 import { useCollaboration } from '../hooks/useCollaboration'
 import { api } from '../lib/api'
-import { uid, mdForDownload, sanitizeFilename, downloadText } from '../utils/helpers'
+import { mdForDownload, sanitizeFilename, downloadText } from '../utils/helpers'
+import { useReorderNotes } from './mutations/useNoteMutations'
 import logger from '../utils/logger'
 
 const NOTES_CACHE_KEY = 'glassy-dash-notes-'
@@ -18,6 +19,7 @@ const CACHE_TIMESTAMP_KEY = 'glassy-dash-notes-cache-timestamp'
 export function useNotesCompat() {
   const authStore = useAuthStore()
   const notesStore = useNotesStore()
+  const reorderNotesMutation = useReorderNotes()
 
   const token = authStore.token
   const currentUser = authStore.currentUser
@@ -47,13 +49,13 @@ export function useNotesCompat() {
     try {
       localStorage.setItem(getCacheKey(), JSON.stringify(notesArray))
       localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString())
-    } catch (e) {}
+    } catch (_) {}
   }
 
   const persistTrashCache = notesArray => {
     try {
       localStorage.setItem(getTrashCacheKey(), JSON.stringify(notesArray))
-    } catch (e) {}
+    } catch (_) {}
   }
 
   const invalidateNotesCache = () => {
@@ -62,15 +64,26 @@ export function useNotesCompat() {
       localStorage.removeItem(getArchivedCacheKey())
       localStorage.removeItem(getTrashCacheKey())
       localStorage.removeItem(CACHE_TIMESTAMP_KEY)
-    } catch (e) {}
+    } catch (_) {}
   }
 
   // Sort notes by recency
+  // Sort notes by recency/position
   const sortNotesByRecency = arr => {
     if (!Array.isArray(arr)) return []
     return [...arr].sort((a, b) => {
-      const aPos = a.position !== undefined ? a.position : a.timestamp
-      const bPos = b.position !== undefined ? b.position : b.timestamp
+      const aPos =
+        typeof a.position === 'number'
+          ? a.position
+          : a.timestamp
+            ? new Date(a.timestamp).getTime()
+            : 0
+      const bPos =
+        typeof b.position === 'number'
+          ? b.position
+          : b.timestamp
+            ? new Date(b.timestamp).getTime()
+            : 0
       return (bPos || 0) - (aPos || 0)
     })
   }
@@ -100,12 +113,12 @@ export function useNotesCompat() {
     try {
       const data = await api('/notes/archived', { token })
       const notesArray = Array.isArray(data) ? data : []
-      notesStore.setNotes(sortNotesByRecency(notesArray))
+      notesStore.setArchivedNotes(sortNotesByRecency(notesArray))
       localStorage.setItem(getArchivedCacheKey(), JSON.stringify(notesArray))
     } catch (error) {
       logger.error('load_archived_notes_failed', { status: error.status }, error)
       const cached = localStorage.getItem(getArchivedCacheKey())
-      if (cached) notesStore.setNotes(sortNotesByRecency(JSON.parse(cached)))
+      if (cached) notesStore.setArchivedNotes(sortNotesByRecency(JSON.parse(cached)))
     } finally {
       notesStore.setNotesLoading(false)
     }
@@ -119,14 +132,14 @@ export function useNotesCompat() {
       const data = await api('/notes/trash', { token })
       const notesArray = Array.isArray(data) ? data : []
       const sorted = notesArray.sort((a, b) => (b.deleted_at || 0) - (a.deleted_at || 0))
-      notesStore.setNotes([...notesStore.notes, ...sorted])
+      notesStore.setTrashNotes(sorted)
       persistTrashCache(notesArray)
     } catch (error) {
       logger.error('load_trash_notes_failed', { status: error.status }, error)
       const cached = localStorage.getItem(getTrashCacheKey())
       if (cached) {
         const sorted = JSON.parse(cached).sort((a, b) => (b.deleted_at || 0) - (a.deleted_at || 0))
-        notesStore.setNotes([...notesStore.notes, ...sorted])
+        notesStore.setTrashNotes(sorted)
       }
     } finally {
       notesStore.setTrashLoading(false)
@@ -180,7 +193,6 @@ export function useNotesCompat() {
     const updatedItems = originalItems.map(item =>
       item.id === itemId ? { ...item, done: checked } : item
     )
-    const updatedNote = { ...note, items: updatedItems }
 
     notesStore.updateNote(noteId, { items: updatedItems })
 
@@ -193,22 +205,7 @@ export function useNotesCompat() {
       invalidateNotesCache()
     } catch (error) {
       logger.error('update_checklist_item_failed', { noteId, itemId }, error)
-      const revertedNote = { ...note, items: originalItems }
       notesStore.updateNote(noteId, { items: originalItems })
-      throw error
-    }
-  }
-
-  const reorderNotes = async noteIds => {
-    try {
-      await api('/notes/reorder', {
-        method: 'POST',
-        token,
-        body: { positions: noteIds.map((id, idx) => ({ id, position: noteIds.length - idx })) },
-      })
-      invalidateNotesCache()
-    } catch (error) {
-      logger.error('reorder_notes_failed', { count: noteIds.length }, error)
       throw error
     }
   }
@@ -483,54 +480,108 @@ export function useNotesCompat() {
 
   // Drag and drop operations
   const onDragStart = (e, noteId) => {
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', String(noteId))
+    if (e && typeof e.stopPropagation === 'function') {
+      e.stopPropagation()
+    }
+    if (e?.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/plain', String(noteId))
+    }
   }
 
   const onDragOver = e => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
+    if (e && typeof e.preventDefault === 'function') {
+      e.stopPropagation()
+      e.preventDefault()
+    }
+    if (e?.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move'
+    }
   }
 
   const onDragLeave = e => {
-    e.preventDefault()
+    // Only handle if actually leaving element (not moving to child)
+    if (e && typeof e.preventDefault === 'function' && 
+        e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) {
+      e.preventDefault()
+    }
   }
 
   const onDrop = async (e, targetNoteId) => {
-    e.preventDefault()
-    const draggedId = e.dataTransfer.getData('text/plain')
+    if (e && typeof e.preventDefault === 'function') {
+      e.stopPropagation()
+      e.preventDefault()
+    }
 
-    if (draggedId && draggedId !== String(targetNoteId)) {
-      const allNotes = [...pinned, ...others]
-      const draggedIdx = allNotes.findIndex(n => String(n.id) === draggedId)
-      const targetIdx = allNotes.findIndex(n => String(n.id) === String(targetNoteId))
+    // Get dragged ID with fallback
+    let draggedId = null
+    try {
+      draggedId = e?.dataTransfer?.getData('text/plain')
+    } catch (err) {
+      logger.warn('drag_data_retrieval_failed', {}, err)
+      return
+    }
 
-      if (draggedIdx === -1 || targetIdx === -1) {
-        logger.warn('note_drag_invalid_ids', { draggedId, targetNoteId })
-        return
+    // Find target note first to ensure it exists
+    const allNotes = [...pinned, ...others]
+    const targetNote = allNotes.find(n => String(n.id) === String(targetNoteId))
+
+    if (draggedId && targetNote && String(draggedId) !== String(targetNoteId)) {
+      // Reorder logic:
+      // We start with the full current lists
+      let newPinnedNotes = [...pinned]
+      let newOtherNotes = [...others]
+
+      // Remove draggedNote from its current position in whichever list it was in
+      newPinnedNotes = newPinnedNotes.filter(n => String(n.id) !== draggedId)
+      newOtherNotes = newOtherNotes.filter(n => String(n.id) !== draggedId)
+
+      const draggedNote = [...pinned, ...others].find(n => String(n.id) === draggedId)
+      if (!draggedNote) return
+
+      // Update pinned status if it changed
+      const willBePinned = !!targetNote.pinned
+      const updatedNote = { ...draggedNote, pinned: willBePinned }
+
+      // Insert into the target list at the correct position
+      if (willBePinned) {
+        const idx = newPinnedNotes.findIndex(n => String(n.id) === String(targetNoteId))
+        if (idx !== -1) newPinnedNotes.splice(idx, 0, updatedNote)
+        else newPinnedNotes.push(updatedNote)
+      } else {
+        const idx = newOtherNotes.findIndex(n => String(n.id) === String(targetNoteId))
+        if (idx !== -1) newOtherNotes.splice(idx, 0, updatedNote)
+        else newOtherNotes.push(updatedNote)
       }
 
-      const reorderedNotes = [...allNotes]
-      const [draggedNote] = reorderedNotes.splice(draggedIdx, 1)
-      reorderedNotes.splice(targetIdx, 0, draggedNote)
-
-      const noteIds = reorderedNotes.map(n => String(n.id))
+      const pinnedIds = newPinnedNotes.map(n => String(n.id))
+      const otherIds = newOtherNotes.map(n => String(n.id))
 
       try {
-        await reorderNotes(noteIds)
+        // Optimistic update to store
+        notesStore.reorderNotes(pinnedIds, otherIds)
+
+        // Persistent update to backend
+        await reorderNotesMutation.mutateAsync({ pinnedIds, otherIds })
+
         logger.info('note_reordered', {
           from: draggedId,
           to: targetNoteId,
-          position: targetIdx,
+          isPinned: willBePinned,
         })
-      } catch (error) {
-        logger.error('note_reorder_failed', { from: draggedId, to: targetNoteId }, error)
+      } catch (err) {
+        logger.error('note_reorder_failed', { from: draggedId, to: targetNoteId }, err)
+        // Note: query cancellation and error handling in mutation should revert RQ cache.
+        // For Zustand store, we might need a refresh to restore state if it fails.
+        loadNotes()
       }
     }
   }
 
   const onDragEnd = e => {
-    e.preventDefault()
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault()
+    }
   }
 
   // Computed values
@@ -579,7 +630,8 @@ export function useNotesCompat() {
     createNote,
     updateChecklistItem,
     togglePin: notesStore.togglePin,
-    reorderNotes,
+    reorderNotes: (pinnedIds, otherIds) =>
+      reorderNotesMutation.mutateAsync({ pinnedIds, otherIds }),
     invalidateNotesCache,
 
     // Multi-select

@@ -316,13 +316,24 @@ class ProviderRouter {
    * Execute task with streaming support
    * @param {string} taskType - The task type
    * @param {string} prompt - The prompt
-   * @param {Function} onChunk - Chunk callback
-   * @param {Function} onComplete - Complete callback
-   * @param {Object} options - Generation options
+   * @param {Function|Object} onChunkOrOptions - Chunk callback or options object
+   * @param {Function} [onComplete] - Complete callback
+   * @param {Object} [options={}] - Generation options
    * @returns {Promise<Object>} - Execution result
    */
-  async executeTaskStream(taskType, prompt, onChunk, onComplete, options = {}) {
+  async executeTaskStream(taskType, prompt, onChunkOrOptions, onComplete, options = {}) {
     const startTime = Date.now()
+    
+    // Normalize arguments (handle positional or options object)
+    let finalOnChunk = onChunkOrOptions
+    let finalOnComplete = onComplete
+    let finalOptions = options
+
+    if (typeof onChunkOrOptions === 'object' && onChunkOrOptions !== null && !Array.isArray(onChunkOrOptions)) {
+      finalOnChunk = onChunkOrOptions.onChunk
+      finalOnComplete = onChunkOrOptions.onComplete
+      finalOptions = onChunkOrOptions
+    }
     
     try {
       // Select appropriate provider
@@ -334,7 +345,7 @@ class ProviderRouter {
       }
       
       // Execute with streaming
-      const streamResult = provider.generateContentStream(prompt, onChunk, onComplete, options)
+      const streamResult = provider.generateContentStream(prompt, finalOnChunk, finalOnComplete, finalOptions)
       
       const latency = Date.now() - startTime
       this.updateMetrics(provider, 'success', latency)

@@ -18,7 +18,7 @@ GLASSYDASH provides three main note management modules, each fully operational w
 
 **Features:**
 
-- Masonry-grid layout with glassmorphism design
+- Flexible Masonry layout with glassmorphism design
 - Create, edit, delete, pin, and archive notes
 - Rich content support (Markdown, checklists, drawings, images)
 - Drag-and-drop reordering
@@ -262,10 +262,12 @@ GLASSYDASH provides three main note management modules, each fully operational w
 
 **Search Features:**
 
-- Real-time results
-- Highlighted matches
-- Advanced filters
-- Search history
+- **Fuzzy Search**: Typo-tolerant matching (finds "meeting" even if you type "meetng")
+- **Real-time Results**: Instant filtering as you type
+- **Visual Highlighting**: Matches are highlighted in yellow within titles and content
+- **Smooth Animations**: Fluid reordering of notes during filtering
+- **Smart Ranking**: Prioritizes matches in titles over content
+- **Advanced Filters**: Combine search with tags and color filters
 
 ### AI-Powered Search
 

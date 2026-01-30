@@ -6,6 +6,7 @@
 import { useNotesStore } from '../stores/notesStore'
 import { useDocsStore } from '../stores/docsStore'
 import { formatDuration } from './voiceSearch'
+import { api } from '../lib/api'
 
 /**
  * Convert voice recording to a Note
@@ -19,23 +20,25 @@ export async function convertToNote(recording) {
     const noteContent = buildNoteContent(recording)
 
     const noteId = crypto.randomUUID()
-    const note = {
+    const noteData = {
       id: noteId,
+      type: 'text',
       title: recording.title || 'Voice Transcript',
       content: noteContent,
       tags: [...(recording.tags || []), 'voice-transcript'],
-      background: 'indigo', // Distinctive color for voice notes
+      color: 'indigo', // Distinctive color for voice notes
       pinned: false,
-      deletedAt: null,
-      deleted_at: null,
-      createdAt: recording.createdAt,
-      created_at: recording.createdAt,
-      updatedAt: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      timestamp: recording.createdAt || new Date().toISOString(),
     }
 
+    // Persist to server first to avoid 404s in UI
+    const createdNote = await api('/notes', {
+      method: 'POST',
+      body: noteData,
+    })
+
     // Create note using the store's addNote method
-    notesStore.addNote(note)
+    notesStore.addNote(createdNote || noteData)
     return noteId
   } catch (error) {
     console.error('Error converting to note:', error)
@@ -44,17 +47,29 @@ export async function convertToNote(recording) {
 }
 
 /**
+ * Helper to get summary as a string, handling both string and array formats
+ * @param {Object} recording - Voice recording object
+ * @returns {string} Summary text
+ */
+function getSummaryText(recording) {
+  if (!recording.summary) return '';
+  if (Array.isArray(recording.summary)) return recording.summary.join('\n');
+  return String(recording.summary);
+}
+
+/**
  * Build formatted note content from recording
  * @param {Object} recording - Voice recording object
  * @returns {string} Formatted note content
  */
 function buildNoteContent(recording) {
-  const hasSummary = recording.summary && recording.summary.trim().length > 0
+  const summaryText = getSummaryText(recording);
+  const hasSummary = summaryText.trim().length > 0
 
   let content = ''
 
   if (hasSummary) {
-    content += `**Summary:** ${recording.summary}\n\n`
+    content += `**Summary:** ${summaryText}\n\n`
   }
 
   content += recording.transcript || ''
@@ -98,7 +113,8 @@ export async function convertToDocument(recording) {
  * @returns {string} Formatted document content
  */
 function buildDocumentContent(recording) {
-  const hasSummary = recording.summary && recording.summary.trim().length > 0
+  const summaryText = getSummaryText(recording);
+  const hasSummary = summaryText.trim().length > 0
 
   let content = '# Voice Transcript\n\n'
 
@@ -117,7 +133,7 @@ function buildDocumentContent(recording) {
   // Summary section
   if (hasSummary) {
     content += '## Summary\n\n'
-    content += recording.summary + '\n\n'
+    content += summaryText + '\n\n'
     content += '---\n\n'
   }
 
@@ -165,14 +181,15 @@ export function generateMarkdown(recording) {
  * @returns {string} Plain text content
  */
 export function generatePlainText(recording) {
-  const hasSummary = recording.summary && recording.summary.trim().length > 0
+  const summaryText = getSummaryText(recording);
+  const hasSummary = summaryText.trim().length > 0
 
   let content = recording.title || 'Voice Transcript'
   content += '\n\n'
 
   if (hasSummary) {
     content += 'SUMMARY\n' + '='.repeat(50) + '\n'
-    content += recording.summary + '\n\n'
+    content += summaryText + '\n\n'
   }
 
   content += 'TRANSCRIPT\n' + '='.repeat(50) + '\n'

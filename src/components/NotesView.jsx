@@ -11,6 +11,7 @@ import { NoteCard } from './NoteCard'
 import { Composer } from './Composer'
 import { SettingsPanel } from './SettingsPanel'
 import DashboardLayout from './DashboardLayout'
+import { MasonryLayout } from './MasonryLayout'
 import { Popover } from './Popover'
 import { ColorDot } from './ColorDot'
 import { PinIcon, ArchiveIcon, CloseIcon } from './Icons'
@@ -306,12 +307,12 @@ export default function NotesView() {
                       </div>
                     </div>
 
-                    <div className={listView ? 'w-full space-y-6' : 'masonry-grid'}>
+                    <div className={listView ? 'w-full space-y-6' : ''}>
                       {sortedArchivedNotes.length === 0 ? (
                         <p className="text-center text-gray-400 mt-8 col-span-full">
                           No archived notes.
                         </p>
-                      ) : (
+                      ) : listView ? (
                         sortedArchivedNotes.map(n => (
                           <NoteCard
                             key={n.id}
@@ -327,6 +328,25 @@ export default function NotesView() {
                             onDragEnd={onDragEnd}
                           />
                         ))
+                      ) : (
+                        <MasonryLayout
+                          notes={sortedArchivedNotes}
+                          renderItem={n => (
+                            <NoteCard
+                              key={n.id}
+                              n={n}
+                              multiMode={multiMode}
+                              selected={selectedIds.has(String(n.id))}
+                              onToggleSelect={onToggleSelect}
+                              disablePin={true}
+                              onDragStart={onDragStart}
+                              onDragOver={onDragOver}
+                              onDragLeave={onDragLeave}
+                              onDrop={onDrop}
+                              onDragEnd={onDragEnd}
+                            />
+                          )}
+                        />
                       )}
                     </div>
                   </section>
@@ -340,22 +360,45 @@ export default function NotesView() {
                         <h2 className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-3 ml-1 w-full">
                           Pinned
                         </h2>
-                        <div className={listView ? 'w-full space-y-6' : 'masonry-grid'}>
-                          {pinned.map(n => (
-                            <NoteCard
-                              key={n.id}
-                              n={n}
-                              multiMode={multiMode}
-                              selected={selectedIds.has(String(n.id))}
-                              onToggleSelect={onToggleSelect}
-                              disablePin={'ontouchstart' in window || navigator.maxTouchPoints > 0}
-                              onDragStart={onDragStart}
-                              onDragOver={onDragOver}
-                              onDragLeave={onDragLeave}
-                              onDrop={onDrop}
-                              onDragEnd={onDragEnd}
+                        <div className={listView ? 'w-full space-y-6' : ''}>
+                          {listView ? (
+                            pinned.map(n => (
+                              <NoteCard
+                                key={n.id}
+                                n={n}
+                                multiMode={multiMode}
+                                selected={selectedIds.has(String(n.id))}
+                                onToggleSelect={onToggleSelect}
+                                disablePin={'ontouchstart' in window || navigator.maxTouchPoints > 0}
+                                onDragStart={onDragStart}
+                                onDragOver={onDragOver}
+                                onDragLeave={onDragLeave}
+                                onDrop={onDrop}
+                                onDragEnd={onDragEnd}
+                              />
+                            ))
+                          ) : (
+                            <MasonryLayout
+                              notes={pinned}
+                              renderItem={n => (
+                                <NoteCard
+                                  key={n.id}
+                                  n={n}
+                                  multiMode={multiMode}
+                                  selected={selectedIds.has(String(n.id))}
+                                  onToggleSelect={onToggleSelect}
+                                  disablePin={
+                                    'ontouchstart' in window || navigator.maxTouchPoints > 0
+                                  }
+                                  onDragStart={onDragStart}
+                                  onDragOver={onDragOver}
+                                  onDragLeave={onDragLeave}
+                                  onDrop={onDrop}
+                                  onDragEnd={onDragEnd}
+                                />
+                              )}
                             />
-                          ))}
+                          )}
                         </div>
                       </section>
                     )}
@@ -367,22 +410,45 @@ export default function NotesView() {
                             Others
                           </h2>
                         )}
-                        <div className={listView ? 'w-full space-y-6' : 'masonry-grid'}>
-                          {others.map(n => (
-                            <NoteCard
-                              key={n.id}
-                              n={n}
-                              multiMode={multiMode}
-                              selected={selectedIds.has(String(n.id))}
-                              onToggleSelect={onToggleSelect}
-                              disablePin={'ontouchstart' in window || navigator.maxTouchPoints > 0}
-                              onDragStart={onDragStart}
-                              onDragOver={onDragOver}
-                              onDragLeave={onDragLeave}
-                              onDrop={onDrop}
-                              onDragEnd={onDragEnd}
+                        <div className={listView ? 'w-full space-y-6' : ''}>
+                          {listView ? (
+                            others.map(n => (
+                              <NoteCard
+                                key={n.id}
+                                n={n}
+                                multiMode={multiMode}
+                                selected={selectedIds.has(String(n.id))}
+                                onToggleSelect={onToggleSelect}
+                                disablePin={'ontouchstart' in window || navigator.maxTouchPoints > 0}
+                                onDragStart={onDragStart}
+                                onDragOver={onDragOver}
+                                onDragLeave={onDragLeave}
+                                onDrop={onDrop}
+                                onDragEnd={onDragEnd}
+                              />
+                            ))
+                          ) : (
+                            <MasonryLayout
+                              notes={others}
+                              renderItem={n => (
+                                <NoteCard
+                                  key={n.id}
+                                  n={n}
+                                  multiMode={multiMode}
+                                  selected={selectedIds.has(String(n.id))}
+                                  onToggleSelect={onToggleSelect}
+                                  disablePin={
+                                    'ontouchstart' in window || navigator.maxTouchPoints > 0
+                                  }
+                                  onDragStart={onDragStart}
+                                  onDragOver={onDragOver}
+                                  onDragLeave={onDragLeave}
+                                  onDrop={onDrop}
+                                  onDragEnd={onDragEnd}
+                                />
+                              )}
                             />
-                          ))}
+                          )}
                         </div>
                       </section>
                     )}

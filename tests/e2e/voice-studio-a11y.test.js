@@ -8,7 +8,9 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Voice Studio Accessibility', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/#/voice')
+    await page.goto('/#/voice', { waitUntil: 'networkidle' })
+    await page.waitForSelector('body', { state: 'attached' })
+    await page.waitForTimeout(500)
   })
 
   test.describe('Keyboard Navigation', () => {

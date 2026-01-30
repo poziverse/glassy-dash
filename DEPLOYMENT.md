@@ -142,6 +142,10 @@ sudo ./docker_manage.sh prod-compose
 - **VM Password**: `pozi`
 - **Service URL**: `http://192.168.122.45:3001`
 
+### Environment Variables
+
+Ensure `GEMINI_API_KEY` (or `VITE_GEMINI_API_KEY`) is set in `docker-compose.prod.yml` or passed via `-e`.
+
 ## Maintenance & Troubleshooting
 
 ### 502 Bad Gateway

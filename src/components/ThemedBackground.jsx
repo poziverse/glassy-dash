@@ -52,33 +52,6 @@ export default function ThemedBackground() {
 
   return (
     <>
-      {/* Golden Gradient Background */}
-      {backgroundImage === 'golden_gradient' && (
-        <div
-          className="fixed inset-0 z-[0] pointer-events-none animate-in fade-in duration-700"
-          style={{
-            background: `
-              radial-gradient(circle at 15% 50%, rgba(251, 191, 36, 0.2), transparent 30%),
-              radial-gradient(circle at 85% 30%, rgba(253, 224, 71, 0.15), transparent 30%),
-              linear-gradient(to bottom, #FFFBEB, #FEF3C7, #FDE68A)
-            `,
-          }}
-        >
-          {backgroundOverlay && (
-            <div
-              className="absolute inset-0 transition-opacity duration-700"
-              style={{
-                background: dark
-                  ? `radial-gradient(circle at 15% 50%, ${accentRgba}, transparent 40%), linear-gradient(to bottom, #000000, #1a1a1a)`
-                  : `rgba(255, 255, 255, 0.2)`,
-                overflow: 'hidden',
-                opacity: overlayOpacity,
-              }}
-            />
-          )}
-        </div>
-      )}
-
       {/* Custom Backgrounds from IndexedDB */}
       {backgroundImage?.startsWith('custom:') && (
         <CustomBackgroundRenderer
@@ -93,7 +66,6 @@ export default function ThemedBackground() {
 
       {/* Regular Background Images */}
       {!backgroundImage?.startsWith('custom:') &&
-        backgroundImage !== 'golden_gradient' &&
         currentBg &&
         optimalPath && (
           <div className="fixed inset-0 z-[0] pointer-events-none">
@@ -112,7 +84,7 @@ export default function ThemedBackground() {
                         linear-gradient(to bottom, #050505, #121212, #0a0a0a)`
                     : `radial-gradient(circle at 15% 50%, ${accentRgbaSubtle}, transparent 25%), 
                         radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.1), transparent 25%),
-                        linear-gradient(to bottom, #0f0c29, #302b63, #24243e)`,
+                        linear-gradient(to bottom, #dbeafe, #eff6ff, #f8fafc)`,
                   overflow: 'hidden',
                   opacity: overlayOpacity,
                 }}
@@ -182,7 +154,7 @@ function CustomBackgroundRenderer({
                     linear-gradient(to bottom, #050505, #121212, #0a0a0a)`
               : `radial-gradient(circle at 15% 50%, ${accentRgbaSubtle}, transparent 25%), 
                     radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.1), transparent 25%),
-                    linear-gradient(to bottom, #0f0c29, #302b63, #24243e)`,
+                    linear-gradient(to bottom, #dbeafe, #eff6ff, #f8fafc)`,
             overflow: 'hidden',
             opacity: overlayOpacity,
           }}

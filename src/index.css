@@ -83,8 +83,8 @@ body:not([data-has-background]) {
   /* Dynamic Background using CSS variable for opacity */
   background: linear-gradient(
     145deg,
-    rgba(var(--glass-base), var(--glass-opacity, 0.45)) 0%,
-    rgba(var(--glass-base), calc(var(--glass-opacity, 0.45) * 0.4)) 100%
+    rgba(var(--glass-base), calc(var(--glass-opacity, 0.45) * 0.5)) 0%,
+    rgba(var(--glass-base), calc(var(--glass-opacity, 0.45) * 0.1)) 100%
   );
   backdrop-filter: blur(var(--glass-blur, 20px));
   -webkit-backdrop-filter: blur(var(--glass-blur, 20px));
@@ -105,27 +105,25 @@ body:not([data-has-background]) {
 .glass-card:hover {
   background: linear-gradient(
     145deg,
-    rgba(var(--glass-base), calc(var(--glass-opacity, 0.45) + 0.05)) 0%,
-    rgba(var(--glass-base), calc(var(--glass-opacity, 0.45) * 0.6)) 100%
+    rgba(var(--glass-base), calc(var(--glass-opacity, 0.45) * 0.6)) 0%,
+    rgba(var(--glass-base), calc(var(--glass-opacity, 0.45) * 0.2)) 100%
   );
-  border-color: rgba(255, 255, 255, 0.25);
+  /* Refined hover borders to avoid harsh lines & restore inset shadow */
+  border-color: rgba(255, 255, 255, 0.12);
+  border-top-color: rgba(255, 255, 255, 0.2);
+  border-left-color: rgba(255, 255, 255, 0.16);
   box-shadow:
     0 10px 40px -10px rgba(0, 0, 0, 0.5),
-    0 0 20px -5px var(--color-accent-glow, rgba(99, 102, 241, 0.2));
+    0 0 20px -5px var(--color-accent-glow, rgba(99, 102, 241, 0.2)),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
 }
 
-/* CSS Grid Layout - Fix for Left-to-Right Ordering */
+/* === Masonry / Grid Layout === */
 .masonry-grid {
   display: grid;
   grid-template-columns: repeat(1, minmax(0, 1fr));
   gap: 1.5rem;
   align-items: start; /* Prevents stretching to match row height if undesired */
-}
-
-.note-card {
-  /* Reset masonry specific props */
-  width: 100%;
-  /* margin-bottom handled by grid gap */
 }
 
 /* Responsive Grid Columns */
@@ -203,6 +201,7 @@ body:not([data-has-background]) {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 12;
+  line-clamp: 12;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -211,35 +210,50 @@ body:not([data-has-background]) {
 .modal-scrim .note-content--dense {
   display: block;
   -webkit-line-clamp: unset;
+  line-clamp: unset;
   overflow: visible;
 }
 
-/* Ensure text is fully visible in modal */
-.note-content--dense p,
-.note-content--dense h1,
-.note-content--dense h2,
-.note-content--dense h3,
-.note-content--dense h4,
-.note-content--dense h5,
-.note-content--dense h6,
-.note-content--dense ul,
-.note-content--dense ol,
-.note-content--dense pre,
-.note-content--dense code,
-.note-content--dense blockquote {
-  margin-bottom: 1rem;
+/* Ensure text is fully visible and formatted correctly */
+.note-content p,
+.note-content h1,
+.note-content h2,
+.note-content h3,
+.note-content h4,
+.note-content h5,
+.note-content h6,
+.note-content ul,
+.note-content ol,
+.note-content pre,
+.note-content code,
+.note-content blockquote {
+  margin-bottom: 0.75rem;
 }
 
-.note-content--dense p:last-child,
-.note-content--dense h1:last-child,
-.note-content--dense h2:last-child,
-.note-content--dense h3:last-child,
-.note-content--dense h4:last-child,
-.note-content--dense h5:last-child,
-.note-content--dense h6:last-child,
-.note-content--dense ul:last-child,
-.note-content--dense ol:last-child {
+.note-content p:last-child,
+.note-content h1:last-child,
+.note-content h2:last-child,
+.note-content h3:last-child,
+.note-content h4:last-child,
+.note-content h5:last-child,
+.note-content h6:last-child,
+.note-content ul:last-child,
+.note-content ol:last-child {
   margin-bottom: 0;
+}
+
+/* Specific adjustment for whitespace in rendered blocks */
+.note-content.whitespace-pre-wrap {
+  /* Only apply pre-wrap to raw text, allow block elements to handle their own layout */
+  white-space: pre-wrap;
+}
+
+/* When dangerouslySetInnerHTML is used, we usually want normal white-space 
+   to avoid double-spacing from newlines between HTML tags */
+.note-content:has(> p),
+.note-content:has(> h1),
+.note-content:has(> ul) {
+  white-space: normal;
 }
 
 /* Code block styling */
@@ -306,5 +320,178 @@ body:not([data-has-background]) {
     left: calc(4rem + 1rem);
     right: 1rem;
     max-width: none;
+  }
+}
+
+/* === Loading Spinner Styles === */
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  color: var(--color-accent);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.loading-text {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+  letter-spacing: 0.025em;
+}
+
+/* === Error Boundary Styles === */
+.error-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  text-align: center;
+  color: white;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.error-icon {
+  margin-bottom: 1.5rem;
+  color: var(--color-red-500, #ef4444);
+  animation: shake 0.5s ease-in-out;
+}
+
+.error-fallback h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: white;
+}
+
+.error-fallback p {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  max-width: 400px;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.error-details {
+  margin-bottom: 1.5rem;
+  text-align: left;
+  max-width: 600px;
+  width: 100%;
+}
+
+.error-details summary {
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  transition: all var(--transition-fast);
+}
+
+.error-details summary:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.error-details[open] summary {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.error-stack {
+  padding: 1rem;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: none;
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+  overflow-x: auto;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.error-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.retry-button,
+.refresh-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+}
+
+.retry-button {
+  background: var(--color-accent, #6366f1);
+  color: white;
+}
+
+.retry-button:hover {
+  background: var(--color-accent-hover, #4f46e5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.refresh-button {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.refresh-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Light mode adjustments */
+@media (prefers-color-scheme: light) {
+  :root:not(.dark) .error-icon {
+    color: var(--color-red-600, #dc2626);
+  }
+
+  :root:not(.dark) .error-fallback h2 {
+    color: #1a1a1a;
+  }
+
+  :root:not(.dark) .error-fallback p {
+    color: rgba(0, 0, 0, 0.7);
+  }
+
+  :root:not(.dark) .retry-button {
+    background: var(--color-accent, #6366f1);
+    color: white;
+  }
+
+  :root:not(.dark) .refresh-button {
+    background: rgba(0, 0, 0, 0.05);
+    color: #1a1a1a;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+  }
+
+  :root:not(.dark) .refresh-button:hover {
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  :root:not(.dark) .loading-text {
+    color: rgba(0, 0, 0, 0.7);
   }
 }

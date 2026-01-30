@@ -6,6 +6,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { notesKeys } from '../queries/useNotes'
+import { useNotesStore } from '../../stores/notesStore'
 
 /**
  * Create a new note with optimistic update and retry logic
@@ -26,15 +27,19 @@ export function useCreateNote(options = {}) {
       // Snapshot previous value
       const previousNotes = queryClient.getQueryData(notesKeys.list({ type: 'active' }))
 
+      const tempNote = {
+        ...newNote,
+        id: newNote.id || 'temp-' + Date.now(),
+        items: newNote.items || [],
+        tags: newNote.tags || [],
+        images: newNote.images || [],
+      }
+
+      // Optimistically update store
+      useNotesStore.getState().addNote(tempNote)
+
       // Optimistically add note with temp ID to the active list
       queryClient.setQueryData(notesKeys.list({ type: 'active' }), old => {
-        const tempNote = {
-          ...newNote,
-          id: newNote.id || 'temp-' + Date.now(),
-          items: newNote.items || [],
-          tags: newNote.tags || [],
-          images: newNote.images || [],
-        }
         if (!old) return [tempNote]
         return [tempNote, ...old]
       })
@@ -45,8 +50,9 @@ export function useCreateNote(options = {}) {
       // Rollback on error
       if (context?.previousNotes) {
         queryClient.setQueryData(notesKeys.list({ type: 'active' }), context.previousNotes)
+        // Store will be synced by useEffect in NotesContext
       }
-      
+
       // Log error for debugging
       console.error('[useCreateNote] Error:', {
         error: err.message,
@@ -59,7 +65,7 @@ export function useCreateNote(options = {}) {
           type: newNote.type,
           hasImages: !!newNote.images,
           imagesCount: newNote.images?.length || 0,
-        }
+        },
       })
     },
     onSuccess: () => {
@@ -68,20 +74,19 @@ export function useCreateNote(options = {}) {
     },
     // Retry logic: retry on network errors or 5xx server errors
     retry: (failureCount, error) => {
-      const shouldRetry = (
-        failureCount < 3 && 
-        (error.isNetworkError || 
-         (error.status >= 500 && error.status < 600) ||
-         error.isValidationError)
-      )
-      
+      const shouldRetry =
+        failureCount < 3 &&
+        (error.isNetworkError ||
+          (error.status >= 500 && error.status < 600) ||
+          error.isValidationError)
+
       if (shouldRetry) {
         console.log(`[useCreateNote] Retrying (attempt ${failureCount + 1}/3):`, error.message)
       }
-      
+
       return shouldRetry
     },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
     ...options,
   })
 }
@@ -109,6 +114,9 @@ export function useUpdateNote(options = {}) {
         if (!old) return old
         return old.map(note => (String(note.id) === String(id) ? { ...note, ...updates } : note))
       }
+
+      // Optimistically update store
+      useNotesStore.getState().updateNote(id, updates)
 
       // Optimistically update note in active lists and archived
       queryClient.setQueriesData({ queryKey: notesKeys.lists() }, updateFn)
@@ -157,6 +165,9 @@ export function usePatchNote(options = {}) {
         if (!old) return old
         return old.map(note => (String(note.id) === String(id) ? { ...note, ...updates } : note))
       }
+
+      // Optimistically update store
+      useNotesStore.getState().updateNote(id, updates)
 
       // Optimistically update note in active lists and archived
       queryClient.setQueriesData({ queryKey: notesKeys.lists() }, updateFn)
@@ -500,35 +511,49 @@ export function useReorderNotes(options = {}) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async noteIds => {
-      const positions = noteIds.map((id, idx) => ({
-        id,
-        position: noteIds.length - idx,
-      }))
+    mutationFn: async ({ pinnedIds = [], otherIds = [] }) => {
       return await api('/notes/reorder', {
         method: 'POST',
-        body: { positions },
+        body: { pinnedIds, otherIds },
       })
     },
-    onMutate: async noteIds => {
+    onMutate: async ({ pinnedIds = [], otherIds = [] }) => {
       await queryClient.cancelQueries({ queryKey: notesKeys.lists() })
 
       const previousNotes = queryClient.getQueryData(notesKeys.list({ type: 'active' }))
 
       // Optimistically reorder in active list
       if (previousNotes) {
-        const idMap = new Map(noteIds.map((id, idx) => [String(id), noteIds.length - idx]))
-        const reordered = [...previousNotes].sort((a, b) => {
-          const posA = idMap.get(String(a.id)) ?? a.position
-          const posB = idMap.get(String(b.id)) ?? b.position
-          return posB - posA
-        })
-        queryClient.setQueryData(notesKeys.list({ type: 'active' }), reordered)
+        const base = Date.now()
+        const noteMap = new Map(previousNotes.map(n => [String(n.id), n]))
+        const reorderedPinned = pinnedIds
+          .map((id, idx) => {
+            const n = noteMap.get(String(id))
+            if (!n) return null
+            return { ...n, pinned: true, position: base + (pinnedIds.length - idx) }
+          })
+          .filter(Boolean)
+        const reorderedOthers = otherIds
+          .map((id, idx) => {
+            const n = noteMap.get(String(id))
+            if (!n) return null
+            return { ...n, pinned: false, position: base - (idx + 1) }
+          })
+          .filter(Boolean)
+
+        const updatedIds = new Set([...pinnedIds, ...otherIds].map(String))
+        const remaining = previousNotes.filter(n => !updatedIds.has(String(n.id)))
+
+        queryClient.setQueryData(notesKeys.list({ type: 'active' }), [
+          ...reorderedPinned,
+          ...reorderedOthers,
+          ...remaining,
+        ])
       }
 
       return { previousNotes }
     },
-    onError: (err, noteIds, context) => {
+    onError: (err, _variables, context) => {
       if (context?.previousNotes) {
         queryClient.setQueryData(notesKeys.list({ type: 'active' }), context.previousNotes)
       }

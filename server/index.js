@@ -33,7 +33,6 @@ const bcrypt = require('bcryptjs')
 const Database = require('./db')
 const cors = require('cors')
 const crypto = require('crypto')
-const helmet = require('helmet')
 const rateLimit = require('express-rate-limit')
 
 // transformers.js setup remains same...
@@ -102,6 +101,14 @@ try {
   console.error('Failed to load AI routes:', err)
 }
 
+// ---------- Logging ----------
+try {
+  require('./logging-module')(app, auth)
+  console.log('✓ Logging routes mounted at /api/logs')
+} catch (err) {
+  console.error('Failed to load Logging routes:', err)
+}
+
 const apiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -165,6 +172,7 @@ async function validateDatabaseSchema() {
       'last_edited_by',
       'last_edited_at',
       'deleted_at',
+      'layout_json',
     ]
 
     const missingNotesColumns = requiredNotesColumns.filter(c => !notesColumnNames.has(c))
@@ -319,6 +327,9 @@ CREATE TABLE IF NOT EXISTS bug_reports (
           if (!names.has('deleted_at')) {
             await db.exec(`ALTER TABLE notes ADD COLUMN deleted_at INTEGER`)
           }
+          if (!names.has('layout_json')) {
+            await db.exec(`ALTER TABLE notes ADD COLUMN layout_json TEXT`)
+          }
         }
         const tx = db.transaction(txLogic)
         await tx()
@@ -395,7 +406,6 @@ function signToken(user) {
     {
       uid: user.id,
       email: user.email,
-      name: user.name,
       name: user.name,
       is_admin: !!user.is_admin,
       announcements_opt_out: !!user.announcements_opt_out,
@@ -525,7 +535,7 @@ const getNote = db.prepare('SELECT * FROM notes WHERE id = ? AND user_id = ?')
 const getNoteWithCollaboration = db.prepare(`
   SELECT n.* FROM notes n
   LEFT JOIN note_collaborators nc ON n.id = nc.note_id AND nc.user_id = ?
-  WHERE n.id = ? AND (n.user_id = ? OR nc.user_id IS NOT NULL OR n.is_announcement = 1)
+  WHERE n.id = ? AND (n.user_id = ? OR nc.user_id IS NOT NULL)
 `)
 const insertNote = db.prepare(`
   INSERT INTO notes (id,user_id,type,title,content,items_json,tags_json,images_json,color,pinned,position,timestamp,archived,is_announcement)
@@ -688,6 +698,54 @@ async function broadcastNoteUpdated(noteId) {
   } catch {}
 }
 
+async function broadcastTyping(noteId, userId, userName) {
+  try {
+    const note = await getNoteById.get(noteId)
+    if (!note) return
+    const collaboratorIds = await getCollaboratorUserIdsForNote(noteId)
+    const recipientIds = new Set([note.user_id, ...collaboratorIds])
+    // Make sure we don't send back to self (optional, but frontend usually ignores)
+    recipientIds.delete(userId)
+
+    const evt = { type: 'user_typing', noteId, userId, userName }
+    for (const uid of recipientIds) sendEventToUser(uid, evt)
+  } catch (e) {
+    console.error('Broadcast typing error:', e)
+  }
+}
+
+async function broadcastPresence(noteId, userId, user, status) {
+  try {
+    const note = await getNoteById.get(noteId)
+    if (!note) return
+    const collaboratorIds = await getCollaboratorUserIdsForNote(noteId)
+    const recipientIds = new Set([note.user_id, ...collaboratorIds])
+
+    const evt = { type: 'user_presence', noteId, userId, user, status }
+    for (const uid of recipientIds) sendEventToUser(uid, evt)
+  } catch (e) {
+    console.error('Broadcast presence error:', e)
+  }
+}
+
+app.post('/api/notes/:id/typing', auth, async (req, res) => {
+  const noteId = req.params.id
+  broadcastTyping(noteId, req.user.id, req.user.name)
+  res.json({ ok: true })
+})
+
+app.post('/api/notes/:id/presence', auth, async (req, res) => {
+  const noteId = req.params.id
+  const { status } = req.body
+  broadcastPresence(
+    noteId,
+    req.user.id,
+    { id: req.user.id, name: req.user.name, email: req.user.email },
+    status || 'viewing'
+  )
+  res.json({ ok: true })
+})
+
 app.get('/api/events', authFromQueryOrHeader, (req, res) => {
   // SSE headers
   res.setHeader('Content-Type', 'text/event-stream')
@@ -789,41 +847,6 @@ app.post('/api/login', authRateLimiter, async (req, res) => {
 })
 
 // ---------- Admin ----------
-app.get('/api/admin/users', auth, async (req, res) => {
-  if (!req.user.is_admin) return res.status(403).json({ error: 'Admin access required' })
-
-  try {
-    const users = await db.prepare('SELECT id, name, email, is_admin, created_at FROM users').all()
-    const result = []
-
-    for (const u of users) {
-      const stats = await db
-        .prepare(
-          `SELECT 
-             COUNT(*) as count, 
-             SUM(length(content) + length(items_json) + length(tags_json) + length(images_json)) as bytes 
-           FROM notes WHERE user_id = ?`
-        )
-        .get(u.id)
-
-      result.push({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        is_admin: !!u.is_admin,
-        created_at: u.created_at,
-        notes: stats ? stats.count : 0,
-        storage_bytes: stats ? stats.bytes : 0,
-      })
-    }
-
-    res.json(result)
-  } catch (err) {
-    console.error('Admin users load failed:', err)
-    res.status(500).json({ error: 'Failed to load users' })
-  }
-})
-
 app.delete('/api/admin/users/:id', auth, async (req, res) => {
   if (!req.user.is_admin) return res.status(403).json({ error: 'Admin access required' })
 
@@ -962,6 +985,7 @@ app.get('/api/notes', auth, async (req, res) => {
         lastEditedAt: r.last_edited_at,
         archived: !!r.archived,
         is_announcement: !!r.is_announcement,
+        layout: JSON.parse(r.layout_json || '{}'),
         collaborators: hasCollaborators ? [] : null, // Empty array to indicate has collaborators, null if none
       }
     })
@@ -1336,6 +1360,29 @@ app.delete('/api/notes/:id/permanent', auth, async (req, res) => {
 })
 
 // Reorder within sections
+app.post('/api/notes/layouts', auth, async (req, res) => {
+  const updates = req.body
+  if (!Array.isArray(updates)) {
+    return res.status(400).json({ error: 'Body must be an array of {id, layout}' })
+  }
+
+  const updateLayout = db.prepare('UPDATE notes SET layout_json = ? WHERE id = ? AND user_id = ?')
+
+  const updateMany = db.transaction(items => {
+    for (const { id, layout } of items) {
+      updateLayout.run(JSON.stringify(layout), id, req.user.id)
+    }
+  })
+
+  try {
+    updateMany(updates)
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('Save layouts error:', err)
+    res.status(500).json({ error: 'Failed to save layouts' })
+  }
+})
+
 app.post('/api/notes/reorder', auth, async (req, res) => {
   const { pinnedIds = [], otherIds = [] } = req.body || {}
   const base = Date.now()
@@ -1700,6 +1747,8 @@ app.get('/api/admin/users', auth, adminOnly, async (_req, res) => {
       email: r.email,
       is_admin: !!r.is_admin,
       created_at: r.created_at,
+      notes: r.notes || 0,
+      storage_bytes: r.storage_bytes || 0,
     }))
   )
 })

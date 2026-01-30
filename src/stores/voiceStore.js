@@ -69,6 +69,9 @@ export const useVoiceStore = create(
 
       setTranscript: transcript =>
         set(state => {
+          // If transcript is exactly the same, do nothing
+          if (state.currentTranscript === transcript) return state
+
           // Push to history if not at the end
           const newHistory = state.transcriptHistory.slice(0, state.historyIndex + 1)
           newHistory.push(transcript)
@@ -84,6 +87,9 @@ export const useVoiceStore = create(
             historyIndex: newHistory.length - 1,
           }
         }),
+
+      // For streaming transcription (doesn't affect history)
+      updateTranscript: transcript => set({ currentTranscript: transcript }),
 
       // Undo/Redo Actions
       undoTranscript: () =>
@@ -319,6 +325,7 @@ export const useVoiceStore = create(
             currentTranscript: recording.transcript,
             currentSummary: recording.summary,
             currentAudio: recording.audioData,
+            recordingDuration: recording.duration || 0,
             recordingState: 'reviewing',
           })
         }
@@ -572,9 +579,9 @@ export const useVoiceStore = create(
           // Text search
           const matchesQuery =
             !query ||
-            r.title.toLowerCase().includes(lowerQuery) ||
-            r.transcript.toLowerCase().includes(lowerQuery) ||
-            r.summary.toLowerCase().includes(lowerQuery)
+            (r.title && r.title.toLowerCase().includes(lowerQuery)) ||
+            (r.transcript && r.transcript.toLowerCase().includes(lowerQuery)) ||
+            (r.summary && (Array.isArray(r.summary) ? r.summary.join(' ') : String(r.summary)).toLowerCase().includes(lowerQuery))
 
           if (!matchesQuery) return false
 

@@ -50,6 +50,35 @@ export const useNotesStore = create(
           const updateList = list =>
             list.map(n => (String(n.id) === String(id) ? { ...n, ...updates } : n))
 
+          // If pinned status changed, we need to move the note between lists
+          if (updates.pinned !== undefined) {
+            const isPinned = !!updates.pinned
+            const note = state.notes.find(n => String(n.id) === String(id))
+            if (note) {
+              const updatedNote = { ...note, ...updates }
+              const filteredPinned = state.pinned.filter(n => String(n.id) !== String(id))
+              const filteredOthers = state.others.filter(n => String(n.id) !== String(id))
+
+              if (isPinned) {
+                return {
+                  notes: updateList(state.notes),
+                  pinned: [updatedNote, ...filteredPinned],
+                  others: filteredOthers,
+                  trashNotes: updateList(state.trashNotes),
+                  archivedNotes: updateList(state.archivedNotes),
+                }
+              } else {
+                return {
+                  notes: updateList(state.notes),
+                  pinned: filteredPinned,
+                  others: [updatedNote, ...filteredOthers],
+                  trashNotes: updateList(state.trashNotes),
+                  archivedNotes: updateList(state.archivedNotes),
+                }
+              }
+            }
+          }
+
           return {
             notes: updateList(state.notes),
             pinned: updateList(state.pinned),
@@ -198,6 +227,39 @@ export const useNotesStore = create(
       setSSEConnected: connected => set({ sseConnected: connected }),
 
       setIsOnline: online => set({ isOnline: online }),
+
+      reorderNotes: (pinnedIds, otherIds) => {
+        set(state => {
+          const base = Date.now()
+          const noteMap = new Map(state.notes.map(n => [String(n.id), n]))
+
+          const newPinned = pinnedIds
+            .map((id, idx) => {
+              const n = noteMap.get(String(id))
+              if (!n) return null
+              return { ...n, pinned: true, position: base + (pinnedIds.length - idx) }
+            })
+            .filter(Boolean)
+
+          const newOthers = otherIds
+            .map((id, idx) => {
+              const n = noteMap.get(String(id))
+              if (!n) return null
+              return { ...n, pinned: false, position: base - (idx + 1) }
+            })
+            .filter(Boolean)
+
+          // Update main notes list
+          const updatedIds = new Set([...pinnedIds, ...otherIds].map(String))
+          const remainingNotes = state.notes.filter(n => !updatedIds.has(String(n.id)))
+
+          return {
+            pinned: newPinned,
+            others: newOthers,
+            notes: [...newPinned, ...newOthers, ...remainingNotes],
+          }
+        })
+      },
     }),
     {
       name: 'glassy-dash-notes',

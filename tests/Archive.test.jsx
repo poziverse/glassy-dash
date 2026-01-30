@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import React from 'react'
 import NotesView from '../src/components/NotesView'
 import { useNotesCompat } from '../src/hooks/useNotesCompat'
@@ -63,7 +63,7 @@ describe('NotesView - Archive Logic', () => {
     expect(titles).toEqual(['Apple', 'Cherry', 'Banana'])
   })
 
-  it('sorts archived notes by title-asc', () => {
+  it('sorts archived notes by title-asc', async () => {
     useNotesCompat.mockReturnValue({
       currentUser: { id: 1, is_admin: false },
       pinned: [],
@@ -86,7 +86,9 @@ describe('NotesView - Archive Logic', () => {
     const select = screen.getByRole('combobox')
     fireEvent.change(select, { target: { value: 'title-asc' } })
 
-    const titles = screen.getAllByRole('heading', { level: 3 }).map(h => h.textContent)
-    expect(titles).toEqual(['Apple', 'Banana', 'Cherry'])
+    await waitFor(() => {
+      const titles = screen.getAllByRole('heading', { level: 3 }).map(h => h.textContent)
+      expect(titles).toEqual(['Apple', 'Banana', 'Cherry'])
+    })
   })
 })

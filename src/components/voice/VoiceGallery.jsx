@@ -116,7 +116,9 @@ export default function VoiceGallery() {
   }
 
   const handleDragOver = e => {
-    e.preventDefault()
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault()
+    }
     setIsDragging(true)
   }
 
@@ -125,9 +127,11 @@ export default function VoiceGallery() {
   }
 
   const handleDrop = e => {
-    e.preventDefault()
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault()
+    }
     setIsDragging(false)
-    const files = Array.from(e.dataTransfer.files)
+    const files = Array.from(e?.dataTransfer?.files || [])
     if (files.length > 0) {
       handleImport(files)
     }

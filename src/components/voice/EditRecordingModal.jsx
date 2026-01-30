@@ -54,7 +54,13 @@ export default function EditRecordingModal({ isOpen, onClose, recordingId, onSav
       const recording = recordings.find(r => r.id === recordingId)
       if (recording) {
         setTitle(recording.title || '')
-        setSummary(recording.summary || '')
+        
+        // Normalize summary - could be array or string
+        const normalizedSummary = Array.isArray(recording.summary)
+          ? recording.summary.join('\n')
+          : (recording.summary || '')
+        setSummary(normalizedSummary)
+        
         setTranscript(recording.transcript || '')
         setSelectedTags(recording.tags || [])
         setType(recording.type || 'notes')

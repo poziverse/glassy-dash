@@ -174,7 +174,12 @@ export function ComposerProvider({ children }) {
         const val = content || ''
         const start = el.selectionStart ?? val.length
         const end = el.selectionEnd ?? val.length
-        const textToInsert = `![icon:${p}](/api/icons/lucide/${p}.svg)`
+
+        // Determine if it's an emoji or a Lucide icon name (alphanumeric)
+        const isEmoji = !/^[a-zA-Z0-9]+$/.test(p)
+
+        const textToInsert = isEmoji ? p : `![icon:${p}](/api/icons/lucide/${p}.svg)`
+
         const newText = val.slice(0, start) + textToInsert + val.slice(end)
         setContent(newText)
         setTimeout(() => {
