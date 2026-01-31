@@ -42,6 +42,8 @@ export const MusicPlayerCard = memo(function MusicPlayerCard({ data, isPreview =
   const [showVisualizer, setShowVisualizer] = useState(true)
   const [showCast, setShowCast] = useState(false)
   const [castSessions, setCastSessions] = useState([]) // Remote devices
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0) // Playback speed control
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false)
 
   // Playlist State
   const [playlist, setPlaylist] = useState([])
@@ -241,29 +243,46 @@ export const MusicPlayerCard = memo(function MusicPlayerCard({ data, isPreview =
     }
   }
 
-  // Audio Visualizer Setup
+  // Audio Visualizer Setup (with proper cleanup and performance optimization)
   useEffect(() => {
-    if (!audioRef.current || !showVisualizer || isCompact) return
+    if (!audioRef.current || !showVisualizer || isCompact) {
+      // Stop visualizer if disabled
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+        animationRef.current = null
+      }
+      return
+    }
 
     try {
+      // Resume audio context if suspended (autoplay policy)
+      if (audioContextRef.current?.state === 'suspended') {
+        audioContextRef.current.resume()
+      }
+
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)()
       }
 
       const ctx = audioContextRef.current
+      
+      // Only create source if it doesn't exist
       if (!sourceRef.current) {
         try {
           sourceRef.current = ctx.createMediaElementSource(audioRef.current)
+          analyzerRef.current = ctx.createAnalyser()
+          analyzerRef.current.fftSize = 64
+          analyzerRef.current.smoothingTimeConstant = 0.8 // Smoother visualization
+          sourceRef.current.connect(analyzerRef.current)
+          analyzerRef.current.connect(ctx.destination)
         } catch (e) {
-          // Sometimes fails if already connected
-          console.warn('MediaElementSource attach failed', e)
+          // Source already connected - this is normal, reuse existing
+          if (!analyzerRef.current) {
+            analyzerRef.current = ctx.createAnalyser()
+            analyzerRef.current.fftSize = 64
+            analyzerRef.current.smoothingTimeConstant = 0.8
+          }
         }
-        if (!sourceRef.current) return // Bail if failed
-
-        analyzerRef.current = ctx.createAnalyser()
-        analyzerRef.current.fftSize = 64
-        sourceRef.current.connect(analyzerRef.current)
-        analyzerRef.current.connect(ctx.destination)
       }
 
       const analyzer = analyzerRef.current
@@ -274,12 +293,29 @@ export const MusicPlayerCard = memo(function MusicPlayerCard({ data, isPreview =
       if (!canvas) return
       const canvasCtx = canvas.getContext('2d')
 
-      const draw = () => {
-        if (!canvas) return
-        animationRef.current = requestAnimationFrame(draw)
+      // Optimize frame rate for better performance
+      let frameCount = 0
+      const targetFPS = 30
+      const frameInterval = 1000 / targetFPS
+      let lastTime = 0
+
+      const draw = (timestamp) => {
+        if (!canvas || !showVisualizer) {
+          if (animationRef.current) {
+            cancelAnimationFrame(animationRef.current)
+            animationRef.current = null
+          }
+          return
+        }
+
+        // Throttle to target FPS
+        if (timestamp - lastTime < frameInterval) {
+          animationRef.current = requestAnimationFrame(draw)
+          return
+        }
+        lastTime = timestamp
 
         analyzer.getByteFrequencyData(dataArray)
-
         canvasCtx.clearRect(0, 0, canvas.width, canvas.height)
 
         const barWidth = (canvas.width / bufferLength) * 2.5
@@ -287,7 +323,7 @@ export const MusicPlayerCard = memo(function MusicPlayerCard({ data, isPreview =
         let x = 0
 
         for (let i = 0; i < bufferLength; i++) {
-          barHeight = (dataArray[i] / 255) * canvas.height * 0.8 // Scale height
+          barHeight = (dataArray[i] / 255) * canvas.height * 0.8
 
           // Gradient bar
           const gradient = canvasCtx.createLinearGradient(
@@ -296,27 +332,56 @@ export const MusicPlayerCard = memo(function MusicPlayerCard({ data, isPreview =
             0,
             canvas.height - barHeight
           )
-          gradient.addColorStop(0, 'rgba(168, 85, 247, 0.8)') // Purple
-          gradient.addColorStop(1, 'rgba(236, 72, 153, 0.8)') // Pink
+          gradient.addColorStop(0, 'rgba(168, 85, 247, 0.8)')
+          gradient.addColorStop(1, 'rgba(236, 72, 153, 0.8)')
 
           canvasCtx.fillStyle = gradient
-          // Rounded top bars
           canvasCtx.beginPath()
           canvasCtx.roundRect(x, canvas.height - barHeight, barWidth, barHeight, 4)
           canvasCtx.fill()
 
           x += barWidth + 2
         }
+
+        animationRef.current = requestAnimationFrame(draw)
       }
-      draw()
+      draw(0)
     } catch (e) {
-      console.warn('Visualizer init failed (CORS or Autoplay policy)', e)
+      console.warn('Visualizer init failed:', e)
     }
 
+    // Cleanup function
     return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current)
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+        animationRef.current = null
+      }
     }
   }, [showVisualizer, isCompact, streamUrl])
+
+  // Global cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Clean up audio context and related resources
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+        animationRef.current = null
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close()
+        audioContextRef.current = null
+      }
+      if (sourceRef.current) {
+        try {
+          sourceRef.current.disconnect()
+        } catch (e) {
+          // Already disconnected
+        }
+        sourceRef.current = null
+      }
+      analyzerRef.current = null
+    }
+  }, [])
 
   // Format time display (mm:ss)
   const formatTime = seconds => {
@@ -326,12 +391,26 @@ export const MusicPlayerCard = memo(function MusicPlayerCard({ data, isPreview =
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Set initial settings
+  // Set initial settings and apply playback speed
   useEffect(() => {
     if (playbackSettings?.volume) {
       setVolume(playbackSettings.volume)
     }
-  }, [playbackSettings?.volume])
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackSpeed
+    }
+  }, [playbackSettings?.volume, playbackSpeed])
+
+  // Handle playback speed change
+  const handleSpeedChange = useCallback((speed) => {
+    setPlaybackSpeed(speed)
+    if (audioRef.current) {
+      audioRef.current.playbackRate = speed
+    }
+    setShowSpeedMenu(false)
+  }, [])
+
+  const speedOptions = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
 
   // Audio element event handlers
   useEffect(() => {
@@ -778,6 +857,39 @@ export const MusicPlayerCard = memo(function MusicPlayerCard({ data, isPreview =
             >
               📊
             </button>
+            
+            {/* Playback Speed Control */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSpeedMenu(!showSpeedMenu)}
+                className="text-xs font-bold text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-black/10 transition-colors"
+                title="Playback Speed"
+              >
+                {playbackSpeed}x
+              </button>
+              
+              {showSpeedMenu && (
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-gray-900 dark:bg-gray-800 rounded-lg shadow-xl p-2 z-50 min-w-[80px]">
+                  <div className="text-xs text-gray-400 mb-2 text-center">Speed</div>
+                  <div className="space-y-1">
+                    {speedOptions.map((speed) => (
+                      <button
+                        key={speed}
+                        onClick={() => handleSpeedChange(speed)}
+                        className={`w-full text-left px-3 py-1.5 rounded text-xs transition-colors ${
+                          speed === playbackSpeed
+                            ? 'bg-purple-600 text-white'
+                            : 'text-gray-300 hover:bg-gray-700'
+                        }`}
+                      >
+                        {speed}x
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
             <div className="flex-1 flex items-center gap-2 group">
               <span className="text-xs">🔊</span>
               <input

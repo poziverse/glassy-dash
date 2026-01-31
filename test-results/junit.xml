@@ -1,20 +1,1496 @@
-<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="0.7395330000000001">
-<testsuite name="critical_flows.spec.js" timestamp="2026-01-24T14:01:12.074Z" hostname="chromium" tests="1" failures="1" skipped="0" time="0.002" errors="0">
-<testcase name="Critical User Flows › Complete Authentication and Note Lifecycle" classname="critical_flows.spec.js" time="0.002">
-<failure message="critical_flows.spec.js:18:3 Complete Authentication and Note Lifecycle" type="FAILURE">
-<![CDATA[  [chromium] › critical_flows.spec.js:18:3 › Critical User Flows › Complete Authentication and Note Lifecycle 
+<testsuites id="" name="" tests="38" failures="38" skipped="0" errors="0" time="596.5050659999999">
+<testsuite name="critical_flows.spec.js" timestamp="2026-01-31T02:06:11.303Z" hostname="chromium" tests="1" failures="1" skipped="0" time="15.297" errors="0">
+<testcase name="Critical User Flows › Complete Authentication and Note Lifecycle" classname="critical_flows.spec.js" time="15.297">
+<failure message="critical_flows.spec.js:23:3 Complete Authentication and Note Lifecycle" type="FAILURE">
+<![CDATA[  [chromium] › critical_flows.spec.js:23:3 › Critical User Flows › Complete Authentication and Note Lifecycle 
 
-    Error: browserType.launch: Executable doesn't exist at /root/.cache/ms-playwright/chromium_headless_shell-1200/chrome-headless-shell-linux64/chrome-headless-shell
-    ╔═════════════════════════════════════════════════════════════════════════╗
-    ║ Looks like Playwright Test or Playwright was just installed or updated. ║
-    ║ Please run the following command to download new browsers:              ║
-    ║                                                                         ║
-    ║     npx playwright install                                              ║
-    ║                                                                         ║
-    ║ <3 Playwright Team                                                      ║
-    ╚═════════════════════════════════════════════════════════════════════════╝
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/", waiting until "networkidle"
+
+
+      13 |   test.beforeEach(async ({ page }) => {
+      14 |     // Navigate to home before each test
+    > 15 |     await page.goto('/', { waitUntil: 'networkidle' })
+         |                ^
+      16 |     await page.waitForSelector('body', { state: 'attached' })
+      17 |     await page.waitForTimeout(500)
+      18 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/critical_flows.spec.js:15:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/critical_flows-Critical-Us-0badf-tication-and-Note-Lifecycle-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/critical_flows-Critical-Us-0badf-tication-and-Note-Lifecycle-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/critical_flows-Critical-Us-0badf-tication-and-Note-Lifecycle-chromium/error-context.md
 ]]>
 </failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|critical_flows-Critical-Us-0badf-tication-and-Note-Lifecycle-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|critical_flows-Critical-Us-0badf-tication-and-Note-Lifecycle-chromium/video.webm]]
+
+[[ATTACHMENT|critical_flows-Critical-Us-0badf-tication-and-Note-Lifecycle-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="documents-updated.spec.js" timestamp="2026-01-31T02:06:11.303Z" hostname="chromium" tests="8" failures="8" skipped="0" time="122.417" errors="0">
+<testcase name="Documents Feature (Updated) › should create a new document" classname="documents-updated.spec.js" time="15.314">
+<failure message="documents-updated.spec.js:69:3 should create a new document" type="FAILURE">
+<![CDATA[  [chromium] › documents-updated.spec.js:69:3 › Documents Feature (Updated) › should create a new document 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/register", waiting until "networkidle"
+
+
+      13 |     
+      14 |     // Register new user
+    > 15 |     await page.goto('/#/register', { waitUntil: 'networkidle' })
+         |                ^
+      16 |     await page.waitForSelector('body', { state: 'attached' })
+      17 |     await page.waitForSelector('input[placeholder="Name"]', { timeout: 10000 })
+      18 |     
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/documents-updated.spec.js:15:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/documents-updated-Document-c1711-hould-create-a-new-document-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/documents-updated-Document-c1711-hould-create-a-new-document-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/documents-updated-Document-c1711-hould-create-a-new-document-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|documents-updated-Document-c1711-hould-create-a-new-document-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|documents-updated-Document-c1711-hould-create-a-new-document-chromium/video.webm]]
+
+[[ATTACHMENT|documents-updated-Document-c1711-hould-create-a-new-document-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Documents Feature (Updated) › should create and edit a document" classname="documents-updated.spec.js" time="15.289">
+<failure message="documents-updated.spec.js:99:3 should create and edit a document" type="FAILURE">
+<![CDATA[  [chromium] › documents-updated.spec.js:99:3 › Documents Feature (Updated) › should create and edit a document 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/register", waiting until "networkidle"
+
+
+      13 |     
+      14 |     // Register new user
+    > 15 |     await page.goto('/#/register', { waitUntil: 'networkidle' })
+         |                ^
+      16 |     await page.waitForSelector('body', { state: 'attached' })
+      17 |     await page.waitForSelector('input[placeholder="Name"]', { timeout: 10000 })
+      18 |     
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/documents-updated.spec.js:15:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/documents-updated-Document-4407d--create-and-edit-a-document-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/documents-updated-Document-4407d--create-and-edit-a-document-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/documents-updated-Document-4407d--create-and-edit-a-document-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|documents-updated-Document-4407d--create-and-edit-a-document-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|documents-updated-Document-4407d--create-and-edit-a-document-chromium/video.webm]]
+
+[[ATTACHMENT|documents-updated-Document-4407d--create-and-edit-a-document-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Documents Feature (Updated) › should search documents" classname="documents-updated.spec.js" time="15.303">
+<failure message="documents-updated.spec.js:159:3 should search documents" type="FAILURE">
+<![CDATA[  [chromium] › documents-updated.spec.js:159:3 › Documents Feature (Updated) › should search documents 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/register", waiting until "networkidle"
+
+
+      13 |     
+      14 |     // Register new user
+    > 15 |     await page.goto('/#/register', { waitUntil: 'networkidle' })
+         |                ^
+      16 |     await page.waitForSelector('body', { state: 'attached' })
+      17 |     await page.waitForSelector('input[placeholder="Name"]', { timeout: 10000 })
+      18 |     
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/documents-updated.spec.js:15:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/documents-updated-Document-a58be-ted-should-search-documents-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/documents-updated-Document-a58be-ted-should-search-documents-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/documents-updated-Document-a58be-ted-should-search-documents-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|documents-updated-Document-a58be-ted-should-search-documents-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|documents-updated-Document-a58be-ted-should-search-documents-chromium/video.webm]]
+
+[[ATTACHMENT|documents-updated-Document-a58be-ted-should-search-documents-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Documents Feature (Updated) › should delete document" classname="documents-updated.spec.js" time="15.298">
+<failure message="documents-updated.spec.js:209:3 should delete document" type="FAILURE">
+<![CDATA[  [chromium] › documents-updated.spec.js:209:3 › Documents Feature (Updated) › should delete document 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/register", waiting until "networkidle"
+
+
+      13 |     
+      14 |     // Register new user
+    > 15 |     await page.goto('/#/register', { waitUntil: 'networkidle' })
+         |                ^
+      16 |     await page.waitForSelector('body', { state: 'attached' })
+      17 |     await page.waitForSelector('input[placeholder="Name"]', { timeout: 10000 })
+      18 |     
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/documents-updated.spec.js:15:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/documents-updated-Document-52835-ated-should-delete-document-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/documents-updated-Document-52835-ated-should-delete-document-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/documents-updated-Document-52835-ated-should-delete-document-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|documents-updated-Document-52835-ated-should-delete-document-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|documents-updated-Document-52835-ated-should-delete-document-chromium/video.webm]]
+
+[[ATTACHMENT|documents-updated-Document-52835-ated-should-delete-document-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Documents Feature (Updated) › should switch between grid and list view" classname="documents-updated.spec.js" time="15.3">
+<failure message="documents-updated.spec.js:264:3 should switch between grid and list view" type="FAILURE">
+<![CDATA[  [chromium] › documents-updated.spec.js:264:3 › Documents Feature (Updated) › should switch between grid and list view 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/register", waiting until "networkidle"
+
+
+      13 |     
+      14 |     // Register new user
+    > 15 |     await page.goto('/#/register', { waitUntil: 'networkidle' })
+         |                ^
+      16 |     await page.waitForSelector('body', { state: 'attached' })
+      17 |     await page.waitForSelector('input[placeholder="Name"]', { timeout: 10000 })
+      18 |     
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/documents-updated.spec.js:15:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/documents-updated-Document-76973--between-grid-and-list-view-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/documents-updated-Document-76973--between-grid-and-list-view-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/documents-updated-Document-76973--between-grid-and-list-view-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|documents-updated-Document-76973--between-grid-and-list-view-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|documents-updated-Document-76973--between-grid-and-list-view-chromium/video.webm]]
+
+[[ATTACHMENT|documents-updated-Document-76973--between-grid-and-list-view-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Documents Feature (Updated) › should sort documents" classname="documents-updated.spec.js" time="15.296">
+<failure message="documents-updated.spec.js:302:3 should sort documents" type="FAILURE">
+<![CDATA[  [chromium] › documents-updated.spec.js:302:3 › Documents Feature (Updated) › should sort documents 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/register", waiting until "networkidle"
+
+
+      13 |     
+      14 |     // Register new user
+    > 15 |     await page.goto('/#/register', { waitUntil: 'networkidle' })
+         |                ^
+      16 |     await page.waitForSelector('body', { state: 'attached' })
+      17 |     await page.waitForSelector('input[placeholder="Name"]', { timeout: 10000 })
+      18 |     
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/documents-updated.spec.js:15:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/documents-updated-Document-bdc4b-dated-should-sort-documents-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/documents-updated-Document-bdc4b-dated-should-sort-documents-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/documents-updated-Document-bdc4b-dated-should-sort-documents-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|documents-updated-Document-bdc4b-dated-should-sort-documents-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|documents-updated-Document-bdc4b-dated-should-sort-documents-chromium/video.webm]]
+
+[[ATTACHMENT|documents-updated-Document-bdc4b-dated-should-sort-documents-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Documents Feature (Updated) › should toggle trash view" classname="documents-updated.spec.js" time="15.319">
+<failure message="documents-updated.spec.js:342:3 should toggle trash view" type="FAILURE">
+<![CDATA[  [chromium] › documents-updated.spec.js:342:3 › Documents Feature (Updated) › should toggle trash view 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/register", waiting until "networkidle"
+
+
+      13 |     
+      14 |     // Register new user
+    > 15 |     await page.goto('/#/register', { waitUntil: 'networkidle' })
+         |                ^
+      16 |     await page.waitForSelector('body', { state: 'attached' })
+      17 |     await page.waitForSelector('input[placeholder="Name"]', { timeout: 10000 })
+      18 |     
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/documents-updated.spec.js:15:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/documents-updated-Document-4c1b2-ed-should-toggle-trash-view-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/documents-updated-Document-4c1b2-ed-should-toggle-trash-view-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/documents-updated-Document-4c1b2-ed-should-toggle-trash-view-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|documents-updated-Document-4c1b2-ed-should-toggle-trash-view-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|documents-updated-Document-4c1b2-ed-should-toggle-trash-view-chromium/video.webm]]
+
+[[ATTACHMENT|documents-updated-Document-4c1b2-ed-should-toggle-trash-view-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Documents Feature (Updated) › should pin document" classname="documents-updated.spec.js" time="15.298">
+<failure message="documents-updated.spec.js:381:3 should pin document" type="FAILURE">
+<![CDATA[  [chromium] › documents-updated.spec.js:381:3 › Documents Feature (Updated) › should pin document ─
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/register", waiting until "networkidle"
+
+
+      13 |     
+      14 |     // Register new user
+    > 15 |     await page.goto('/#/register', { waitUntil: 'networkidle' })
+         |                ^
+      16 |     await page.waitForSelector('body', { state: 'attached' })
+      17 |     await page.waitForSelector('input[placeholder="Name"]', { timeout: 10000 })
+      18 |     
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/documents-updated.spec.js:15:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/documents-updated-Document-7edc1-Updated-should-pin-document-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/documents-updated-Document-7edc1-Updated-should-pin-document-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/documents-updated-Document-7edc1-Updated-should-pin-document-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|documents-updated-Document-7edc1-Updated-should-pin-document-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|documents-updated-Document-7edc1-Updated-should-pin-document-chromium/video.webm]]
+
+[[ATTACHMENT|documents-updated-Document-7edc1-Updated-should-pin-document-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="documents.spec.js" timestamp="2026-01-31T02:06:11.303Z" hostname="chromium" tests="2" failures="2" skipped="0" time="30.556" errors="0">
+<testcase name="Documents Feature › should create a new folder" classname="documents.spec.js" time="15.28">
+<failure message="documents.spec.js:29:3 should create a new folder" type="FAILURE">
+<![CDATA[  [chromium] › documents.spec.js:29:3 › Documents Feature › should create a new folder ─────────────
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/", waiting until "networkidle"
+
+
+      4 |   test.beforeEach(async ({ page }) => {
+      5 |     // Mock authentication or login
+    > 6 |     await page.goto('/', { waitUntil: 'networkidle' })
+        |                ^
+      7 |     await page.waitForSelector('body', { state: 'attached' })
+      8 |     await page.waitForTimeout(500)
+      9 |     
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/documents.spec.js:6:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/documents-Documents-Feature-should-create-a-new-folder-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/documents-Documents-Feature-should-create-a-new-folder-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/documents-Documents-Feature-should-create-a-new-folder-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|documents-Documents-Feature-should-create-a-new-folder-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|documents-Documents-Feature-should-create-a-new-folder-chromium/video.webm]]
+
+[[ATTACHMENT|documents-Documents-Feature-should-create-a-new-folder-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Documents Feature › should create and verify a new document" classname="documents.spec.js" time="15.276">
+<failure message="documents.spec.js:48:3 should create and verify a new document" type="FAILURE">
+<![CDATA[  [chromium] › documents.spec.js:48:3 › Documents Feature › should create and verify a new document 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/", waiting until "networkidle"
+
+
+      4 |   test.beforeEach(async ({ page }) => {
+      5 |     // Mock authentication or login
+    > 6 |     await page.goto('/', { waitUntil: 'networkidle' })
+        |                ^
+      7 |     await page.waitForSelector('body', { state: 'attached' })
+      8 |     await page.waitForTimeout(500)
+      9 |     
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/documents.spec.js:6:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/documents-Documents-Featur-aea15-e-and-verify-a-new-document-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/documents-Documents-Featur-aea15-e-and-verify-a-new-document-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/documents-Documents-Featur-aea15-e-and-verify-a-new-document-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|documents-Documents-Featur-aea15-e-and-verify-a-new-document-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|documents-Documents-Featur-aea15-e-and-verify-a-new-document-chromium/video.webm]]
+
+[[ATTACHMENT|documents-Documents-Featur-aea15-e-and-verify-a-new-document-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="logging.e2e.test.js" timestamp="2026-01-31T02:06:11.303Z" hostname="chromium" tests="8" failures="8" skipped="0" time="122.343" errors="0">
+<testcase name="Logging System E2E Tests › should log user login event" classname="logging.e2e.test.js" time="15.28">
+<failure message="logging.e2e.test.js:32:3 should log user login event" type="FAILURE">
+<![CDATA[  [chromium] › logging.e2e.test.js:32:3 › Logging System E2E Tests › should log user login event ───
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/login", waiting until "networkidle"
+
+
+      4 |   test.beforeEach(async ({ page }) => {
+      5 |     // Wait for app to be ready
+    > 6 |     await page.goto('/#/login', { waitUntil: 'networkidle' })
+        |                ^
+      7 |     
+      8 |     // Wait for React to mount
+      9 |     await page.waitForSelector('body', { state: 'attached' })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/logging.e2e.test.js:6:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/logging.e2e-Logging-System-ae68e-should-log-user-login-event-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/logging.e2e-Logging-System-ae68e-should-log-user-login-event-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/logging.e2e-Logging-System-ae68e-should-log-user-login-event-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|logging.e2e-Logging-System-ae68e-should-log-user-login-event-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|logging.e2e-Logging-System-ae68e-should-log-user-login-event-chromium/video.webm]]
+
+[[ATTACHMENT|logging.e2e-Logging-System-ae68e-should-log-user-login-event-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Logging System E2E Tests › should log note creation" classname="logging.e2e.test.js" time="15.293">
+<failure message="logging.e2e.test.js:49:3 should log note creation" type="FAILURE">
+<![CDATA[  [chromium] › logging.e2e.test.js:49:3 › Logging System E2E Tests › should log note creation ──────
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/login", waiting until "networkidle"
+
+
+      4 |   test.beforeEach(async ({ page }) => {
+      5 |     // Wait for app to be ready
+    > 6 |     await page.goto('/#/login', { waitUntil: 'networkidle' })
+        |                ^
+      7 |     
+      8 |     // Wait for React to mount
+      9 |     await page.waitForSelector('body', { state: 'attached' })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/logging.e2e.test.js:6:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/logging.e2e-Logging-System-d0a07-ts-should-log-note-creation-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/logging.e2e-Logging-System-d0a07-ts-should-log-note-creation-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/logging.e2e-Logging-System-d0a07-ts-should-log-note-creation-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|logging.e2e-Logging-System-d0a07-ts-should-log-note-creation-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|logging.e2e-Logging-System-d0a07-ts-should-log-note-creation-chromium/video.webm]]
+
+[[ATTACHMENT|logging.e2e-Logging-System-d0a07-ts-should-log-note-creation-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Logging System E2E Tests › should handle API errors gracefully" classname="logging.e2e.test.js" time="15.316">
+<failure message="logging.e2e.test.js:78:3 should handle API errors gracefully" type="FAILURE">
+<![CDATA[  [chromium] › logging.e2e.test.js:78:3 › Logging System E2E Tests › should handle API errors gracefully 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/login", waiting until "networkidle"
+
+
+      4 |   test.beforeEach(async ({ page }) => {
+      5 |     // Wait for app to be ready
+    > 6 |     await page.goto('/#/login', { waitUntil: 'networkidle' })
+        |                ^
+      7 |     
+      8 |     // Wait for React to mount
+      9 |     await page.waitForSelector('body', { state: 'attached' })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/logging.e2e.test.js:6:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/logging.e2e-Logging-System-ec534-andle-API-errors-gracefully-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/logging.e2e-Logging-System-ec534-andle-API-errors-gracefully-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/logging.e2e-Logging-System-ec534-andle-API-errors-gracefully-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|logging.e2e-Logging-System-ec534-andle-API-errors-gracefully-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|logging.e2e-Logging-System-ec534-andle-API-errors-gracefully-chromium/video.webm]]
+
+[[ATTACHMENT|logging.e2e-Logging-System-ec534-andle-API-errors-gracefully-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Logging System E2E Tests › should persist logs on network failure" classname="logging.e2e.test.js" time="15.275">
+<failure message="logging.e2e.test.js:95:3 should persist logs on network failure" type="FAILURE">
+<![CDATA[  [chromium] › logging.e2e.test.js:95:3 › Logging System E2E Tests › should persist logs on network failure 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/login", waiting until "networkidle"
+
+
+      4 |   test.beforeEach(async ({ page }) => {
+      5 |     // Wait for app to be ready
+    > 6 |     await page.goto('/#/login', { waitUntil: 'networkidle' })
+        |                ^
+      7 |     
+      8 |     // Wait for React to mount
+      9 |     await page.waitForSelector('body', { state: 'attached' })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/logging.e2e.test.js:6:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/logging.e2e-Logging-System-88244-ist-logs-on-network-failure-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/logging.e2e-Logging-System-88244-ist-logs-on-network-failure-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/logging.e2e-Logging-System-88244-ist-logs-on-network-failure-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|logging.e2e-Logging-System-88244-ist-logs-on-network-failure-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|logging.e2e-Logging-System-88244-ist-logs-on-network-failure-chromium/video.webm]]
+
+[[ATTACHMENT|logging.e2e-Logging-System-88244-ist-logs-on-network-failure-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Logging System E2E Tests › should generate unique request IDs" classname="logging.e2e.test.js" time="15.295">
+<failure message="logging.e2e.test.js:112:3 should generate unique request IDs" type="FAILURE">
+<![CDATA[  [chromium] › logging.e2e.test.js:112:3 › Logging System E2E Tests › should generate unique request IDs 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/login", waiting until "networkidle"
+
+
+      4 |   test.beforeEach(async ({ page }) => {
+      5 |     // Wait for app to be ready
+    > 6 |     await page.goto('/#/login', { waitUntil: 'networkidle' })
+        |                ^
+      7 |     
+      8 |     // Wait for React to mount
+      9 |     await page.waitForSelector('body', { state: 'attached' })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/logging.e2e.test.js:6:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/logging.e2e-Logging-System-9fe3a-generate-unique-request-IDs-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/logging.e2e-Logging-System-9fe3a-generate-unique-request-IDs-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/logging.e2e-Logging-System-9fe3a-generate-unique-request-IDs-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|logging.e2e-Logging-System-9fe3a-generate-unique-request-IDs-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|logging.e2e-Logging-System-9fe3a-generate-unique-request-IDs-chromium/video.webm]]
+
+[[ATTACHMENT|logging.e2e-Logging-System-9fe3a-generate-unique-request-IDs-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Logging System E2E Tests › should log logout events" classname="logging.e2e.test.js" time="15.283">
+<failure message="logging.e2e.test.js:143:3 should log logout events" type="FAILURE">
+<![CDATA[  [chromium] › logging.e2e.test.js:143:3 › Logging System E2E Tests › should log logout events ─────
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/login", waiting until "networkidle"
+
+
+      4 |   test.beforeEach(async ({ page }) => {
+      5 |     // Wait for app to be ready
+    > 6 |     await page.goto('/#/login', { waitUntil: 'networkidle' })
+        |                ^
+      7 |     
+      8 |     // Wait for React to mount
+      9 |     await page.waitForSelector('body', { state: 'attached' })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/logging.e2e.test.js:6:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/logging.e2e-Logging-System-e93d1-ts-should-log-logout-events-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/logging.e2e-Logging-System-e93d1-ts-should-log-logout-events-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/logging.e2e-Logging-System-e93d1-ts-should-log-logout-events-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|logging.e2e-Logging-System-e93d1-ts-should-log-logout-events-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|logging.e2e-Logging-System-e93d1-ts-should-log-logout-events-chromium/video.webm]]
+
+[[ATTACHMENT|logging.e2e-Logging-System-e93d1-ts-should-log-logout-events-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Logging System E2E Tests › should export logs as CSV" classname="logging.e2e.test.js" time="15.292">
+<failure message="logging.e2e.test.js:161:3 should export logs as CSV" type="FAILURE">
+<![CDATA[  [chromium] › logging.e2e.test.js:161:3 › Logging System E2E Tests › should export logs as CSV ────
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/login", waiting until "networkidle"
+
+
+      4 |   test.beforeEach(async ({ page }) => {
+      5 |     // Wait for app to be ready
+    > 6 |     await page.goto('/#/login', { waitUntil: 'networkidle' })
+        |                ^
+      7 |     
+      8 |     // Wait for React to mount
+      9 |     await page.waitForSelector('body', { state: 'attached' })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/logging.e2e.test.js:6:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/logging.e2e-Logging-System-f540d-s-should-export-logs-as-CSV-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/logging.e2e-Logging-System-f540d-s-should-export-logs-as-CSV-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/logging.e2e-Logging-System-f540d-s-should-export-logs-as-CSV-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|logging.e2e-Logging-System-f540d-s-should-export-logs-as-CSV-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|logging.e2e-Logging-System-f540d-s-should-export-logs-as-CSV-chromium/video.webm]]
+
+[[ATTACHMENT|logging.e2e-Logging-System-f540d-s-should-export-logs-as-CSV-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Logging System E2E Tests › should provide log statistics" classname="logging.e2e.test.js" time="15.309">
+<failure message="logging.e2e.test.js:181:3 should provide log statistics" type="FAILURE">
+<![CDATA[  [chromium] › logging.e2e.test.js:181:3 › Logging System E2E Tests › should provide log statistics 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/login", waiting until "networkidle"
+
+
+      4 |   test.beforeEach(async ({ page }) => {
+      5 |     // Wait for app to be ready
+    > 6 |     await page.goto('/#/login', { waitUntil: 'networkidle' })
+        |                ^
+      7 |     
+      8 |     // Wait for React to mount
+      9 |     await page.waitForSelector('body', { state: 'attached' })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/logging.e2e.test.js:6:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/logging.e2e-Logging-System-854a9-ould-provide-log-statistics-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/logging.e2e-Logging-System-854a9-ould-provide-log-statistics-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/logging.e2e-Logging-System-854a9-ould-provide-log-statistics-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|logging.e2e-Logging-System-854a9-ould-provide-log-statistics-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|logging.e2e-Logging-System-854a9-ould-provide-log-statistics-chromium/video.webm]]
+
+[[ATTACHMENT|logging.e2e-Logging-System-854a9-ould-provide-log-statistics-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="voice-studio-a11y.test.js" timestamp="2026-01-31T02:06:11.303Z" hostname="chromium" tests="17" failures="17" skipped="0" time="260.272" errors="0">
+<testcase name="Voice Studio Accessibility › Keyboard Navigation › should be fully navigable with keyboard" classname="voice-studio-a11y.test.js" time="15.283">
+<failure message="voice-studio-a11y.test.js:21:5 should be fully navigable with keyboard" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:21:5 › Voice Studio Accessibility › Keyboard Navigation › should be fully navigable with keyboard 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-5cefb-lly-navigable-with-keyboard-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-5cefb-lly-navigable-with-keyboard-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-5cefb-lly-navigable-with-keyboard-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-5cefb-lly-navigable-with-keyboard-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-5cefb-lly-navigable-with-keyboard-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-5cefb-lly-navigable-with-keyboard-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Accessibility › Keyboard Navigation › should support Space to start recording" classname="voice-studio-a11y.test.js" time="15.31">
+<failure message="voice-studio-a11y.test.js:37:5 should support Space to start recording" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:37:5 › Voice Studio Accessibility › Keyboard Navigation › should support Space to start recording 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-8e979-rt-Space-to-start-recording-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-8e979-rt-Space-to-start-recording-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-8e979-rt-Space-to-start-recording-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-8e979-rt-Space-to-start-recording-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-8e979-rt-Space-to-start-recording-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-8e979-rt-Space-to-start-recording-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Accessibility › Keyboard Navigation › should support Escape to stop recording" classname="voice-studio-a11y.test.js" time="15.309">
+<failure message="voice-studio-a11y.test.js:46:5 should support Escape to stop recording" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:46:5 › Voice Studio Accessibility › Keyboard Navigation › should support Escape to stop recording 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-e4d25-rt-Escape-to-stop-recording-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-e4d25-rt-Escape-to-stop-recording-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-e4d25-rt-Escape-to-stop-recording-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-e4d25-rt-Escape-to-stop-recording-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-e4d25-rt-Escape-to-stop-recording-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-e4d25-rt-Escape-to-stop-recording-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Accessibility › Keyboard Navigation › should support keyboard shortcuts for undo/redo" classname="voice-studio-a11y.test.js" time="15.306">
+<failure message="voice-studio-a11y.test.js:60:5 should support keyboard shortcuts for undo/redo" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:60:5 › Voice Studio Accessibility › Keyboard Navigation › should support keyboard shortcuts for undo/redo 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-b31e5-ard-shortcuts-for-undo-redo-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-b31e5-ard-shortcuts-for-undo-redo-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-b31e5-ard-shortcuts-for-undo-redo-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-b31e5-ard-shortcuts-for-undo-redo-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-b31e5-ard-shortcuts-for-undo-redo-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-b31e5-ard-shortcuts-for-undo-redo-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Accessibility › Screen Reader Support › should have proper ARIA labels" classname="voice-studio-a11y.test.js" time="15.301">
+<failure message="voice-studio-a11y.test.js:82:5 should have proper ARIA labels" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:82:5 › Voice Studio Accessibility › Screen Reader Support › should have proper ARIA labels 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-b6476-uld-have-proper-ARIA-labels-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-b6476-uld-have-proper-ARIA-labels-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-b6476-uld-have-proper-ARIA-labels-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-b6476-uld-have-proper-ARIA-labels-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-b6476-uld-have-proper-ARIA-labels-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-b6476-uld-have-proper-ARIA-labels-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Accessibility › Screen Reader Support › should announce recording state changes" classname="voice-studio-a11y.test.js" time="15.321">
+<failure message="voice-studio-a11y.test.js:93:5 should announce recording state changes" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:93:5 › Voice Studio Accessibility › Screen Reader Support › should announce recording state changes 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-8631a-nce-recording-state-changes-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-8631a-nce-recording-state-changes-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-8631a-nce-recording-state-changes-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-8631a-nce-recording-state-changes-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-8631a-nce-recording-state-changes-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-8631a-nce-recording-state-changes-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Accessibility › Screen Reader Support › should announce errors to screen readers" classname="voice-studio-a11y.test.js" time="15.3">
+<failure message="voice-studio-a11y.test.js:107:5 should announce errors to screen readers" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:107:5 › Voice Studio Accessibility › Screen Reader Support › should announce errors to screen readers 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-4791b-ce-errors-to-screen-readers-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-4791b-ce-errors-to-screen-readers-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-4791b-ce-errors-to-screen-readers-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-4791b-ce-errors-to-screen-readers-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-4791b-ce-errors-to-screen-readers-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-4791b-ce-errors-to-screen-readers-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Accessibility › Color Contrast › should have sufficient color contrast" classname="voice-studio-a11y.test.js" time="15.322">
+<failure message="voice-studio-a11y.test.js:121:5 should have sufficient color contrast" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:121:5 › Voice Studio Accessibility › Color Contrast › should have sufficient color contrast 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-fa7b4-e-sufficient-color-contrast-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-fa7b4-e-sufficient-color-contrast-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-fa7b4-e-sufficient-color-contrast-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-fa7b4-e-sufficient-color-contrast-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-fa7b4-e-sufficient-color-contrast-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-fa7b4-e-sufficient-color-contrast-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Accessibility › Color Contrast › should have focus indicators" classname="voice-studio-a11y.test.js" time="15.311">
+<failure message="voice-studio-a11y.test.js:142:5 should have focus indicators" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:142:5 › Voice Studio Accessibility › Color Contrast › should have focus indicators 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-cf372-hould-have-focus-indicators-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-cf372-hould-have-focus-indicators-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-cf372-hould-have-focus-indicators-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-cf372-hould-have-focus-indicators-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-cf372-hould-have-focus-indicators-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-cf372-hould-have-focus-indicators-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Accessibility › Visual Design › should have minimum font size" classname="voice-studio-a11y.test.js" time="15.325">
+<failure message="voice-studio-a11y.test.js:157:5 should have minimum font size" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:157:5 › Voice Studio Accessibility › Visual Design › should have minimum font size 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-75abf-ould-have-minimum-font-size-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-75abf-ould-have-minimum-font-size-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-75abf-ould-have-minimum-font-size-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-75abf-ould-have-minimum-font-size-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-75abf-ould-have-minimum-font-size-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-75abf-ould-have-minimum-font-size-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Accessibility › Visual Design › should have clickable touch targets" classname="voice-studio-a11y.test.js" time="15.303">
+<failure message="voice-studio-a11y.test.js:172:5 should have clickable touch targets" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:172:5 › Voice Studio Accessibility › Visual Design › should have clickable touch targets 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-72770-ave-clickable-touch-targets-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-72770-ave-clickable-touch-targets-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-72770-ave-clickable-touch-targets-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-72770-ave-clickable-touch-targets-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-72770-ave-clickable-touch-targets-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-72770-ave-clickable-touch-targets-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Accessibility › Semantics › should use semantic HTML elements" classname="voice-studio-a11y.test.js" time="15.293">
+<failure message="voice-studio-a11y.test.js:190:5 should use semantic HTML elements" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:190:5 › Voice Studio Accessibility › Semantics › should use semantic HTML elements 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-3a1a7--use-semantic-HTML-elements-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-3a1a7--use-semantic-HTML-elements-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-3a1a7--use-semantic-HTML-elements-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-3a1a7--use-semantic-HTML-elements-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-3a1a7--use-semantic-HTML-elements-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-3a1a7--use-semantic-HTML-elements-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Accessibility › Semantics › should have proper form labels" classname="voice-studio-a11y.test.js" time="15.318">
+<failure message="voice-studio-a11y.test.js:206:5 should have proper form labels" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:206:5 › Voice Studio Accessibility › Semantics › should have proper form labels 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-84a00-uld-have-proper-form-labels-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-84a00-uld-have-proper-form-labels-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-84a00-uld-have-proper-form-labels-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-84a00-uld-have-proper-form-labels-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-84a00-uld-have-proper-form-labels-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-84a00-uld-have-proper-form-labels-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Accessibility › Motion and Animation › should respect prefers-reduced-motion" classname="voice-studio-a11y.test.js" time="15.319">
+<failure message="voice-studio-a11y.test.js:219:5 should respect prefers-reduced-motion" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:219:5 › Voice Studio Accessibility › Motion and Animation › should respect prefers-reduced-motion 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-4549a-pect-prefers-reduced-motion-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-4549a-pect-prefers-reduced-motion-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-4549a-pect-prefers-reduced-motion-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-4549a-pect-prefers-reduced-motion-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-4549a-pect-prefers-reduced-motion-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-4549a-pect-prefers-reduced-motion-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Accessibility › Motion and Animation › should not have excessive animations" classname="voice-studio-a11y.test.js" time="15.322">
+<failure message="voice-studio-a11y.test.js:235:5 should not have excessive animations" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:235:5 › Voice Studio Accessibility › Motion and Animation › should not have excessive animations 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-70652-t-have-excessive-animations-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-70652-t-have-excessive-animations-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-70652-t-have-excessive-animations-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-70652-t-have-excessive-animations-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-70652-t-have-excessive-animations-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-70652-t-have-excessive-animations-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Accessibility › Error Handling › should display errors in accessible format" classname="voice-studio-a11y.test.js" time="15.32">
+<failure message="voice-studio-a11y.test.js:247:5 should display errors in accessible format" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:247:5 › Voice Studio Accessibility › Error Handling › should display errors in accessible format 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-1b76f-errors-in-accessible-format-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-1b76f-errors-in-accessible-format-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-1b76f-errors-in-accessible-format-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-1b76f-errors-in-accessible-format-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-1b76f-errors-in-accessible-format-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-1b76f-errors-in-accessible-format-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Accessibility › Error Handling › should provide recovery actions" classname="voice-studio-a11y.test.js" time="15.309">
+<failure message="voice-studio-a11y.test.js:263:5 should provide recovery actions" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio-a11y.test.js:263:5 › Voice Studio Accessibility › Error Handling › should provide recovery actions 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+       9 | test.describe('Voice Studio Accessibility', () => {
+      10 |   test.beforeEach(async ({ page }) => {
+    > 11 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+         |                ^
+      12 |     await page.waitForSelector('body', { state: 'attached' })
+      13 |     await page.waitForTimeout(500)
+      14 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio-a11y.test.js:11:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-11f92-ld-provide-recovery-actions-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-a11y-Voice-St-11f92-ld-provide-recovery-actions-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-a11y-Voice-St-11f92-ld-provide-recovery-actions-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-a11y-Voice-St-11f92-ld-provide-recovery-actions-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-11f92-ld-provide-recovery-actions-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-a11y-Voice-St-11f92-ld-provide-recovery-actions-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+<testsuite name="voice-studio.spec.js" timestamp="2026-01-31T02:06:11.303Z" hostname="chromium" tests="2" failures="2" skipped="0" time="30.6" errors="0">
+<testcase name="Voice Studio Feature › should show microphone permission error if not granted" classname="voice-studio.spec.js" time="15.311">
+<failure message="voice-studio.spec.js:15:3 should show microphone permission error if not granted" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio.spec.js:15:3 › Voice Studio Feature › should show microphone permission error if not granted 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+      4 |   test.beforeEach(async ({ page }) => {
+      5 |     // Navigate to Voice Studio
+    > 6 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+        |                ^
+      7 |     await page.waitForSelector('body', { state: 'attached' })
+      8 |     await page.waitForTimeout(500)
+      9 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio.spec.js:6:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-Voice-Studio--a835a-ission-error-if-not-granted-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-Voice-Studio--a835a-ission-error-if-not-granted-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-Voice-Studio--a835a-ission-error-if-not-granted-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-Voice-Studio--a835a-ission-error-if-not-granted-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-Voice-Studio--a835a-ission-error-if-not-granted-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-Voice-Studio--a835a-ission-error-if-not-granted-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Voice Studio Feature › should toggle audio editor when viewing a recording" classname="voice-studio.spec.js" time="15.289">
+<failure message="voice-studio.spec.js:37:3 should toggle audio editor when viewing a recording" type="FAILURE">
+<![CDATA[  [chromium] › voice-studio.spec.js:37:3 › Voice Studio Feature › should toggle audio editor when viewing a recording 
+
+    TimeoutError: page.goto: Timeout 15000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/#/voice", waiting until "networkidle"
+
+
+      4 |   test.beforeEach(async ({ page }) => {
+      5 |     // Navigate to Voice Studio
+    > 6 |     await page.goto('/#/voice', { waitUntil: 'networkidle' })
+        |                ^
+      7 |     await page.waitForSelector('body', { state: 'attached' })
+      8 |     await page.waitForTimeout(500)
+      9 |   })
+        at /home/pozicontrol/projects/glassy-dash/GLASSYDASH/tests/e2e/voice-studio.spec.js:6:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-Voice-Studio--b57d8-or-when-viewing-a-recording-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/voice-studio-Voice-Studio--b57d8-or-when-viewing-a-recording-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/voice-studio-Voice-Studio--b57d8-or-when-viewing-a-recording-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|voice-studio-Voice-Studio--b57d8-or-when-viewing-a-recording-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|voice-studio-Voice-Studio--b57d8-or-when-viewing-a-recording-chromium/video.webm]]
+
+[[ATTACHMENT|voice-studio-Voice-Studio--b57d8-or-when-viewing-a-recording-chromium/error-context.md]]
+]]>
+</system-out>
 </testcase>
 </testsuite>
 </testsuites>

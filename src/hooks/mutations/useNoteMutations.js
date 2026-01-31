@@ -77,8 +77,7 @@ export function useCreateNote(options = {}) {
       const shouldRetry =
         failureCount < 3 &&
         (error.isNetworkError ||
-          (error.status >= 500 && error.status < 600) ||
-          error.isValidationError)
+          (error.status >= 500 && error.status < 600))
 
       if (shouldRetry) {
         console.log(`[useCreateNote] Retrying (attempt ${failureCount + 1}/3):`, error.message)

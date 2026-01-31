@@ -52,7 +52,7 @@ describe('NotesView - Archive Logic', () => {
       filteredEmptyWithSearch: false,
       allEmpty: false,
       togglePin: vi.fn(),
-      selectedIds: new Set(),
+      selectedIds: [],
       multiMode: false,
     })
 
@@ -76,7 +76,7 @@ describe('NotesView - Archive Logic', () => {
       filteredEmptyWithSearch: false,
       allEmpty: false,
       togglePin: vi.fn(),
-      selectedIds: new Set(),
+      selectedIds: [],
       multiMode: false,
     })
 

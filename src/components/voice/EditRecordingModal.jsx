@@ -182,7 +182,7 @@ export default function EditRecordingModal({ isOpen, onClose, recordingId, onSav
           {loadingAudio ? (
             <div className="text-center text-gray-500 py-2">Loading audio...</div>
           ) : audioUrl ? (
-            <MinimalPlaybackControls audioUrl={audioUrl} />
+            <MinimalPlaybackControls audioUrl={audioUrl} playbackId={recordingId} />
           ) : (
             <div className="text-center text-gray-500 py-2">No audio available</div>
           )}

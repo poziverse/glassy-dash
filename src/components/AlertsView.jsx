@@ -6,8 +6,9 @@ import { useUIStore } from '../stores/uiStore'
 
 export default function AlertsView() {
   const currentUser = useAuthStore(state => state.currentUser)
-  const signOut = useAuthStore(state => state.signOut)
+  const signOut = useAuthStore(state => state.logout)
   const setSettingsPanelOpen = useUIStore(state => state.setSettingsPanelOpen)
+  const isAdmin = currentUser?.is_admin === true
 
   return (
     <DashboardLayout
@@ -20,6 +21,7 @@ export default function AlertsView() {
         }
       }}
       user={currentUser}
+      isAdmin={isAdmin}
       title="System Alerts"
       onSignOut={signOut}
       onOpenSettings={() => setSettingsPanelOpen(true)}

@@ -20,6 +20,9 @@ import { ALL_IMAGES } from '../utils/helpers'
 export default function NotesView() {
   // --- Context Consumption ---
   const { currentUser, signOut } = useNotesCompat()
+  
+  // isAdmin is determined from user object
+  const isAdmin = currentUser?.is_admin === true
   const {
     pinned,
     others,
@@ -180,7 +183,7 @@ export default function NotesView() {
         tags={tagsWithCounts}
         onTagSelect={setTagFilter}
         activeTag={tagFilter}
-        isAdmin={currentUser?.is_admin}
+        isAdmin={isAdmin}
         title={dashboardTitle}
         onSignOut={signOut}
         onOpenSettings={() => setSettingsPanelOpen(true)}
@@ -258,7 +261,7 @@ export default function NotesView() {
                       <ArchiveIcon />
                       {tagFilter === 'ARCHIVED' ? 'Unarchive' : 'Archive'}
                     </button>
-                    <span className="text-xs opacity-70 ml-2">Selected: {selectedIds.size}</span>
+                    <span className="text-xs opacity-70 ml-2">Selected: {selectedIds.length}</span>
                   </div>
                   <button
                     className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
@@ -316,10 +319,10 @@ export default function NotesView() {
                         sortedArchivedNotes.map(n => (
                           <NoteCard
                             key={n.id}
-                            n={n}
-                            multiMode={multiMode}
-                            selected={selectedIds.has(String(n.id))}
-                            onToggleSelect={onToggleSelect}
+                          n={n}
+                          multiMode={multiMode}
+                          selected={selectedIds.includes(String(n.id))}
+                          onToggleSelect={onToggleSelect}
                             disablePin={true}
                             onDragStart={onDragStart}
                             onDragOver={onDragOver}
@@ -336,7 +339,7 @@ export default function NotesView() {
                               key={n.id}
                               n={n}
                               multiMode={multiMode}
-                              selected={selectedIds.has(String(n.id))}
+                              selected={selectedIds.includes(String(n.id))}
                               onToggleSelect={onToggleSelect}
                               disablePin={true}
                               onDragStart={onDragStart}
@@ -363,33 +366,33 @@ export default function NotesView() {
                         <div className={listView ? 'w-full space-y-6' : ''}>
                           {listView ? (
                             pinned.map(n => (
-                              <NoteCard
-                                key={n.id}
-                                n={n}
-                                multiMode={multiMode}
-                                selected={selectedIds.has(String(n.id))}
-                                onToggleSelect={onToggleSelect}
-                                disablePin={'ontouchstart' in window || navigator.maxTouchPoints > 0}
-                                onDragStart={onDragStart}
-                                onDragOver={onDragOver}
-                                onDragLeave={onDragLeave}
-                                onDrop={onDrop}
-                                onDragEnd={onDragEnd}
-                              />
+                            <NoteCard
+                              key={n.id}
+                              n={n}
+                              multiMode={multiMode}
+                              selected={selectedIds.includes(String(n.id))}
+                              onToggleSelect={onToggleSelect}
+                              disablePin={'ontouchstart' in window || navigator.maxTouchPoints > 0}
+                              onDragStart={onDragStart}
+                              onDragOver={onDragOver}
+                              onDragLeave={onDragLeave}
+                              onDrop={onDrop}
+                              onDragEnd={onDragEnd}
+                            />
                             ))
                           ) : (
                             <MasonryLayout
                               notes={pinned}
                               renderItem={n => (
-                                <NoteCard
-                                  key={n.id}
-                                  n={n}
-                                  multiMode={multiMode}
-                                  selected={selectedIds.has(String(n.id))}
-                                  onToggleSelect={onToggleSelect}
-                                  disablePin={
-                                    'ontouchstart' in window || navigator.maxTouchPoints > 0
-                                  }
+                              <NoteCard
+                                key={n.id}
+                                n={n}
+                                multiMode={multiMode}
+                                selected={selectedIds.includes(String(n.id))}
+                                onToggleSelect={onToggleSelect}
+                                disablePin={
+                                  'ontouchstart' in window || navigator.maxTouchPoints > 0
+                                }
                                   onDragStart={onDragStart}
                                   onDragOver={onDragOver}
                                   onDragLeave={onDragLeave}
@@ -417,7 +420,7 @@ export default function NotesView() {
                                 key={n.id}
                                 n={n}
                                 multiMode={multiMode}
-                                selected={selectedIds.has(String(n.id))}
+                                selected={selectedIds.includes(String(n.id))}
                                 onToggleSelect={onToggleSelect}
                                 disablePin={'ontouchstart' in window || navigator.maxTouchPoints > 0}
                                 onDragStart={onDragStart}
@@ -431,15 +434,15 @@ export default function NotesView() {
                             <MasonryLayout
                               notes={others}
                               renderItem={n => (
-                                <NoteCard
-                                  key={n.id}
-                                  n={n}
-                                  multiMode={multiMode}
-                                  selected={selectedIds.has(String(n.id))}
-                                  onToggleSelect={onToggleSelect}
-                                  disablePin={
-                                    'ontouchstart' in window || navigator.maxTouchPoints > 0
-                                  }
+                              <NoteCard
+                                key={n.id}
+                                n={n}
+                                multiMode={multiMode}
+                                selected={selectedIds.includes(String(n.id))}
+                                onToggleSelect={onToggleSelect}
+                                disablePin={
+                                  'ontouchstart' in window || navigator.maxTouchPoints > 0
+                                }
                                   onDragStart={onDragStart}
                                   onDragOver={onDragOver}
                                   onDragLeave={onDragLeave}

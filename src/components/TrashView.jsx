@@ -14,6 +14,7 @@ export function TrashView() {
   } = useNotes()
   const { currentUser, signOut } = useAuth()
   const { showGenericConfirm, showToast, setSettingsPanelOpen } = useUI()
+  const isAdmin = currentUser?.is_admin === true
 
   const formatDate = timestamp => {
     if (!timestamp) return 'Unknown'
@@ -105,6 +106,7 @@ export function TrashView() {
         }
       }}
       user={currentUser}
+      isAdmin={isAdmin}
       title="Trash"
       headerActions={
         trashNotes.length > 0 && (

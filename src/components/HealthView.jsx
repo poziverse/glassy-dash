@@ -26,7 +26,8 @@ export default function HealthView() {
   const dark = useSettingsStore(state => state.dark)
   const setSettingsPanelOpen = useUIStore(state => state.setSettingsPanelOpen)
   const currentUser = useAuthStore(state => state.currentUser)
-  const signOut = useAuthStore(state => state.signOut)
+  const signOut = useAuthStore(state => state.logout)
+  const isAdmin = currentUser?.is_admin === true
 
   const fetchMetrics = () => {
     fetch('/api/monitoring/metrics')
@@ -76,6 +77,7 @@ export default function HealthView() {
         }
       }}
       user={currentUser}
+      isAdmin={isAdmin}
       title="Mission Control"
       headerActions={
         metrics?.uptime && (

@@ -227,7 +227,8 @@ export function useCollaboration({ token, tagFilter, onNotesUpdated }) {
   )
 
   useEffect(() => {
-    if (!esRef.current) return
+    const es = esRef.current
+    if (!es) return
 
     const handleTyping = e => {
       try {
@@ -253,9 +254,9 @@ export function useCollaboration({ token, tagFilter, onNotesUpdated }) {
       }
     }
 
-    esRef.current.addEventListener('user_typing', handleTyping)
+    es.addEventListener('user_typing', handleTyping)
     return () => {
-      if (esRef.current) esRef.current.removeEventListener('user_typing', handleTyping)
+      es.removeEventListener('user_typing', handleTyping)
     }
   }, [sseConnected]) // Re-attach if connection cycling happens, though esRef is stable-ish
 

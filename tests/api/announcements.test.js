@@ -1,6 +1,6 @@
 // tests/api/announcements.test.js
 // @vitest-environment node
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
 import path from 'path'
 import dotenv from 'dotenv'
 
@@ -16,6 +16,27 @@ let haterToken = ''
 let announcementId = ''
 
 const sleep = ms => new Promise(r => setTimeout(r, ms))
+
+// Clean up test data after all tests complete
+afterAll(async () => {
+  // Delete the test announcement if it was created
+  // Admin DELETE on announcements permanently deletes them (no soft delete)
+  if (announcementId && adminToken) {
+    try {
+      const res = await fetch(`${BASE_URL}/notes/${announcementId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${adminToken}` },
+      })
+      if (res.ok) {
+        console.log(`[TEST CLEANUP] Deleted test announcement: ${announcementId}`)
+      } else {
+        console.warn(`[TEST CLEANUP] Failed to delete test announcement: ${res.status}`)
+      }
+    } catch (err) {
+      console.warn(`[TEST CLEANUP] Failed to delete test announcement: ${err.message}`)
+    }
+  }
+})
 
 describe('Announcements Integration', () => {
   it('should allow registering an admin user', async () => {

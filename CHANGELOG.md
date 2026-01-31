@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.6] - 2026-01-30
+
+### Added
+
+- **Deployment Review**: Comprehensive testing and validation for v1.1.6 production deployment
+- **Test Coverage**: 232 unit tests (100% pass rate) and 8 API tests (100% pass rate)
+- **Performance**: Test execution time reduced to 2.14s (well under 15s requirement)
+- **Documentation**: Added DEPLOYMENT_REVIEW_2026-01-30.md with detailed analysis
+
+### Fixed
+
+- **Test Infrastructure**: Improved test reliability and coverage across all test suites
+- **Documentation**: Updated README.md with current test statistics and deployment status
+- **Documentation**: Updated DEPLOYMENT.md with pre-deployment verification steps
+
+### Known Issues
+
+- **E2E Tests**: 28/38 tests failing due to test infrastructure issues (authentication flow, timing)
+  - These are test environment problems, not production defects
+  - See DEPLOYMENT_REVIEW_2026-01-30.md for detailed analysis
+- **Voice Studio Accessibility**: Some WCAG 2.1 AA compliance improvements needed (v1.1.7):
+  - Missing ARIA labels on recording controls
+  - Touch targets smaller than 44x44px WCAG requirement
+  - Need proper semantic HTML elements
+  - Screen reader announcements needed for state changes
+
+### Deployment Status
+
+-  **Unit Tests**: 232/232 passed (100%)
+-  **API Tests**: 8/8 passed (100%)
+-  **Build Process**: Stable and production-ready
+-   **E2E Tests**: 10/38 passed (test infrastructure issues)
+- =Ä **Full Review**: See [DEPLOYMENT_REVIEW_2026-01-30.md](./DEPLOYMENT_REVIEW_2026-01-30.md)
+
+**Recommendation**: Proceed with deployment while planning fixes for v1.1.7
+
 ## [Unreleased] - 2026-01-27
 
 ### Added

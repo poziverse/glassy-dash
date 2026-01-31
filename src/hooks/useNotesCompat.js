@@ -304,8 +304,8 @@ export function useNotesCompat() {
 
   // Bulk operations
   const onBulkDelete = async () => {
-    if (!selectedIds.size || !token) return
-    const idsArray = Array.from(selectedIds)
+    if (!selectedIds.length || !token) return
+    const idsArray = [...selectedIds]
 
     const failedIds = []
     try {
@@ -341,8 +341,8 @@ export function useNotesCompat() {
   }
 
   const onBulkPin = async pinned => {
-    if (!selectedIds.size || !token) return
-    const idsArray = Array.from(selectedIds)
+    if (!selectedIds.length || !token) return
+    const idsArray = [...selectedIds]
 
     const failedIds = []
     try {
@@ -379,8 +379,8 @@ export function useNotesCompat() {
   }
 
   const onBulkArchive = async () => {
-    if (!selectedIds.size || !token) return
-    const idsArray = Array.from(selectedIds)
+    if (!selectedIds.length || !token) return
+    const idsArray = [...selectedIds]
 
     const failedIds = []
     const archiving = tagFilter !== 'ARCHIVED'
@@ -425,8 +425,8 @@ export function useNotesCompat() {
   }
 
   const onBulkColor = async color => {
-    if (!selectedIds.size || !token) return
-    const idsArray = Array.from(selectedIds)
+    if (!selectedIds.length || !token) return
+    const idsArray = [...selectedIds]
 
     const failedIds = []
     try {
@@ -463,12 +463,12 @@ export function useNotesCompat() {
   }
 
   const onBulkDownloadZip = () => {
-    if (!selectedIds.size) return
-    const selectedNotesArr = notes.filter(n => selectedIds.has(String(n.id)))
+    if (!selectedIds.length) return
+    const selectedNotesArr = notes.filter(n => selectedIds.includes(String(n.id)))
     const json = JSON.stringify(selectedNotesArr, null, 2)
-    const fname = `glassy-dash-notes-${selectedIds.size}-${Date.now()}.json`
+    const fname = `glassy-dash-notes-${selectedIds.length}-${Date.now()}.json`
     downloadText(fname, json)
-    logger.info('bulk_download', { count: selectedIds.size })
+    logger.info('bulk_download', { count: selectedIds.length })
   }
 
   // SSE Collaboration

@@ -18,8 +18,17 @@ export function AuthProvider({ children }) {
     login: storeLogin,
   } = useAuthStore()
 
-  // Handle auth expiration globally
+  // Sync token with logger and handle auth expiration globally
   useEffect(() => {
+    if (token) {
+      logger.setToken(token)
+      if (currentUser) {
+        logger.setUserId(currentUser.email || currentUser.name)
+      }
+    } else {
+      logger.clearUserId()
+    }
+
     const handleAuthExpired = () => {
       logger.warn('token_expired', { url: window.location.href })
       logger.clearUserId()
@@ -31,7 +40,7 @@ export function AuthProvider({ children }) {
     return () => {
       window.removeEventListener('auth-expired', handleAuthExpired)
     }
-  }, [storeLogout])
+  }, [token, currentUser, storeLogout])
 
   const logout = useCallback(() => {
     logger.info('user_logout', { reason: 'user_requested' })

@@ -1,137 +1,423 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+// API base URL
+const API_BASE = '/api/documents'
+
+// Helper function to get auth token
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('glassy-dash-token')
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+  }
+}
+
+// API wrapper with error handling
+async function apiRequest(url, options = {}) {
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers,
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'API request failed')
+    }
+
+    return response.json()
+  } catch (error) {
+    console.error('[docsStore] API error:', error)
+    throw error
+  }
+}
+
+// Load documents from API
+async function loadDocumentsFromAPI() {
+  try {
+    const response = await apiRequest(`${API_BASE}`)
+    return response || []
+  } catch (error) {
+    console.error('[docsStore] Failed to load documents:', error)
+    return []
+  }
+}
+
+// Load trash from API
+async function loadTrashFromAPI() {
+  try {
+    const response = await apiRequest(`${API_BASE}/trash`)
+    return response || []
+  } catch (error) {
+    console.error('[docsStore] Failed to load trash:', error)
+    return []
+  }
+}
+
 export const useDocsStore = create(
   persist(
-    (set, _get) => ({
+    (set, get) => ({
       docs: [],
+      trash: [],
       activeDocId: null,
+      loading: false,
+      error: null,
 
-      createDoc: (folderId = 'root') => {
+      // Load all documents
+      loadDocuments: async () => {
+        set({ loading: true, error: null })
+        try {
+          const docs = await loadDocumentsFromAPI()
+          set({ docs, loading: false, error: null })
+        } catch (error) {
+          set({ loading: false, error: error.message })
+        }
+      },
+
+      // Load trash
+      loadTrash: async () => {
+        set({ loading: true, error: null })
+        try {
+          const trash = await loadTrashFromAPI()
+          set({ trash, loading: false, error: null })
+        } catch (error) {
+          set({ loading: false, error: error.message })
+        }
+      },
+
+      createDoc: async (folderId = 'root') => {
         const newDoc = {
           id: crypto.randomUUID(),
           title: 'Untitled Document',
           content: '',
+          folderId,
+          tags: [],
+          pinned: false,
+          createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          deletedAt: null, // Track deletion status
-          folderId, // Folder organization
-          tags: [], // Tags/Constraints
-          pinned: false, // Favorites
+          deletedAt: null,
         }
-        set(state => ({
-          docs: [newDoc, ...state.docs],
-          // Don't auto-open - stay in grid view (UX fix)
-          activeDocId: state.activeDocId,
-        }))
-        return newDoc.id
+
+        try {
+          set({ loading: true, error: null })
+
+          // Optimistic update
+          set(state => ({
+            docs: [newDoc, ...state.docs],
+            activeDocId: state.activeDocId,
+          }))
+
+          // API call
+          await apiRequest(API_BASE, {
+            method: 'POST',
+            body: JSON.stringify(newDoc),
+          })
+
+          // Reload to get server response
+          await get().loadDocuments()
+
+          set({ loading: false, error: null })
+          return newDoc.id
+        } catch (error) {
+          // Rollback on error
+          set(state => ({
+            docs: state.docs.filter(d => d.id !== newDoc.id),
+            loading: false,
+            error: error.message,
+          }))
+          throw error
+        }
       },
 
-      updateDoc: (id, updates) => {
-        set(state => ({
-          docs: state.docs.map(doc =>
-            doc.id === id ? { ...doc, ...updates, updatedAt: new Date().toISOString() } : doc
-          ),
-        }))
+      updateDoc: async (id, updates) => {
+        const currentDoc = get().docs.find(d => d.id === id)
+        if (!currentDoc) return
+
+        const updatedDoc = {
+          ...currentDoc,
+          ...updates,
+          updatedAt: new Date().toISOString(),
+        }
+
+        try {
+          set({ loading: true, error: null })
+
+          // Optimistic update
+          set(state => ({
+            docs: state.docs.map(d => (d.id === id ? updatedDoc : d)),
+          }))
+
+          // API call
+          await apiRequest(`${API_BASE}/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(updatedDoc),
+          })
+
+          set({ loading: false, error: null })
+        } catch (error) {
+          // Rollback on error
+          set(state => ({
+            docs: state.docs.map(d => (d.id === id ? currentDoc : d)),
+            loading: false,
+            error: error.message,
+          }))
+          throw error
+        }
       },
 
-      // Soft-delete - moves to trash instead of permanent deletion
-      deleteDoc: id => {
-        set(state => ({
-          docs: state.docs.map(doc =>
-            doc.id === id ? { ...doc, deletedAt: new Date().toISOString() } : doc
-          ),
-          activeDocId: state.activeDocId === id ? null : state.activeDocId,
-        }))
+      deleteDoc: async id => {
+        try {
+          set({ loading: true, error: null })
+
+          // Optimistic update (soft delete)
+          set(state => ({
+            docs: state.docs.filter(d => d.id !== id),
+            activeDocId: state.activeDocId === id ? null : state.activeDocId,
+          }))
+
+          // API call
+          await apiRequest(`${API_BASE}/${id}`, { method: 'DELETE' })
+
+          set({ loading: false, error: null })
+        } catch (error) {
+          // Rollback on error
+          await get().loadDocuments()
+          set({ loading: false, error: error.message })
+          throw error
+        }
       },
 
-      // Restore from trash
-      restoreDoc: id => {
-        set(state => ({
-          docs: state.docs.map(doc =>
-            doc.id === id ? { ...doc, deletedAt: null, updatedAt: new Date().toISOString() } : doc
-          ),
-        }))
+      restoreDoc: async id => {
+        try {
+          set({ loading: true, error: null })
+
+          // API call
+          await apiRequest(`${API_BASE}/${id}/restore`, { method: 'POST' })
+
+          // Reload both docs and trash
+          await get().loadDocuments()
+          await get().loadTrash()
+
+          set({ loading: false, error: null })
+        } catch (error) {
+          set({ loading: false, error: error.message })
+          throw error
+        }
       },
 
-      // Permanently delete (irreversible)
-      permanentDeleteDoc: id => {
-        set(state => ({
-          docs: state.docs.filter(doc => doc.id !== id),
-        }))
+      permanentDeleteDoc: async id => {
+        try {
+          set({ loading: true, error: null })
+
+          // API call
+          await apiRequest(`${API_BASE}/${id}/permanent`, { method: 'DELETE' })
+
+          // Reload trash
+          await get().loadTrash()
+
+          set({ loading: false, error: null })
+        } catch (error) {
+          set({ loading: false, error: error.message })
+          throw error
+        }
       },
 
-      // Clear all trash
-      clearTrash: () => {
-        set(state => ({
-          docs: state.docs.filter(doc => !doc.deletedAt),
-        }))
+      clearTrash: async () => {
+        try {
+          set({ loading: true, error: null })
+
+          // API call
+          await apiRequest(`${API_BASE}/trash`, { method: 'DELETE' })
+
+          // Reload trash
+          await get().loadTrash()
+
+          set({ loading: false, error: null })
+        } catch (error) {
+          set({ loading: false, error: error.message })
+          throw error
+        }
       },
 
       setActiveDoc: id => set({ activeDocId: id }),
 
       // --- Enhanced Features ---
 
-      moveDocToFolder: (docId, folderId) => {
-        set(state => ({
-          docs: state.docs.map(doc =>
-            doc.id === docId ? { ...doc, folderId, updatedAt: new Date().toISOString() } : doc
-          ),
-        }))
+      moveDocToFolder: async (docId, folderId) => {
+        return get().updateDoc(docId, { folderId })
       },
 
-      togglePin: docId => {
-        set(state => ({
-          docs: state.docs.map(doc =>
-            doc.id === docId
-              ? { ...doc, pinned: !doc.pinned, updatedAt: new Date().toISOString() }
-              : doc
-          ),
-        }))
+      togglePin: async docId => {
+        const currentDoc = get().docs.find(d => d.id === docId)
+        if (!currentDoc) return
+
+        const newPinned = !currentDoc.pinned
+
+        try {
+          set({ loading: true, error: null })
+
+          // Optimistic update
+          set(state => ({
+            docs: state.docs.map(d =>
+              d.id === docId ? { ...d, pinned: newPinned, updatedAt: new Date().toISOString() } : d
+            ),
+          }))
+
+          // API call
+          await apiRequest(`${API_BASE}/${docId}/pin`, { method: 'POST' })
+
+          set({ loading: false, error: null })
+        } catch (error) {
+          // Rollback on error
+          set(state => ({
+            docs: state.docs.map(d => (d.id === docId ? currentDoc : d)),
+            loading: false,
+            error: error.message,
+          }))
+          throw error
+        }
       },
 
-      addTag: (docId, tag) => {
-        set(state => ({
-          docs: state.docs.map(doc => {
-            if (doc.id !== docId) return doc
-            const tags = doc.tags || []
-            if (tags.includes(tag)) return doc
-            return { ...doc, tags: [...tags, tag], updatedAt: new Date().toISOString() }
-          }),
-        }))
+      addTag: async (docId, tag) => {
+        const currentDoc = get().docs.find(d => d.id === docId)
+        if (!currentDoc) return
+
+        const tags = currentDoc.tags || []
+        if (tags.includes(tag)) return
+
+        const newTags = [...tags, tag]
+
+        try {
+          set({ loading: true, error: null })
+
+          // Optimistic update
+          set(state => ({
+            docs: state.docs.map(d =>
+              d.id === docId ? { ...d, tags: newTags, updatedAt: new Date().toISOString() } : d
+            ),
+          }))
+
+          // API call
+          await apiRequest(`${API_BASE}/${docId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ tags: newTags }),
+          })
+
+          set({ loading: false, error: null })
+        } catch (error) {
+          // Rollback on error
+          set(state => ({
+            docs: state.docs.map(d => (d.id === docId ? currentDoc : d)),
+            loading: false,
+            error: error.message,
+          }))
+          throw error
+        }
       },
 
-      removeTag: (docId, tag) => {
-        set(state => ({
-          docs: state.docs.map(doc => {
-            if (doc.id !== docId) return doc
-            return {
-              ...doc,
-              tags: (doc.tags || []).filter(t => t !== tag),
-              updatedAt: new Date().toISOString(),
-            }
-          }),
-        }))
+      removeTag: async (docId, tag) => {
+        const currentDoc = get().docs.find(d => d.id === docId)
+        if (!currentDoc) return
+
+        const newTags = (currentDoc.tags || []).filter(t => t !== tag)
+
+        try {
+          set({ loading: true, error: null })
+
+          // Optimistic update
+          set(state => ({
+            docs: state.docs.map(d =>
+              d.id === docId ? { ...d, tags: newTags, updatedAt: new Date().toISOString() } : d
+            ),
+          }))
+
+          // API call
+          await apiRequest(`${API_BASE}/${docId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ tags: newTags }),
+          })
+
+          set({ loading: false, error: null })
+        } catch (error) {
+          // Rollback on error
+          set(state => ({
+            docs: state.docs.map(d => (d.id === docId ? currentDoc : d)),
+            loading: false,
+            error: error.message,
+          }))
+          throw error
+        }
       },
 
       // Bulk Operations
-      bulkDeleteDocs: ids => {
-        set(state => ({
-          docs: state.docs.map(doc =>
-            ids.includes(doc.id) ? { ...doc, deletedAt: new Date().toISOString() } : doc
-          ),
-        }))
+      bulkDeleteDocs: async ids => {
+        try {
+          set({ loading: true, error: null })
+
+          // Optimistic update
+          set(state => ({
+            docs: state.docs.filter(d => !ids.includes(d.id)),
+          }))
+
+          // API call for each ID
+          await Promise.all(
+            ids.map(id => apiRequest(`${API_BASE}/${id}`, { method: 'DELETE' }))
+          )
+
+          // Reload to ensure consistency
+          await get().loadDocuments()
+
+          set({ loading: false, error: null })
+        } catch (error) {
+          // Rollback on error
+          await get().loadDocuments()
+          set({ loading: false, error: error.message })
+          throw error
+        }
       },
 
-      bulkMoveDocs: (ids, folderId) => {
-        set(state => ({
-          docs: state.docs.map(doc =>
-            ids.includes(doc.id) ? { ...doc, folderId, updatedAt: new Date().toISOString() } : doc
-          ),
-        }))
+      bulkMoveDocs: async (ids, folderId) => {
+        try {
+          set({ loading: true, error: null })
+
+          // Optimistic update
+          set(state => ({
+            docs: state.docs.map(d =>
+              ids.includes(d.id) ? { ...d, folderId, updatedAt: new Date().toISOString() } : d
+            ),
+          }))
+
+          // API call for each ID
+          await Promise.all(
+            ids.map(id =>
+              apiRequest(`${API_BASE}/${id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ folderId }),
+              })
+            )
+          )
+
+          set({ loading: false, error: null })
+        } catch (error) {
+          // Rollback on error
+          await get().loadDocuments()
+          set({ loading: false, error: error.message })
+          throw error
+        }
       },
+
+      // Clear error
+      clearError: () => set({ error: null }),
     }),
     {
       name: 'glassy-docs-storage',
+      partialize: state => ({
+        activeDocId: state.activeDocId,
+      }),
     }
   )
 )

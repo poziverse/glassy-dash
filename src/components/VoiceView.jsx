@@ -9,9 +9,10 @@ import { Mic } from 'lucide-react'
 
 export default function VoiceView() {
   const currentUser = useAuthStore(state => state.currentUser)
-  const signOut = useAuthStore(state => state.signOut)
+  const signOut = useAuthStore(state => state.logout)
   const dark = useSettingsStore(state => state.dark)
   const setSettingsPanelOpen = useUIStore(state => state.setSettingsPanelOpen)
+  const isAdmin = currentUser?.is_admin === true
 
   return (
     <DashboardLayout
@@ -24,6 +25,7 @@ export default function VoiceView() {
         }
       }}
       user={currentUser}
+      isAdmin={isAdmin}
       title="Voice Studio"
       onSignOut={signOut}
       onOpenSettings={() => setSettingsPanelOpen(true)}

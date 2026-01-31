@@ -18,6 +18,9 @@ export default defineConfig({
     video: 'retain-on-failure',
     timeout: 60000,
     waitForLoadState: 'domcontentloaded',
+    actionTimeout: 10000,
+    navigationTimeout: 15000,
+    storageState: 'tests/playwright/.auth/user.json',
   },
 
   webServer: {
@@ -28,6 +31,8 @@ export default defineConfig({
     stdout: 'pipe',
     stderr: 'pipe',
   },
+
+  globalSetup: './tests/e2e/global-setup.ts',
 
   projects: [
     {

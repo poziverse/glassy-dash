@@ -248,8 +248,8 @@ export function NotesProvider({ children }) {
   )
 
   const onBulkDelete = useCallback(async () => {
-    if (!selectedIds.size) return
-    const ids = Array.from(selectedIds)
+    if (!selectedIds.length) return
+    const ids = [...selectedIds]
     try {
       await Promise.allSettled(ids.map(id => deleteNoteMutation.mutateAsync(id)))
       onExitMulti()
@@ -260,8 +260,8 @@ export function NotesProvider({ children }) {
 
   const onBulkPin = useCallback(
     async pinned => {
-      if (!selectedIds.size) return
-      const ids = Array.from(selectedIds)
+      if (!selectedIds.length) return
+      const ids = [...selectedIds]
       try {
         await Promise.allSettled(ids.map(id => togglePinMutation.mutateAsync({ id, pinned })))
         onExitMulti()
@@ -273,8 +273,8 @@ export function NotesProvider({ children }) {
   )
 
   const onBulkArchive = useCallback(async () => {
-    if (!selectedIds.size) return
-    const ids = Array.from(selectedIds)
+    if (!selectedIds.length) return
+    const ids = [...selectedIds]
     const archiving = tagFilter !== 'ARCHIVED'
     try {
       await Promise.allSettled(
@@ -288,8 +288,8 @@ export function NotesProvider({ children }) {
 
   const onBulkColor = useCallback(
     async color => {
-      if (!selectedIds.size) return
-      const ids = Array.from(selectedIds)
+      if (!selectedIds.length) return
+      const ids = [...selectedIds]
       try {
         await Promise.allSettled(
           ids.map(id => patchNoteMutation.mutateAsync({ id, updates: { color } }))
@@ -303,12 +303,12 @@ export function NotesProvider({ children }) {
   )
 
   const onBulkDownloadZip = useCallback(() => {
-    if (!selectedIds.size) return
-    const selectedNotesArr = notes.filter(n => selectedIds.has(String(n.id)))
+    if (!selectedIds.length) return
+    const selectedNotesArr = notes.filter(n => selectedIds.includes(String(n.id)))
     const json = JSON.stringify(selectedNotesArr, null, 2)
-    const fname = `glassy-dash-notes-${selectedIds.size}-${Date.now()}.json`
+    const fname = `glassy-dash-notes-${selectedIds.length}-${Date.now()}.json`
     downloadText(fname, json)
-    logger.info('bulk_download', { count: selectedIds.size })
+    logger.info('bulk_download', { count: selectedIds.length })
   }, [selectedIds, notes])
 
   const updateChecklistItem = useCallback(

@@ -1,0 +1,70 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic:
+      - img "Background"
+    - complementary [ref=e4]:
+      - img "Logo" [ref=e9]
+      - button "Expand sidebar" [ref=e10]:
+        - img [ref=e11]
+      - generic [ref=e13]:
+        - button "All Notes" [ref=e15]:
+          - img [ref=e16]
+        - button "Documents" [ref=e21]:
+          - img [ref=e22]
+        - button "Voice Studio" [ref=e25]:
+          - img [ref=e26]
+        - button "Trash" [ref=e29]:
+          - img [ref=e30]
+        - button "Archive" [ref=e33]:
+          - img [ref=e34]
+        - button "Health" [ref=e38]:
+          - img [ref=e39]
+        - button "Alerts" [ref=e41]:
+          - img [ref=e42]
+      - generic [ref=e45]:
+        - button "Settings" [ref=e46]:
+          - img [ref=e47]
+        - button "Sign Out" [ref=e51]:
+          - img [ref=e52]
+    - generic [ref=e55]:
+      - banner [ref=e56]:
+        - generic [ref=e57]:
+          - heading "Voice Studio" [level=1] [ref=e58]
+          - generic [ref=e59]:
+            - img [ref=e60]
+            - textbox "Search voice..." [ref=e63]
+        - generic [ref=e64]:
+          - button "AI Assistant (⌘J)" [ref=e65]:
+            - img [ref=e66]
+          - generic [ref=e71]: Online
+          - button "T" [ref=e73]:
+            - generic [ref=e74]: T
+      - main [ref=e75]:
+        - generic [ref=e76]:
+          - generic [ref=e78]:
+            - button "Voice Recorder" [ref=e80]:
+              - img [ref=e81]
+              - generic [ref=e83]: Voice Recorder
+            - generic [ref=e84]:
+              - img [ref=e89]
+              - button [ref=e93]:
+                - img [ref=e94]
+          - generic [ref=e97]:
+            - generic [ref=e98]:
+              - heading "Recent Recordings" [level=2] [ref=e99]
+              - generic [ref=e100]:
+                - button "Import" [ref=e101]:
+                  - img [ref=e102]
+                  - generic [ref=e105]: Import
+                - generic [ref=e106]:
+                  - img [ref=e107]
+                  - textbox "Search recordings..." [ref=e110]
+            - generic [ref=e111]:
+              - img [ref=e112]
+              - paragraph [ref=e115]: No recordings yet. Start recording your ideas!
+  - button "Report a bug" [ref=e116]:
+    - img [ref=e117]
+```

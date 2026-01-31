@@ -196,10 +196,8 @@ export function Composer() {
             <DrawingCanvas
               data={drawingData}
               onChange={setDrawingData}
-              width={650}
-              height={450}
+              readOnly={false}
               darkMode={dark}
-              hideModeToggle={true}
             />
           )}
 

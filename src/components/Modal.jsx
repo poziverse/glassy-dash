@@ -660,8 +660,6 @@ const Modal = ({
                 <DrawingCanvas
                   data={mDrawingData}
                   onChange={setMDrawingData}
-                  width={750}
-                  height={850}
                   readOnly={!isOnline}
                   darkMode={dark}
                   initialMode="view"

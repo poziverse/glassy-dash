@@ -34,8 +34,9 @@ import { safeUserMarkdown } from '../utils/safe-markdown'
 
 export default function DocsView() {
   const currentUser = useAuthStore(state => state.currentUser)
-  const signOut = useAuthStore(state => state.signOut)
+  const signOut = useAuthStore(state => state.logout)
   const setSettingsPanelOpen = useUIStore(state => state.setSettingsPanelOpen)
+  const isAdmin = currentUser?.is_admin === true
   const { dark, cardTransparency } = useSettingsStore()
 
   // Store usage
@@ -221,6 +222,7 @@ export default function DocsView() {
         }
       }}
       user={currentUser}
+      isAdmin={isAdmin}
       title="Documents"
       onSignOut={signOut}
       onOpenSettings={() => setSettingsPanelOpen(true)}

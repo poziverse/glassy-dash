@@ -7,6 +7,7 @@ import { useModalStore } from './stores/modalStore'
 import logger from './utils/logger'
 import { useLogin, useRegister, useSecretKeyLogin } from './hooks/mutations/useAuthMutations'
 import { useAllowRegistration } from './hooks/queries/useAuth'
+import { AudioPlaybackProvider } from './contexts/AudioPlaybackContext'
 
 // Components
 import NotesView from './components/NotesView'
@@ -19,6 +20,7 @@ import { SettingsPanel } from './components/SettingsPanel'
 import { TrashView } from './components/TrashView'
 import DocsView from './components/DocsView'
 import VoiceWorkspace from './components/voice/VoiceWorkspace'
+import StorageHealthCheck from './components/voice/StorageHealthCheck'
 import SettingsView from './components/SettingsView'
 import { BugReportWidget } from './components/BugReportWidget'
 import { WindowView } from './components/WindowView'
@@ -180,7 +182,7 @@ export default function App() {
   }
 
   return (
-    <>
+    <AudioPlaybackProvider>
       {/* Main View */}
       {currentView}
 
@@ -300,6 +302,9 @@ export default function App() {
       )}
       {/* Bug Report Widget */}
       <BugReportWidget />
-    </>
+
+      {/* Storage Health Check - validates voice storage on app load */}
+      <StorageHealthCheck />
+    </AudioPlaybackProvider>
   )
 }

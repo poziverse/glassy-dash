@@ -273,7 +273,7 @@ App (Root)
 - Admin-only endpoints
 - CORS protection
 
-### 9. Admin Announcements (New)
+### 9. Admin Announcements
 
 **Features:**
 
@@ -281,6 +281,47 @@ App (Root)
 - **Visual Distinction**: Announcements appear with a distinctive golden frame and megaphone icon.
 - **User Control**: Users can dismiss individual announcements or opt-out entirely via Settings.
 - **Tracking**: System tracks dismissals per user to ensure announcements are only seen once.
+
+---
+
+## Next Major Feature: Project SPACES (Planned)
+
+**Status:** Planning Phase  
+**Documentation:** [PROJECT_SPACES.md](./PROJECT_SPACES.md)
+
+### Overview
+
+Project SPACES is a transformative upcoming feature that will evolve GlassyDash from a note-taking application into a powerful organization and collaboration platform. Spaces provide unique blank canvases for users to organize, collaborate, and visualize their content through multiple view modes.
+
+**Vision:** Part Pinterest board, part Kanban, part social media microblog - SPACES offers unlimited opportunity for creative organization and project management.
+
+### Key Capabilities (Planned)
+
+- **Multi-view Architecture**: Grid, Board (Kanban), Timeline, Focus, and more
+- **Flexible Assignment**: Explicit assignment, tag-based filtering, AI smart collections
+- **Rich Media Embedding**: Spotify, YouTube, Vimeo, and more directly in notes
+- **Advanced Collaboration**: Space-level sharing with granular permissions
+- **AI-Powered**: Smart suggestions, content clustering, automated workflows
+- **Premium Views**: Mind maps, calendars, Gantt charts
+
+### Target Use Cases
+
+- **Project Management**: Marketing campaigns, software projects, event planning
+- **Personal Organization**: Home renovation, vacation planning, hobby tracking
+- **Creative Workspaces**: Mood boards, design collections, inspiration boards
+- **Team Collaboration**: Shared workspaces with real-time updates and presence
+
+### Implementation Phases
+
+1. **Phase 1** (2-3 weeks): Foundation - Core data model, CRUD, grid view
+2. **Phase 2** (2-3 weeks): Board View - Kanban with drag-and-drop
+3. **Phase 3** (3-4 weeks): Advanced Views - Timeline, focus view, templates
+4. **Phase 4** (2-3 weeks): Collaboration - Space sharing and real-time sync
+5. **Phase 5** (2-3 weeks): Media Embedding - Rich media integration
+6. **Phase 6** (2-3 weeks): AI Integration - Smart space intelligence
+7. **Phase 7** (Ongoing): Premium Features - Advanced views and analytics
+
+**See [PROJECT_SPACES.md](./PROJECT_SPACES.md) for complete feature specifications, database schema, and implementation roadmap.**
 
 ---
 
@@ -655,13 +696,14 @@ User Action → API Request → Database Update → SSE Broadcast → Client Upd
 
 ## Future Enhancements
 
-1. **Advanced AI**: Support for larger models, multi-modal AI
-2. **Database Migration**: PostgreSQL for better scalability
-3. **File Storage**: AWS S3 or similar for images
-4. **Advanced Collaboration**: Cursors, presence indicators
-5. **Mobile App**: React Native implementation
-6. **Plugins**: Extensible plugin architecture
-7. **WebRTC**: Direct peer-to-peer collaboration
+1. **Project SPACES** - Multi-view workspaces with Kanban, media embedding, and AI-powered organization (See [PROJECT_SPACES.md](./PROJECT_SPACES.md))
+2. **Advanced AI**: Support for larger models, multi-modal AI
+3. **Database Migration**: PostgreSQL for better scalability
+4. **File Storage**: AWS S3 or similar for images
+5. **Advanced Collaboration**: Cursors, presence indicators
+6. **Mobile App**: React Native implementation
+7. **Plugins**: Extensible plugin architecture
+8. **WebRTC**: Direct peer-to-peer collaboration
 
 ---
 
@@ -680,6 +722,7 @@ User Action → API Request → Database Update → SSE Broadcast → Client Upd
 - [PWA Documentation](./11_PWA.md)
 - [Logging Documentation](./12_LOGGING.md)
 - [Security Documentation](./13_SECURITY.md)
+- [Project SPACES Documentation](./PROJECT_SPACES.md) - Next major feature (Planning Phase)
 
 ---
 

@@ -7,8 +7,9 @@ import { Settings } from 'lucide-react'
 
 export default function SettingsView() {
   const currentUser = useAuthStore(state => state.currentUser)
-  const signOut = useAuthStore(state => state.signOut)
+  const signOut = useAuthStore(state => state.logout)
   const setSettingsPanelOpen = useUIStore(state => state.setSettingsPanelOpen)
+  const isAdmin = currentUser?.is_admin === true
 
   return (
     <DashboardLayout
@@ -21,6 +22,7 @@ export default function SettingsView() {
         }
       }}
       user={currentUser}
+      isAdmin={isAdmin}
       title="Settings"
       onSignOut={signOut}
       onOpenSettings={() => setSettingsPanelOpen(true)}

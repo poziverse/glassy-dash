@@ -62,6 +62,7 @@ docs/
 ├── GETTING_STARTED.md               # Quick start guide
 ├── LOGGING_IMPLEMENTATION.md         # Logging system documentation
 ├── MCP_TOOLS_SETUP.md               # MCP tools setup guide
+├── PROJECT_SPACES.md               # Project SPACES feature planning (NEW 2026-01-30)
 ├── README.md                        # Main project README
 ├── SECURITY.md                      # Security documentation
 ├── TESTING.md                      # Testing guide
@@ -147,6 +148,12 @@ Operational and maintenance guides:
 4. Check **LOGGING_IMPLEMENTATION.md** for monitoring
 5. Use **TROUBLESHOOTING.md** for common issues
 
+### For Feature Planning
+
+1. Review **PROJECT_SPACES.md** for upcoming SPACES feature development
+2. Consult **ARCHITECTURE.md** for system design patterns
+3. Check **DATABASE_SCHEMA.md** for data model considerations
+
 ---
 
 ## Documentation Standards
@@ -177,10 +184,10 @@ When adding or updating documentation:
 
 ## Total Documentation Count
 
-- **System docs**: 14 files
+- **System docs**: 15 files (including PROJECT_SPACES.md)
 - **Component docs**: 17 files
 - **Context docs**: 6 files
-- **Total**: 37 comprehensive documentation files
+- **Total**: 38 comprehensive documentation files
 
 ---
 

@@ -278,6 +278,50 @@ CREATE TABLE IF NOT EXISTS bug_reports (
   updated_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS documents (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  folder_id TEXT DEFAULT 'root',
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  pinned INTEGER NOT NULL DEFAULT 0,
+  deleted_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS voice_recordings (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  transcript TEXT NOT NULL,
+  summary TEXT,
+  duration REAL NOT NULL DEFAULT 0,
+  audio_file_path TEXT,
+  audio_size INTEGER NOT NULL DEFAULT 0,
+  audio_format TEXT NOT NULL DEFAULT 'webm',
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  type TEXT NOT NULL DEFAULT 'gallery',
+  archived INTEGER NOT NULL DEFAULT 0,
+  deleted_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+`)
+
+// Create indexes for performance
+await db.exec(`
+CREATE INDEX IF NOT EXISTS idx_documents_user_id ON documents(user_id);
+CREATE INDEX IF NOT EXISTS idx_documents_folder_id ON documents(folder_id);
+CREATE INDEX IF NOT EXISTS idx_documents_deleted_at ON documents(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_voice_recordings_user_id ON voice_recordings(user_id);
+CREATE INDEX IF NOT EXISTS idx_voice_recordings_type ON voice_recordings(type);
+CREATE INDEX IF NOT EXISTS idx_voice_recordings_deleted_at ON voice_recordings(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_voice_recordings_archived ON voice_recordings(archived);
 `)
 
     // Tiny migrations (safe to run repeatedly)
@@ -598,6 +642,70 @@ const listTrash = db.prepare(
 const emptyTrash = db.prepare('DELETE FROM notes WHERE user_id = ? AND deleted_at IS NOT NULL')
 const permanentDeleteNote = db.prepare(
   'DELETE FROM notes WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL'
+)
+
+// Documents statements
+const listDocuments = db.prepare(
+  `SELECT * FROM documents WHERE user_id = ? AND deleted_at IS NULL ORDER BY pinned DESC, created_at DESC`
+)
+const listDocumentsTrash = db.prepare(
+  `SELECT * FROM documents WHERE user_id = ? AND deleted_at IS NOT NULL ORDER BY deleted_at DESC`
+)
+const getDocument = db.prepare('SELECT * FROM documents WHERE id = ? AND user_id = ?')
+const insertDocument = db.prepare(`
+  INSERT INTO documents (id,user_id,title,content,folder_id,tags_json,pinned,created_at,updated_at)
+  VALUES (@id,@user_id,@title,@content,@folder_id,@tags_json,@pinned,@created_at,@updated_at)
+`)
+const updateDocument = db.prepare(`
+  UPDATE documents SET title=@title,content=@content,folder_id=@folder_id,tags_json=@tags_json,
+    pinned=@pinned,updated_at=@updated_at
+  WHERE id=@id AND user_id=@user_id
+`)
+const patchDocument = db.prepare(`
+  UPDATE documents SET title=COALESCE(@title,title),
+    content=COALESCE(@content,content),
+    folder_id=COALESCE(@folder_id,folder_id),
+    tags_json=COALESCE(@tags_json,tags_json),
+    pinned=COALESCE(@pinned,pinned),
+    updated_at=COALESCE(@updated_at,updated_at)
+  WHERE id=@id AND user_id=@user_id
+`)
+const softDeleteDocument = db.prepare('UPDATE documents SET deleted_at = ? WHERE id = ? AND user_id = ?')
+const restoreDocument = db.prepare('UPDATE documents SET deleted_at = NULL WHERE id = ? AND user_id = ?')
+const emptyDocumentsTrash = db.prepare('DELETE FROM documents WHERE user_id = ? AND deleted_at IS NOT NULL')
+const permanentDeleteDocument = db.prepare(
+  'DELETE FROM documents WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL'
+)
+
+// Voice recordings statements
+const listVoiceRecordings = db.prepare(
+  `SELECT * FROM voice_recordings WHERE user_id = ? AND archived = 0 AND deleted_at IS NULL ORDER BY created_at DESC`
+)
+const listVoiceArchived = db.prepare(
+  `SELECT * FROM voice_recordings WHERE user_id = ? AND archived = 1 ORDER BY created_at DESC`
+)
+const getVoiceRecording = db.prepare('SELECT * FROM voice_recordings WHERE id = ? AND user_id = ?')
+const insertVoiceRecording = db.prepare(`
+  INSERT INTO voice_recordings (id,user_id,title,transcript,summary,duration,audio_file_path,audio_size,audio_format,tags_json,type,created_at,updated_at)
+  VALUES (@id,@user_id,@title,@transcript,@summary,@duration,@audio_file_path,@audio_size,@audio_format,@tags_json,@type,@created_at,@updated_at)
+`)
+const updateVoiceRecording = db.prepare(`
+  UPDATE voice_recordings SET title=@title,transcript=@transcript,summary=@summary,tags_json=@tags_json,updated_at=@updated_at
+  WHERE id=@id AND user_id=@user_id
+`)
+const patchVoiceRecording = db.prepare(`
+  UPDATE voice_recordings SET title=COALESCE(@title,title),
+    transcript=COALESCE(@transcript,transcript),
+    summary=COALESCE(@summary,summary),
+    tags_json=COALESCE(@tags_json,tags_json),
+    updated_at=COALESCE(@updated_at,updated_at)
+  WHERE id=@id AND user_id=@user_id
+`)
+const softDeleteVoiceRecording = db.prepare('UPDATE voice_recordings SET deleted_at = ? WHERE id = ? AND user_id = ?')
+const archiveVoiceRecording = db.prepare('UPDATE voice_recordings SET archived = 1 WHERE id = ? AND user_id = ?')
+const unarchiveVoiceRecording = db.prepare('UPDATE voice_recordings SET archived = 0 WHERE id = ? AND user_id = ?')
+const permanentDeleteVoiceRecording = db.prepare(
+  'DELETE FROM voice_recordings WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL'
 )
 
 // Collaboration statements
@@ -1585,7 +1693,416 @@ app.get('/api/notes/archived', auth, async (req, res) => {
   )
 })
 
-// Export/Import
+// ---------- Documents API ----------
+
+// List all documents
+app.get('/api/documents', auth, async (req, res) => {
+  const rows = await listDocuments.all(req.user.id)
+  res.json(
+    rows.map(r => ({
+      id: r.id,
+      user_id: r.user_id,
+      title: r.title,
+      content: r.content,
+      folder_id: r.folder_id,
+      tags: JSON.parse(r.tags_json || '[]'),
+      pinned: !!r.pinned,
+      deleted_at: r.deleted_at,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    }))
+  )
+})
+
+// Get single document
+app.get('/api/documents/:id', auth, async (req, res) => {
+  const doc = await getDocument.get(req.params.id, req.user.id)
+  if (!doc) return res.status(404).json({ error: 'Document not found' })
+  
+  res.json({
+    id: doc.id,
+    user_id: doc.user_id,
+    title: doc.title,
+    content: doc.content,
+    folder_id: doc.folder_id,
+    tags: JSON.parse(doc.tags_json || '[]'),
+    pinned: !!doc.pinned,
+    deleted_at: doc.deleted_at,
+    created_at: doc.created_at,
+    updated_at: doc.updated_at,
+  })
+})
+
+// Create document
+app.post('/api/documents', auth, async (req, res) => {
+  const body = req.body || {}
+  const doc = {
+    id: body.id || uid(),
+    user_id: req.user.id,
+    title: String(body.title || 'Untitled Document'),
+    content: String(body.content || ''),
+    folder_id: String(body.folder_id || 'root'),
+    tags_json: JSON.stringify(Array.isArray(body.tags) ? body.tags : []),
+    pinned: body.pinned ? 1 : 0,
+    created_at: nowISO(),
+    updated_at: nowISO(),
+  }
+
+  await insertDocument.run(doc)
+  res.status(201).json({
+    id: doc.id,
+    user_id: doc.user_id,
+    title: doc.title,
+    content: doc.content,
+    folder_id: doc.folder_id,
+    tags: JSON.parse(doc.tags_json),
+    pinned: !!doc.pinned,
+    created_at: doc.created_at,
+    updated_at: doc.updated_at,
+  })
+})
+
+// Update document
+app.put('/api/documents/:id', auth, async (req, res) => {
+  const body = req.body || {}
+  const doc = await getDocument.get(req.params.id, req.user.id)
+  if (!doc) return res.status(404).json({ error: 'Document not found' })
+
+  const updated = {
+    id: req.params.id,
+    user_id: req.user.id,
+    title: String(body.title || doc.title),
+    content: String(body.content || doc.content),
+    folder_id: String(body.folder_id || doc.folder_id),
+    tags_json: JSON.stringify(Array.isArray(body.tags) ? body.tags : JSON.parse(doc.tags_json)),
+    pinned: typeof body.pinned === 'boolean' ? (body.pinned ? 1 : 0) : doc.pinned,
+    updated_at: nowISO(),
+  }
+
+  await updateDocument.run(updated)
+  res.json({ ok: true })
+})
+
+// Partial update document
+app.patch('/api/documents/:id', auth, async (req, res) => {
+  const body = req.body || {}
+  const doc = await getDocument.get(req.params.id, req.user.id)
+  if (!doc) return res.status(404).json({ error: 'Document not found' })
+
+  const updates = {
+    id: req.params.id,
+    user_id: req.user.id,
+    title: typeof body.title === 'string' ? body.title : null,
+    content: typeof body.content === 'string' ? body.content : null,
+    folder_id: typeof body.folder_id === 'string' ? body.folder_id : null,
+    tags_json: Array.isArray(body.tags) ? JSON.stringify(body.tags) : null,
+    pinned: typeof body.pinned === 'boolean' ? (body.pinned ? 1 : 0) : null,
+    updated_at: nowISO(),
+  }
+
+  await patchDocument.run(updates)
+  res.json({ ok: true })
+})
+
+// Soft delete (move to trash)
+app.delete('/api/documents/:id', auth, async (req, res) => {
+  await softDeleteDocument.run(nowISO(), req.params.id, req.user.id)
+  res.json({ ok: true })
+})
+
+// Restore from trash
+app.post('/api/documents/:id/restore', auth, async (req, res) => {
+  await restoreDocument.run(req.params.id, req.user.id)
+  res.json({ ok: true })
+})
+
+// List trash
+app.get('/api/documents/trash', auth, async (req, res) => {
+  const rows = await listDocumentsTrash.all(req.user.id)
+  res.json(
+    rows.map(r => ({
+      id: r.id,
+      title: r.title,
+      content: r.content,
+      folder_id: r.folder_id,
+      tags: JSON.parse(r.tags_json || '[]'),
+      pinned: !!r.pinned,
+      deleted_at: r.deleted_at,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    }))
+  )
+})
+
+// Empty trash (permanent delete all)
+app.delete('/api/documents/trash', auth, async (req, res) => {
+  await emptyDocumentsTrash.run(req.user.id)
+  res.json({ ok: true })
+})
+
+// Permanently delete single document from trash
+app.delete('/api/documents/:id/permanent', auth, async (req, res) => {
+  await permanentDeleteDocument.run(req.params.id, req.user.id)
+  res.json({ ok: true })
+})
+
+// Toggle pin
+app.post('/api/documents/:id/pin', auth, async (req, res) => {
+  const doc = await getDocument.get(req.params.id, req.user.id)
+  if (!doc) return res.status(404).json({ error: 'Document not found' })
+
+  const newPinned = !doc.pinned
+  await updateDocument.run({
+    id: req.params.id,
+    user_id: req.user.id,
+    title: doc.title,
+    content: doc.content,
+    folder_id: doc.folder_id,
+    tags_json: doc.tags_json,
+    pinned: newPinned ? 1 : 0,
+    updated_at: nowISO(),
+  })
+
+  res.json({ ok: true, pinned: newPinned })
+})
+
+// ---------- Voice Recordings API ----------
+
+// List all voice recordings
+app.get('/api/voice/recordings', auth, async (req, res) => {
+  const rows = await listVoiceRecordings.all(req.user.id)
+  res.json(
+    rows.map(r => ({
+      id: r.id,
+      user_id: r.user_id,
+      title: r.title,
+      transcript: r.transcript,
+      summary: r.summary,
+      duration: r.duration,
+      audio_file_path: r.audio_file_path,
+      audio_size: r.audio_size,
+      audio_format: r.audio_format,
+      tags: JSON.parse(r.tags_json || '[]'),
+      type: r.type,
+      archived: !!r.archived,
+      deleted_at: r.deleted_at,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    }))
+  )
+})
+
+// Get single voice recording
+app.get('/api/voice/recordings/:id', auth, async (req, res) => {
+  const recording = await getVoiceRecording.get(req.params.id, req.user.id)
+  if (!recording) return res.status(404).json({ error: 'Recording not found' })
+  
+  res.json({
+    id: recording.id,
+    user_id: recording.user_id,
+    title: recording.title,
+    transcript: recording.transcript,
+    summary: recording.summary,
+    duration: recording.duration,
+    audio_file_path: recording.audio_file_path,
+    audio_size: recording.audio_size,
+    audio_format: recording.audio_format,
+    tags: JSON.parse(recording.tags_json || '[]'),
+    type: recording.type,
+    archived: !!recording.archived,
+    deleted_at: recording.deleted_at,
+    created_at: recording.created_at,
+    updated_at: recording.updated_at,
+  })
+})
+
+// Create voice recording metadata (audio uploaded separately)
+app.post('/api/voice/recordings', auth, async (req, res) => {
+  const body = req.body || {}
+  const recording = {
+    id: body.id || uid(),
+    user_id: req.user.id,
+    title: String(body.title || 'Voice Recording'),
+    transcript: String(body.transcript || ''),
+    summary: body.summary ? String(body.summary) : null,
+    duration: typeof body.duration === 'number' ? body.duration : 0,
+    audio_file_path: body.audio_file_path || null,
+    audio_size: typeof body.audio_size === 'number' ? body.audio_size : 0,
+    audio_format: String(body.audio_format || 'webm'),
+    tags_json: JSON.stringify(Array.isArray(body.tags) ? body.tags : []),
+    type: ['notes', 'gallery'].includes(body.type) ? body.type : 'gallery',
+    created_at: nowISO(),
+    updated_at: nowISO(),
+  }
+
+  await insertVoiceRecording.run(recording)
+  res.status(201).json({
+    id: recording.id,
+    user_id: recording.user_id,
+    title: recording.title,
+    transcript: recording.transcript,
+    summary: recording.summary,
+    duration: recording.duration,
+    audio_file_path: recording.audio_file_path,
+    audio_size: recording.audio_size,
+    audio_format: recording.audio_format,
+    tags: JSON.parse(recording.tags_json),
+    type: recording.type,
+    created_at: recording.created_at,
+    updated_at: recording.updated_at,
+  })
+})
+
+// Update voice recording
+app.put('/api/voice/recordings/:id', auth, async (req, res) => {
+  const body = req.body || {}
+  const recording = await getVoiceRecording.get(req.params.id, req.user.id)
+  if (!recording) return res.status(404).json({ error: 'Recording not found' })
+
+  const updated = {
+    id: req.params.id,
+    user_id: req.user.id,
+    title: String(body.title || recording.title),
+    transcript: String(body.transcript || recording.transcript),
+    summary: body.summary ? String(body.summary) : recording.summary,
+    tags_json: JSON.stringify(Array.isArray(body.tags) ? body.tags : JSON.parse(recording.tags_json)),
+    updated_at: nowISO(),
+  }
+
+  await updateVoiceRecording.run(updated)
+  res.json({ ok: true })
+})
+
+// Partial update voice recording
+app.patch('/api/voice/recordings/:id', auth, async (req, res) => {
+  const body = req.body || {}
+  const recording = await getVoiceRecording.get(req.params.id, req.user.id)
+  if (!recording) return res.status(404).json({ error: 'Recording not found' })
+
+  const updates = {
+    id: req.params.id,
+    user_id: req.user.id,
+    title: typeof body.title === 'string' ? body.title : null,
+    transcript: typeof body.transcript === 'string' ? body.transcript : null,
+    summary: typeof body.summary === 'string' ? body.summary : null,
+    tags_json: Array.isArray(body.tags) ? JSON.stringify(body.tags) : null,
+    updated_at: nowISO(),
+  }
+
+  await patchVoiceRecording.run(updates)
+  res.json({ ok: true })
+})
+
+// Soft delete (move to trash)
+app.delete('/api/voice/recordings/:id', auth, async (req, res) => {
+  await softDeleteVoiceRecording.run(nowISO(), req.params.id, req.user.id)
+  res.json({ ok: true })
+})
+
+// Archive recording
+app.post('/api/voice/recordings/:id/archive', auth, async (req, res) => {
+  await archiveVoiceRecording.run(req.params.id, req.user.id)
+  res.json({ ok: true })
+})
+
+// Unarchive recording
+app.post('/api/voice/recordings/:id/unarchive', auth, async (req, res) => {
+  await unarchiveVoiceRecording.run(req.params.id, req.user.id)
+  res.json({ ok: true })
+})
+
+// List archived recordings
+app.get('/api/voice/recordings/archived', auth, async (req, res) => {
+  const rows = await listVoiceArchived.all(req.user.id)
+  res.json(
+    rows.map(r => ({
+      id: r.id,
+      title: r.title,
+      transcript: r.transcript,
+      summary: r.summary,
+      duration: r.duration,
+      audio_file_path: r.audio_file_path,
+      audio_size: r.audio_size,
+      audio_format: r.audio_format,
+      tags: JSON.parse(r.tags_json || '[]'),
+      type: r.type,
+      archived: !!r.archived,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    }))
+  )
+})
+
+// Upload audio for a recording (multipart/form-data)
+app.put('/api/voice/recordings/:id/audio', auth, async (req, res) => {
+  const recording = await getVoiceRecording.get(req.params.id, req.user.id)
+  if (!recording) return res.status(404).json({ error: 'Recording not found' })
+
+  // Audio should be uploaded via separate endpoint with proper multipart handling
+  // For now, update audio_file_path if provided
+  const { audio_file_path, audio_size, audio_format } = req.body || {}
+  
+  await db.prepare(`
+    UPDATE voice_recordings 
+    SET audio_file_path=?, audio_size=?, audio_format=?, updated_at=?
+    WHERE id=? AND user_id=?
+  `).run(
+    audio_file_path || recording.audio_file_path,
+    audio_size || recording.audio_size,
+    audio_format || recording.audio_format,
+    nowISO(),
+    req.params.id,
+    req.user.id
+  )
+
+  res.json({ ok: true })
+})
+
+// Download audio for a recording
+app.get('/api/voice/recordings/:id/audio', auth, async (req, res) => {
+  const recording = await getVoiceRecording.get(req.params.id, req.user.id)
+  if (!recording) return res.status(404).json({ error: 'Recording not found' })
+  if (!recording.audio_file_path) return res.status(404).json({ error: 'No audio file found' })
+
+  const fs = require('fs')
+  const path = require('path')
+  
+  // Serve the audio file
+  const audioPath = path.join(__dirname, '..', recording.audio_file_path)
+  if (fs.existsSync(audioPath)) {
+    res.sendFile(audioPath)
+  } else {
+    res.status(404).json({ error: 'Audio file not found on server' })
+  }
+})
+
+// Bulk operations
+app.post('/api/voice/recordings/bulk', auth, async (req, res) => {
+  const { action, ids } = req.body || {}
+  if (!action || !Array.isArray(ids)) {
+    return res.status(400).json({ error: 'Action and ids array required' })
+  }
+
+  if (action === 'delete') {
+    for (const id of ids) {
+      await softDeleteVoiceRecording.run(nowISO(), id, req.user.id)
+    }
+  } else if (action === 'archive') {
+    for (const id of ids) {
+      await archiveVoiceRecording.run(id, req.user.id)
+    }
+  } else if (action === 'unarchive') {
+    for (const id of ids) {
+      await unarchiveVoiceRecording.run(id, req.user.id)
+    }
+  } else {
+    return res.status(400).json({ error: 'Invalid action. Use: delete, archive, unarchive' })
+  }
+
+  res.json({ ok: true, action, count: ids.length })
+})
+
+// ---------- Export/Import ----------
 app.get('/api/notes/export', auth, async (req, res) => {
   const rows = await listNotes.all(req.user.id)
   res.json({

@@ -56,7 +56,13 @@ export default function AsyncMinimalPlaybackControls({
 
   // If we have a URL, show controls
   if (audioUrl) {
-    return <MinimalPlaybackControls audioUrl={audioUrl} className={className} />
+    return (
+      <MinimalPlaybackControls 
+        audioUrl={audioUrl} 
+        playbackId={recordingId} 
+        className={className} 
+      />
+    )
   }
 
   // If loading or waiting to load (show placeholder that triggers load on hover)

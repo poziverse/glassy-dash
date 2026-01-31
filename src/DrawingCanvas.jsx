@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { migrateLegacyDrawing, transformAllCoordinates, createDimensions } from './utils/drawing';
 
 const DRAWING_COLORS = [
   '#000000', // black
@@ -18,8 +19,9 @@ const DRAWING_COLORS = [
 
 const PEN_SIZES = [1, 2, 4, 8, 12, 16, 24, 32];
 
-function DrawingCanvas({ data, onChange, width = 800, height = 600, readOnly = false, darkMode = false, hideModeToggle = false, initialMode = null }) {
+function DrawingCanvas({ data, onChange, readOnly = false, darkMode = false, hideModeToggle = false, initialMode = null }) {
   const canvasRef = useRef(null);
+  const containerRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState('pen'); // 'pen' or 'eraser'
   const [color, setColor] = useState(darkMode ? '#FFFFFF' : '#000000');
@@ -35,40 +37,47 @@ function DrawingCanvas({ data, onChange, width = 800, height = 600, readOnly = f
     return 'view'; // Modal - default to view mode
   };
   const [mode, setMode] = useState(getInitialMode());
-  const [canvasWidth, setCanvasWidth] = useState(width);
-  const [canvasHeight, setCanvasHeight] = useState(height);
+  const [canvasWidth, setCanvasWidth] = useState(800);
+  const [canvasHeight, setCanvasHeight] = useState(600);
+  const [savedDimensions, setSavedDimensions] = useState(null);
+
+  // Dynamic canvas sizing - observe container and adjust canvas size
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const resizeObserver = new ResizeObserver(entries => {
+      const entry = entries[0];
+      const { width, height } = entry.contentRect;
+      
+      if (width > 0 && height > 0) {
+        setCanvasWidth(Math.round(width));
+        setCanvasHeight(Math.round(height));
+      }
+    });
+
+    resizeObserver.observe(container);
+
+    return () => resizeObserver.disconnect();
+  }, []);
 
   // Load drawing data when component mounts or data changes
   useEffect(() => {
-    let pathsData = [];
-    let dimensions = null;
+    // Migrate legacy drawing to new format
+    const migrated = migrateLegacyDrawing(data);
+    const pathsData = migrated.paths || [];
+    const dimensions = migrated.dimensions;
 
-    // Handle both old format (array) and new format (object with paths and dimensions)
-    if (data) {
-      if (Array.isArray(data)) {
-        // Old format: just an array of paths
-        pathsData = data;
-      } else if (data.paths && Array.isArray(data.paths)) {
-        // New format: object with paths and dimensions
-        pathsData = data.paths;
-        if (data.dimensions) {
-          dimensions = data.dimensions;
-        }
-      }
-    }
-
-    // Apply dimensions if available, otherwise reset to props (for new/old drawings)
-    if (dimensions && dimensions.width && dimensions.height) {
-      setCanvasWidth(dimensions.width);
-      setCanvasHeight(dimensions.height);
-    } else {
-      // Reset to initial props for old format drawings or new drawings
-      setCanvasWidth(width);
-      setCanvasHeight(height);
+    // Store saved dimensions for coordinate transformation
+    if (dimensions) {
+      setSavedDimensions({
+        width: dimensions.width,
+        height: dimensions.height
+      });
     }
 
     // Convert black/white strokes based on current theme for optimal contrast
-    const convertedData = pathsData.map(path => {
+    let convertedData = pathsData.map(path => {
       // Only convert black/white strokes for better contrast, keep other colors as-is
       if (darkMode) {
         // In dark mode, ensure black strokes are white for visibility
@@ -83,8 +92,19 @@ function DrawingCanvas({ data, onChange, width = 800, height = 600, readOnly = f
       }
       return path;
     });
+
+    // Transform coordinates if saved dimensions differ from current canvas size
+    if (savedDimensions && 
+        (savedDimensions.width !== canvasWidth || savedDimensions.height !== canvasHeight)) {
+      convertedData = transformAllCoordinates(
+        convertedData,
+        savedDimensions,
+        { width: canvasWidth, height: canvasHeight }
+      );
+    }
+
     setPaths(convertedData);
-  }, [data, darkMode]);
+  }, [data, darkMode, canvasWidth, canvasHeight, savedDimensions]);
 
   // Update default color when dark mode changes
   useEffect(() => {
@@ -95,23 +115,13 @@ function DrawingCanvas({ data, onChange, width = 800, height = 600, readOnly = f
   // Notify parent of changes (include dimensions)
   const notifyChange = useCallback((newPaths) => {
     if (onChange) {
-      // Get current dimensions to preserve originalHeight if it exists
-      let originalHeight = height; // Default to initial prop
-      if (data && typeof data === 'object' && !Array.isArray(data) && data.dimensions) {
-        originalHeight = data.dimensions.originalHeight || height;
-      }
-      
       // Send both paths and dimensions
       onChange({
         paths: newPaths,
-        dimensions: {
-          width: canvasWidth,
-          height: canvasHeight,
-          originalHeight: originalHeight
-        }
+        dimensions: createDimensions(canvasWidth, canvasHeight)
       });
     }
-  }, [onChange, canvasWidth, canvasHeight, data, height]);
+  }, [onChange, canvasWidth, canvasHeight]);
 
   // Close color picker when clicking outside
   useEffect(() => {
@@ -125,17 +135,7 @@ function DrawingCanvas({ data, onChange, width = 800, height = 600, readOnly = f
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showColorPicker]);
 
-  // Update canvas size when width/height props change (only if no dimensions in data)
-  // This ensures props are used for initial size, but dimensions from data take precedence
-  useEffect(() => {
-    // Only update from props if we don't have dimensions in the current data
-    if (data && typeof data === 'object' && !Array.isArray(data) && data.dimensions) {
-      // Data has dimensions, don't override with props
-      return;
-    }
-    setCanvasWidth(width);
-    setCanvasHeight(height);
-  }, [width, height, data]);
+  // Removed - canvas size is now controlled by ResizeObserver
 
   // Redraw canvas when paths change
   useEffect(() => {
@@ -198,17 +198,19 @@ function DrawingCanvas({ data, onChange, width = 800, height = 600, readOnly = f
 
   const getCanvasCoordinates = useCallback((e) => {
     const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
+    
     // Handle both mouse and touch events
     const clientX = e.clientX !== undefined ? e.clientX : e.touches[0].clientX;
     const clientY = e.clientY !== undefined ? e.clientY : e.touches[0].clientY;
 
+    // Return pixel coordinates relative to canvas
+    // Canvas internal dimensions match visual dimensions, so no scaling needed
     return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY,
+      x: clientX - rect.left,
+      y: clientY - rect.top
     };
   }, []);
 
@@ -271,28 +273,20 @@ function DrawingCanvas({ data, onChange, width = 800, height = 600, readOnly = f
 
   const addPage = useCallback(() => {
     if (readOnly || mode !== 'draw') return;
-    // Only double the height (add page below)
+    // Double the height while maintaining same width
     const newHeight = canvasHeight * 2;
     setCanvasHeight(newHeight);
     // Stay in draw mode to continue editing
     // Notify parent of the dimension change with updated dimensions
     if (onChange) {
-      // Get current dimensions to preserve originalHeight if it exists
-      let originalHeight = height; // Default to initial prop
-      if (data && typeof data === 'object' && !Array.isArray(data) && data.dimensions) {
-        originalHeight = data.dimensions.originalHeight || height;
-      }
+      const currentDims = savedDimensions || { width: canvasWidth, height: canvasHeight };
       
       onChange({
         paths: paths,
-        dimensions: {
-          width: canvasWidth,
-          height: newHeight,
-          originalHeight: originalHeight // Store the original first page height
-        }
+        dimensions: createDimensions(canvasWidth, newHeight)
       });
     }
-  }, [readOnly, mode, paths, canvasWidth, canvasHeight, onChange, data, height]);
+  }, [readOnly, mode, paths, canvasWidth, canvasHeight, onChange, savedDimensions]);
 
   return (
     <div className="drawing-canvas-container">
@@ -399,16 +393,16 @@ function DrawingCanvas({ data, onChange, width = 800, height = 600, readOnly = f
         </div>
       )}
 
-      {/* Canvas */}
-      <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+      {/* Canvas Container for ResizeObserver */}
+      <div ref={containerRef} className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-white/5 w-full h-full min-h-[400px]">
         <canvas
           ref={canvasRef}
           width={canvasWidth}
           height={canvasHeight}
           className={`block ${mode === 'draw' && !readOnly ? 'cursor-crosshair' : 'cursor-default'}`}
           style={{ 
-            maxWidth: '100%', 
-            height: 'auto', 
+            width: '100%',
+            height: '100%',
             touchAction: mode === 'draw' && !readOnly ? 'none' : 'auto' 
           }}
           onMouseDown={startDrawing}

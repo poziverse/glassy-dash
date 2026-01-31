@@ -404,3 +404,88 @@ export function base64ToBlob(base64, mimeType = 'audio/webm') {
 
   return new Blob(byteArrays, { type: mimeType });
 }
+
+/**
+ * Reset all voice-related storage (localStorage + IndexedDB)
+ * Use with caution - deletes all recordings
+ * @returns {Promise<object>} - Success status and error if failed
+ */
+export async function resetVoiceStorage() {
+  try {
+    // Clear IndexedDB
+    await clearAllAudio()
+    
+    // Clear localStorage for voice store
+    localStorage.removeItem('glassy-voice-storage')
+    
+    console.log('Voice storage reset successfully')
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to reset voice storage:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Check database health
+ * @returns {Promise<object>} - Health status and count if healthy
+ */
+export async function checkDatabaseHealth() {
+  try {
+    const testDb = await initDB()
+    
+    // Test read operation
+    const testResult = await new Promise((resolve, reject) => {
+      const transaction = testDb.transaction([STORE_NAME], 'readonly')
+      const store = transaction.objectStore(STORE_NAME)
+      const countRequest = store.count()
+      
+      countRequest.onsuccess = () => resolve(countRequest.result)
+      countRequest.onerror = () => reject(countRequest.error)
+    })
+    
+    return { healthy: true, count: testResult }
+  } catch (error) {
+    console.error('Database health check failed:', error)
+    return { healthy: false, error }
+  }
+}
+
+/**
+ * Repair database by deleting and recreating it
+ * @returns {Promise<object>} - Success status and error if failed
+ */
+export async function repairDatabase() {
+  try {
+    // Delete existing database
+    const deleteRequest = indexedDB.deleteDatabase(DB_NAME)
+    
+    await new Promise((resolve, reject) => {
+      deleteRequest.onsuccess = resolve
+      deleteRequest.onerror = () => reject(deleteRequest.error)
+    })
+    
+    // Reinitialize
+    await initDB()
+    
+    return { success: true }
+  } catch (error) {
+    console.error('Database repair failed:', error)
+    return { success: false, error }
+  }
+}
+
+/**
+ * Execute a transaction with timeout
+ * @param {Promise} promise - The promise to execute
+ * @param {number} timeoutMs - Timeout in milliseconds
+ * @returns {Promise} - Result or timeout error
+ */
+function executeWithTimeout(promise, timeoutMs = 5000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`Operation timeout after ${timeoutMs}ms`)), timeoutMs)
+    )
+  ])
+}

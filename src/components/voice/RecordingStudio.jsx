@@ -79,6 +79,59 @@ export default function RecordingStudio() {
   const lastProcessedSummaryRef = useRef(null)
   const lastProcessedStateRef = useRef(null)
 
+  // Comprehensive cleanup function
+  const cleanupRecordingResources = () => {
+    // Stop media recorder
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop()
+      } catch (e) {
+        console.warn('[RecordingStudio] Error stopping recorder:', e)
+      }
+      mediaRecorderRef.current = null
+    }
+    
+    // Stop all stream tracks
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        try {
+          track.stop()
+        } catch (e) {
+          console.warn('[RecordingStudio] Error stopping track:', e)
+        }
+      })
+      streamRef.current = null
+    }
+    
+    // Close audio context
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      try {
+        audioContextRef.current.close()
+      } catch (e) {
+        console.warn('[RecordingStudio] Error closing audio context:', e)
+      }
+      audioContextRef.current = null
+    }
+    
+    // Cancel animation frame
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+      animationFrameRef.current = null
+    }
+    
+    // Clear refs
+    audioChunksRef.current = []
+    lastProcessedTranscriptRef.current = null
+    lastProcessedSummaryRef.current = null
+    lastProcessedStateRef.current = null
+    
+    // Clear canvas
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d')
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
+    }
+  }
+
   // Sync transcript from store
   useEffect(() => {
     setLocalTranscript(currentTranscript)
@@ -152,13 +205,13 @@ export default function RecordingStudio() {
       }
 
       mediaRecorder.onstop = async () => {
-        stopVisualizer()
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-
-        // Set processing state
-        setError(null)
-
         try {
+          stopVisualizer()
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+
+          // Set processing state
+          setError(null)
+
           // Convert to base64 for transcription
           const reader = new FileReader()
           reader.readAsDataURL(audioBlob)
@@ -172,13 +225,16 @@ export default function RecordingStudio() {
             await processTranscription(base64String)
           }
           reader.onerror = () => {
+            console.error('FileReader error:', reader.error)
             setError('Failed to process audio. Please try again.')
             stopRecording()
+            cleanupRecordingResources()
           }
         } catch (err) {
-          console.error('Error processing audio:', err)
-          setError('Failed to process audio. Please try again.')
+          console.error('Error in onstop handler:', err)
+          setError('An error occurred while processing the recording.')
           stopRecording()
+          cleanupRecordingResources()
         }
       }
 
@@ -187,6 +243,8 @@ export default function RecordingStudio() {
     } catch (err) {
       console.error('Error accessing microphone:', err)
       setError('Could not access microphone. Please check permissions.')
+      setRecordingState('idle')
+      cleanupRecordingResources()
     }
   }
 
@@ -585,7 +643,7 @@ export default function RecordingStudio() {
             )}
 
             {/* Visualizer */}
-            <div className="flex-1 h-32 bg-black/20 rounded-xl overflow-hidden border border-white/5">
+            <div className="flex-1 h-32 bg-black/20 rounded-xl overflow-hidden border border-white/5 relative">
               <canvas
                 ref={canvasRef}
                 width={600}

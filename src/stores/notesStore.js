@@ -11,7 +11,7 @@ export const useNotesStore = create(
       trashNotes: [],
       archivedNotes: [],
       tags: [],
-      selectedIds: new Set(),
+      selectedIds: [],
       multiMode: false,
       search: '',
       tagFilter: null,
@@ -21,9 +21,14 @@ export const useNotesStore = create(
       isOnline: navigator.onLine,
 
       // Actions
-      setNotes: notes => {
-        const pinned = notes.filter(n => n.pinned && !n.deleted_at)
-        const others = notes.filter(n => !n.pinned && !n.deleted_at)
+      setNotes: (notes, tagFilter = null) => {
+        // Filter notes by tag if a tag filter is set (and not a special case)
+        const notesByTag = tagFilter && tagFilter !== 'ARCHIVED' && tagFilter !== 'ALL_IMAGES'
+          ? notes.filter(n => n.tags && n.tags.includes(tagFilter))
+          : notes
+
+        const pinned = notesByTag.filter(n => n.pinned && !n.deleted_at)
+        const others = notesByTag.filter(n => !n.pinned && !n.deleted_at)
         const tags = extractTags(notes)
 
         set({ notes, pinned, others, tags })
@@ -201,18 +206,25 @@ export const useNotesStore = create(
 
       setSearch: search => set({ search }),
 
-      setTagFilter: tag => set({ tagFilter: tag }),
+      setTagFilter: tag => {
+        set({ tagFilter: tag })
+        // Re-filter pinned/others based on new tag filter
+        const notes = _get().notes
+        _get().setNotes(notes, tag)
+      },
 
-      setSelectedIds: ids => set({ selectedIds: ids }),
+      setSelectedIds: ids => set({ selectedIds: Array.isArray(ids) ? ids : Array.from(ids) }),
 
       toggleNoteSelection: (id, checked) => {
         set(state => {
           const sid = String(id)
-          const newSelected = new Set(state.selectedIds)
+          let newSelected = [...state.selectedIds]
           if (checked) {
-            newSelected.add(sid)
+            if (!newSelected.includes(sid)) {
+              newSelected.push(sid)
+            }
           } else {
-            newSelected.delete(sid)
+            newSelected = newSelected.filter(s => s !== sid)
           }
           return { selectedIds: newSelected }
         })

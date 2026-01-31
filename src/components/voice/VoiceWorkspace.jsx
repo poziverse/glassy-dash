@@ -8,7 +8,7 @@ import { useUIStore } from '../../stores/uiStore'
 
 export default function VoiceWorkspace() {
   const currentUser = useAuthStore(state => state.currentUser)
-  const signOut = useAuthStore(state => state.signOut)
+  const signOut = useAuthStore(state => state.logout)
   const dark = useSettingsStore(state => state.dark)
   const setSettingsPanelOpen = useUIStore(state => state.setSettingsPanelOpen)
 

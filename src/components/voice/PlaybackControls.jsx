@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, RotateCcw } from 'lucide-react'
+import { useAudioPlayback } from '../../contexts/AudioPlaybackContext'
 
 /**
  * Minimal playback controls for audio recording
  */
-export default function MinimalPlaybackControls({ audioUrl, className = '' }) {
+export default function MinimalPlaybackControls({ audioUrl, playbackId, className = '' }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -14,6 +15,7 @@ export default function MinimalPlaybackControls({ audioUrl, className = '' }) {
 
   const audioRef = useRef(null)
   const progressBarRef = useRef(null)
+  const { playAudio, stopAudio, isPlaying: isGloballyPlaying } = useAudioPlayback()
 
   // Initialize audio
   useEffect(() => {
@@ -38,15 +40,28 @@ export default function MinimalPlaybackControls({ audioUrl, className = '' }) {
     }
   }, [audioUrl, volume, playbackRate])
 
+  // Update local isPlaying state when global state changes
+  useEffect(() => {
+    if (playbackId) {
+      const globallyPlaying = isGloballyPlaying(playbackId)
+      setIsPlaying(globallyPlaying)
+    }
+  }, [playbackId, isGloballyPlaying])
+
   const togglePlay = () => {
     if (!audioRef.current) return
     
     if (isPlaying) {
       audioRef.current.pause()
+      setIsPlaying(false)
     } else {
-      audioRef.current.play()
+      if (playbackId) {
+        playAudio(audioRef.current, playbackId)
+      } else {
+        audioRef.current.play()
+      }
+      setIsPlaying(true)
     }
-    setIsPlaying(!isPlaying)
   }
 
   const handleProgressClick = (e) => {
@@ -191,9 +206,10 @@ export default function MinimalPlaybackControls({ audioUrl, className = '' }) {
 /**
  * Compact playback controls (minimal UI)
  */
-export function CompactPlaybackControls({ audioUrl, className = '' }) {
+export function CompactPlaybackControls({ audioUrl, playbackId, className = '' }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const audioRef = useRef(null)
+  const { playAudio, isPlaying: isGloballyPlaying } = useAudioPlayback()
 
   useEffect(() => {
     if (audioRef.current) {
@@ -205,15 +221,28 @@ export function CompactPlaybackControls({ audioUrl, className = '' }) {
     }
   }, [audioUrl])
 
+  // Update local isPlaying state when global state changes
+  useEffect(() => {
+    if (playbackId) {
+      const globallyPlaying = isGloballyPlaying(playbackId)
+      setIsPlaying(globallyPlaying)
+    }
+  }, [playbackId, isGloballyPlaying])
+
   const togglePlay = () => {
     if (!audioRef.current) return
     
     if (isPlaying) {
       audioRef.current.pause()
+      setIsPlaying(false)
     } else {
-      audioRef.current.play()
+      if (playbackId) {
+        playAudio(audioRef.current, playbackId)
+      } else {
+        audioRef.current.play()
+      }
+      setIsPlaying(true)
     }
-    setIsPlaying(!isPlaying)
   }
 
   return (
@@ -234,7 +263,7 @@ export function CompactPlaybackControls({ audioUrl, className = '' }) {
 /**
  * Full playback controls with all features
  */
-export function FullPlaybackControls({ audioUrl, className = '' }) {
+export function FullPlaybackControls({ audioUrl, playbackId, className = '' }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -244,6 +273,7 @@ export function FullPlaybackControls({ audioUrl, className = '' }) {
 
   const audioRef = useRef(null)
   const progressBarRef = useRef(null)
+  const { playAudio, isPlaying: isGloballyPlaying } = useAudioPlayback()
 
   useEffect(() => {
     if (audioRef.current) {
@@ -267,15 +297,28 @@ export function FullPlaybackControls({ audioUrl, className = '' }) {
     }
   }, [audioUrl, volume, playbackRate])
 
+  // Update local isPlaying state when global state changes
+  useEffect(() => {
+    if (playbackId) {
+      const globallyPlaying = isGloballyPlaying(playbackId)
+      setIsPlaying(globallyPlaying)
+    }
+  }, [playbackId, isGloballyPlaying])
+
   const togglePlay = () => {
     if (!audioRef.current) return
     
     if (isPlaying) {
       audioRef.current.pause()
+      setIsPlaying(false)
     } else {
-      audioRef.current.play()
+      if (playbackId) {
+        playAudio(audioRef.current, playbackId)
+      } else {
+        audioRef.current.play()
+      }
+      setIsPlaying(true)
     }
-    setIsPlaying(!isPlaying)
   }
 
   const handleProgressClick = (e) => {

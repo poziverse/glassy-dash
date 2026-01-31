@@ -58,7 +58,7 @@ describe('NotesView', () => {
       filteredEmptyWithSearch: false,
       allEmpty: false,
       multiMode: false,
-      selectedIds: new Set(),
+      selectedIds: [],
       tagsWithCounts: [],
     })
 

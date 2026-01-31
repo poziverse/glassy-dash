@@ -1,44 +1,143 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import {
-  storeAudio,
-  getAudioByRecordingId,
-  deleteAudioByRecordingId,
   base64ToBlob,
-  initDB,
 } from '../utils/audioStorage'
 
-// Initialize IndexedDB on module load
-initDB().catch(err => console.warn('[VoiceStore] IndexedDB init warning:', err))
+// API base URLs
+const VOICE_API_BASE = '/api/voice/recordings'
+
+// Helper function to get auth token
+const getAuthHeaders = (isFormData = false) => {
+  const token = localStorage.getItem('glassy-dash-token')
+  const headers = {
+    ...(token && { Authorization: `Bearer ${token}` }),
+  }
+  
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json'
+  }
+  
+  return headers
+}
+
+// API wrapper with error handling
+async function apiRequest(url, options = {}) {
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...getAuthHeaders(options.isFormData),
+        ...options.headers,
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'API request failed' }))
+      throw new Error(error.error || 'API request failed')
+    }
+
+    return response.json()
+  } catch (error) {
+    console.error('[voiceStore] API error:', error)
+    throw error
+  }
+}
+
+// Load recordings from API
+async function loadRecordingsFromAPI() {
+  try {
+    const response = await apiRequest(`${VOICE_API_BASE}`)
+    return response || []
+  } catch (error) {
+    console.error('[voiceStore] Failed to load recordings:', error)
+    return []
+  }
+}
+
+// Load archived recordings from API
+async function loadArchivedFromAPI() {
+  try {
+    const response = await apiRequest(`${VOICE_API_BASE}/archived`)
+    return response || []
+  } catch (error) {
+    console.error('[voiceStore] Failed to load archived:', error)
+    return []
+  }
+}
+
+// Default state for recovery
+const defaultVoiceState = {
+  recordings: [],
+  archivedRecordings: [],
+  activeRecordingId: null,
+  tags: [],
+  studioCollapsed: false,
+  galleryViewMode: 'grid',
+  recordingState: 'idle',
+  selectedIds: [],
+  currentTranscript: '',
+  currentSummary: '',
+  currentAudio: null,
+  recordingStartTime: null,
+  recordingDuration: 0,
+  error: null,
+  transcriptHistory: [],
+  historyIndex: -1,
+  loading: false,
+}
 
 export const useVoiceStore = create(
   persist(
     (set, get) => ({
       // Data
       recordings: [],
+      archivedRecordings: [],
       activeRecordingId: null,
-      tags: [], // Available tags: { id, name, color, count }
-      archivedRecordings: [], // Archived recordings
+      tags: [],
 
       // UI State
       studioCollapsed: false,
-      galleryViewMode: 'grid', // grid, list, timeline
-      recordingState: 'idle', // idle, recording, paused, processing, reviewing
-      selectedIds: [], // For bulk operations
+      galleryViewMode: 'grid',
+      recordingState: 'idle',
+      selectedIds: [],
 
       // Recording Data
       currentTranscript: '',
       currentSummary: '',
       currentAudio: null,
       recordingStartTime: null,
-      recordingDuration: 0, // in seconds
+      recordingDuration: 0,
       error: null,
 
       // Undo/Redo History for Transcript Editing
-      transcriptHistory: [], // Stack of transcript states
-      historyIndex: -1, // Current position in history
+      transcriptHistory: [],
+      historyIndex: -1,
 
-      // Actions
+      loading: false,
+
+      // Load recordings
+      loadRecordings: async () => {
+        set({ loading: true, error: null })
+        try {
+          const recordings = await loadRecordingsFromAPI()
+          set({ recordings, loading: false, error: null })
+        } catch (error) {
+          set({ loading: false, error: error.message })
+        }
+      },
+
+      // Load archived recordings
+      loadArchived: async () => {
+        set({ loading: true, error: null })
+        try {
+          const archived = await loadArchivedFromAPI()
+          set({ archivedRecordings: archived, loading: false, error: null })
+        } catch (error) {
+          set({ loading: false, error: error.message })
+        }
+      },
+
       startRecording: () => {
         set({
           recordingState: 'recording',
@@ -69,14 +168,11 @@ export const useVoiceStore = create(
 
       setTranscript: transcript =>
         set(state => {
-          // If transcript is exactly the same, do nothing
           if (state.currentTranscript === transcript) return state
 
-          // Push to history if not at the end
           const newHistory = state.transcriptHistory.slice(0, state.historyIndex + 1)
           newHistory.push(transcript)
 
-          // Limit history to 50 states
           if (newHistory.length > 50) {
             newHistory.shift()
           }
@@ -88,10 +184,8 @@ export const useVoiceStore = create(
           }
         }),
 
-      // For streaming transcription (doesn't affect history)
       updateTranscript: transcript => set({ currentTranscript: transcript }),
 
-      // Undo/Redo Actions
       undoTranscript: () =>
         set(state => {
           if (state.historyIndex > 0) {
@@ -128,113 +222,161 @@ export const useVoiceStore = create(
         const { recordings, currentTranscript, currentSummary, currentAudio, recordingStartTime } =
           get()
 
-        // Generate recording ID first (needed for IndexedDB reference)
         const recordingId = crypto.randomUUID()
-
-        // Store audio in IndexedDB if present (for longer recordings)
-        let audioStorageId = null
-        let audioDataFallback = null
-
-        if (currentAudio) {
-          try {
-            // Convert base64 to blob for efficient IndexedDB storage
-            const audioBlob = base64ToBlob(currentAudio)
-            console.log(
-              `[VoiceStore] Storing audio in IndexedDB (${(audioBlob.size / 1024 / 1024).toFixed(2)} MB)`
-            )
-
-            audioStorageId = await storeAudio(recordingId, audioBlob, {
-              duration: get().recordingDuration,
-              format: 'webm',
-            })
-            console.log(`[VoiceStore] Audio stored with ID: ${audioStorageId}`)
-          } catch (error) {
-            console.warn('[VoiceStore] IndexedDB storage failed, using fallback:', error)
-            // Fallback: keep audioData in state (not recommended for long recordings)
-            audioDataFallback = currentAudio
-          }
-        }
-
-        // Convert transcript to segments for easier editing
-        const transcriptSegments = currentTranscript
-          .split(/\n\n+/) // Split by double newlines (paragraphs)
-          .filter(segment => segment.trim().length > 0)
-          .map((text, index) => ({
-            id: crypto.randomUUID(),
-            text: text.trim(),
-            order: index,
-            deleted: false,
-            createdAt: new Date().toISOString(),
-          }))
 
         const newRecording = {
           id: recordingId,
           title: metadata.title || `Voice Note ${recordings.length + 1}`,
           transcript: currentTranscript,
-          transcriptSegments: transcriptSegments,
           summary: currentSummary,
-          audioStorageId, // Reference to IndexedDB (null if fallback used)
-          audioData: audioDataFallback, // Only set if IndexedDB failed
-          createdAt: recordingStartTime || new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
           duration: get().recordingDuration,
           tags: [...(metadata.tags || []), 'voice-studio'],
-          type: type, // 'notes' or 'gallery'
+          type: type,
+          createdAt: recordingStartTime || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         }
 
-        set(state => ({
-          recordings: [newRecording, ...state.recordings],
-          recordingState: 'idle',
-          currentTranscript: '',
-          currentSummary: '',
-          currentAudio: null,
-          recordingStartTime: null,
-          recordingDuration: 0,
-          transcriptHistory: [],
-          historyIndex: -1,
-        }))
+        try {
+          set({ loading: true, error: null })
 
-        return newRecording
+          // Create recording metadata first
+          const response = await apiRequest(VOICE_API_BASE, {
+            method: 'POST',
+            body: JSON.stringify(newRecording),
+          })
+
+          // If there's audio, upload it
+          if (currentAudio) {
+            try {
+              // Convert base64 to blob
+              const audioBlob = base64ToBlob(currentAudio)
+              console.log(
+                `[VoiceStore] Uploading audio (${(audioBlob.size / 1024 / 1024).toFixed(2)} MB)`
+              )
+
+              // Create FormData for file upload
+              const formData = new FormData()
+              formData.append('audio', audioBlob, `recording-${recordingId}.webm`)
+              formData.append('audio_file_path', `uploads/voice/${recordingId}.webm`)
+              formData.append('audio_size', audioBlob.size)
+              formData.append('audio_format', 'webm')
+
+              await apiRequest(`${VOICE_API_BASE}/${recordingId}/audio`, {
+                method: 'PUT',
+                isFormData: true,
+                body: formData,
+              })
+
+              console.log(`[VoiceStore] Audio uploaded successfully`)
+            } catch (audioError) {
+              console.warn('[VoiceStore] Audio upload failed:', audioError)
+              // Continue even if audio upload fails - metadata is saved
+            }
+          }
+
+          // Update recording with audio info
+          newRecording.audio_file_path = response.audio_file_path
+          newRecording.audio_size = response.audio_size
+
+          // Reset state
+          set(state => ({
+            recordings: [newRecording, ...state.recordings],
+            recordingState: 'idle',
+            currentTranscript: '',
+            currentSummary: '',
+            currentAudio: null,
+            recordingStartTime: null,
+            recordingDuration: 0,
+            transcriptHistory: [],
+            historyIndex: -1,
+            loading: false,
+            error: null,
+          }))
+
+          // Reload to get server response
+          await get().loadRecordings()
+
+          return newRecording
+        } catch (error) {
+          set({
+            loading: false,
+            error: error.message,
+            recordingState: 'idle',
+          })
+          throw error
+        }
       },
 
       deleteRecording: async id => {
-        const recording = get().recordings.find(r => r.id === id)
+        try {
+          set({ loading: true, error: null })
 
-        // Delete audio from IndexedDB if stored there
-        if (recording?.audioStorageId) {
-          try {
-            await deleteAudioByRecordingId(id)
-            console.log(`[VoiceStore] Audio deleted from IndexedDB for recording: ${id}`)
-          } catch (error) {
-            console.warn('[VoiceStore] Failed to delete audio from IndexedDB:', error)
-          }
+          // Optimistic update
+          set(state => ({
+            recordings: state.recordings.filter(r => r.id !== id),
+          }))
+
+          // API call
+          await apiRequest(`${VOICE_API_BASE}/${id}`, { method: 'DELETE' })
+
+          set({ loading: false, error: null })
+        } catch (error) {
+          // Rollback on error
+          await get().loadRecordings()
+          set({ loading: false, error: error.message })
+          throw error
+        }
+      },
+
+      editRecording: async (id, updates) => {
+        const currentRecording = get().recordings.find(r => r.id === id)
+        if (!currentRecording) return
+
+        const updatedRecording = {
+          ...currentRecording,
+          ...updates,
+          updatedAt: new Date().toISOString(),
         }
 
-        set(state => ({
-          recordings: state.recordings.filter(r => r.id !== id),
-        }))
+        try {
+          set({ loading: true, error: null })
+
+          // Optimistic update
+          set(state => ({
+            recordings: state.recordings.map(r =>
+              r.id === id ? updatedRecording : r
+            ),
+          }))
+
+          // API call
+          await apiRequest(`${VOICE_API_BASE}/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(updatedRecording),
+          })
+
+          set({ loading: false, error: null })
+        } catch (error) {
+          // Rollback on error
+          set(state => ({
+            recordings: state.recordings.map(r =>
+              r.id === id ? currentRecording : r
+            ),
+            loading: false,
+            error: error.message,
+          }))
+          throw error
+        }
       },
 
-      editRecording: (id, updates) => {
-        set(state => ({
-          recordings: state.recordings.map(r =>
-            r.id === id ? { ...r, ...updates, updatedAt: new Date().toISOString() } : r
-          ),
-        }))
-      },
-
-      // Transcript Segment Management
       deleteTranscriptSegment: (recordingId, segmentId) =>
         set(state => {
           const recording = state.recordings.find(r => r.id === recordingId)
           if (!recording || !recording.transcriptSegments) return state
 
-          // Mark segment as deleted
           const updatedSegments = recording.transcriptSegments.map(seg =>
             seg.id === segmentId ? { ...seg, deleted: true } : seg
           )
 
-          // Rebuild transcript from non-deleted segments
           const newTranscript = updatedSegments
             .filter(seg => !seg.deleted)
             .sort((a, b) => a.order - b.order)
@@ -260,12 +402,10 @@ export const useVoiceStore = create(
           const recording = state.recordings.find(r => r.id === recordingId)
           if (!recording || !recording.transcriptSegments) return state
 
-          // Restore segment
           const updatedSegments = recording.transcriptSegments.map(seg =>
             seg.id === segmentId ? { ...seg, deleted: false } : seg
           )
 
-          // Rebuild transcript
           const newTranscript = updatedSegments
             .filter(seg => !seg.deleted)
             .sort((a, b) => a.order - b.order)
@@ -291,12 +431,10 @@ export const useVoiceStore = create(
           const recording = state.recordings.find(r => r.id === recordingId)
           if (!recording || !recording.transcriptSegments) return state
 
-          // Update segment text
           const updatedSegments = recording.transcriptSegments.map(seg =>
             seg.id === segmentId ? { ...seg, text: newText } : seg
           )
 
-          // Rebuild transcript
           const newTranscript = updatedSegments
             .filter(seg => !seg.deleted)
             .sort((a, b) => a.order - b.order)
@@ -324,7 +462,6 @@ export const useVoiceStore = create(
             activeRecordingId: id,
             currentTranscript: recording.transcript,
             currentSummary: recording.summary,
-            currentAudio: recording.audioData,
             recordingDuration: recording.duration || 0,
             recordingState: 'reviewing',
           })
@@ -342,39 +479,23 @@ export const useVoiceStore = create(
         })
       },
 
-      // Get audio URL for a recording (from IndexedDB or inline fallback)
       getRecordingAudioUrl: async recordingId => {
         const recording = get().recordings.find(r => r.id === recordingId)
         if (!recording) return null
 
-        // Try IndexedDB first (preferred for large files)
-        if (recording.audioStorageId) {
-          try {
-            const blob = await getAudioByRecordingId(recordingId)
-            if (blob) {
-              const url = URL.createObjectURL(blob)
-              console.log(`[VoiceStore] Audio loaded from IndexedDB for: ${recordingId}`)
-              return url
-            }
-          } catch (error) {
-            console.warn('[VoiceStore] Failed to get audio from IndexedDB:', error)
-          }
+        // Get audio URL from API
+        try {
+          const audioUrl = `${VOICE_API_BASE}/${recordingId}/audio`
+          return audioUrl
+        } catch (error) {
+          console.warn('[voiceStore] Failed to get audio URL:', error)
+          return null
         }
-
-        // Fallback to inline audioData (legacy or failed IndexedDB storage)
-        if (recording.audioData) {
-          return `data:audio/webm;base64,${recording.audioData}`
-        }
-
-        return null
       },
 
       setStudioCollapsed: collapsed => set({ studioCollapsed: collapsed }),
-
-      // View Mode
       setGalleryViewMode: mode => set({ galleryViewMode: mode }),
 
-      // Tag Management
       addTag: (name, color = 'indigo') =>
         set(state => {
           const existingTag = state.tags.find(t => t.name.toLowerCase() === name.toLowerCase())
@@ -396,122 +517,81 @@ export const useVoiceStore = create(
       deleteTag: tagId =>
         set(state => ({
           tags: state.tags.filter(t => t.id !== tagId),
-          // Remove tag from all recordings
           recordings: state.recordings.map(r => ({
             ...r,
             tags: (r.tags || []).filter(t => t !== tagId),
           })),
         })),
 
-      updateRecordingTags: (id, tags) =>
-        set(state => {
-          const recording = state.recordings.find(r => r.id === id)
-          if (!recording) return state
+      updateRecordingTags: async (id, tags) => {
+        const recording = get().recordings.find(r => r.id === id)
+        if (!recording) return
 
-          const oldTags = recording.tags || []
-          const newTags = tags
+        try {
+          set({ loading: true, error: null })
 
-          // Update tag counts
-          const tagUpdates = state.tags.map(tag => {
-            const wasInOld = oldTags.includes(tag.id)
-            const isInNew = newTags.includes(tag.id)
-            if (wasInOld && !isInNew) return { ...tag, count: Math.max(0, tag.count - 1) }
-            if (!wasInOld && isInNew) return { ...tag, count: tag.count + 1 }
-            return tag
+          // Optimistic update
+          set(state => ({
+            recordings: state.recordings.map(r =>
+              r.id === id ? { ...r, tags, updatedAt: new Date().toISOString() } : r
+            ),
+          }))
+
+          // API call
+          await apiRequest(`${VOICE_API_BASE}/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ tags }),
           })
 
-          return {
-            tags: tagUpdates,
-            recordings: state.recordings.map(r =>
-              r.id === id ? { ...r, tags: newTags, updatedAt: new Date().toISOString() } : r
-            ),
-          }
-        }),
+          set({ loading: false, error: null })
+        } catch (error) {
+          // Rollback on error
+          set(state => ({
+            recordings: state.recordings.map(r => (r.id === id ? recording : r)),
+            loading: false,
+            error: error.message,
+          }))
+          throw error
+        }
+      },
 
-      // Bulk Operations
       setSelectedIds: ids => set({ selectedIds: ids }),
       clearSelectedIds: () => set({ selectedIds: [] }),
 
-      bulkDelete: ids =>
-        set(state => {
-          // Decrease tag counts
-          const recordingsToDelete = state.recordings.filter(r => ids.includes(r.id))
-          const tagUpdates = state.tags.map(tag => {
-            const countDecrease = recordingsToDelete.filter(r =>
-              (r.tags || []).includes(tag.id)
-            ).length
-            return { ...tag, count: Math.max(0, tag.count - countDecrease) }
-          })
+      bulkDelete: async ids => {
+        try {
+          set({ loading: true, error: null })
 
-          return {
-            tags: tagUpdates,
+          // Optimistic update
+          set(state => ({
             recordings: state.recordings.filter(r => !ids.includes(r.id)),
             selectedIds: [],
-          }
-        }),
+          }))
 
-      bulkMove: (ids, targetType) =>
-        set(state => ({
-          recordings: state.recordings.map(r =>
-            ids.includes(r.id) ? { ...r, type: targetType, updatedAt: new Date().toISOString() } : r
-          ),
-          selectedIds: [],
-        })),
+          // API call for each ID
+          await Promise.all(
+            ids.map(id => apiRequest(`${VOICE_API_BASE}/${id}`, { method: 'DELETE' }))
+          )
 
-      bulkAddTags: (ids, tagIds) =>
-        set(state => {
-          // Update tag counts
-          const recordingsToUpdate = state.recordings.filter(r => ids.includes(r.id))
-          const tagUpdates = state.tags.map(tag => {
-            if (tagIds.includes(tag.id)) {
-              const countIncrease = recordingsToUpdate.filter(
-                r => !(r.tags || []).includes(tag.id)
-              ).length
-              return { ...tag, count: tag.count + countIncrease }
-            }
-            return tag
-          })
+          // Reload to ensure consistency
+          await get().loadRecordings()
 
-          return {
-            tags: tagUpdates,
-            recordings: state.recordings.map(r =>
-              ids.includes(r.id) ? { ...r, tags: [...new Set([...(r.tags || []), ...tagIds])] } : r
-            ),
-            selectedIds: [],
-          }
-        }),
+          set({ loading: false, error: null })
+        } catch (error) {
+          // Rollback on error
+          await get().loadRecordings()
+          set({ loading: false, error: error.message })
+          throw error
+        }
+      },
 
-      bulkRemoveTags: (ids, tagIds) =>
-        set(state => {
-          // Update tag counts
-          const recordingsToUpdate = state.recordings.filter(r => ids.includes(r.id))
-          const tagUpdates = state.tags.map(tag => {
-            if (tagIds.includes(tag.id)) {
-              const countDecrease = recordingsToUpdate.filter(r =>
-                (r.tags || []).includes(tag.id)
-              ).length
-              return { ...tag, count: Math.max(0, tag.count - countDecrease) }
-            }
-            return tag
-          })
+      archiveRecordings: async ids => {
+        try {
+          set({ loading: true, error: null })
 
-          return {
-            tags: tagUpdates,
-            recordings: state.recordings.map(r =>
-              ids.includes(r.id)
-                ? { ...r, tags: (r.tags || []).filter(t => !tagIds.includes(t)) }
-                : r
-            ),
-            selectedIds: [],
-          }
-        }),
-
-      // Archive Operations
-      archiveRecordings: ids =>
-        set(state => {
-          const recordingsToArchive = state.recordings.filter(r => ids.includes(r.id))
-
-          return {
+          // Optimistic update
+          const recordingsToArchive = get().recordings.filter(r => ids.includes(r.id))
+          set(state => ({
             archivedRecordings: [
               ...recordingsToArchive.map(r => ({
                 ...r,
@@ -521,44 +601,102 @@ export const useVoiceStore = create(
             ],
             recordings: state.recordings.filter(r => !ids.includes(r.id)),
             selectedIds: [],
+          }))
+
+          // API call for each ID
+          await Promise.all(
+            ids.map(id => apiRequest(`${VOICE_API_BASE}/${id}/archive`, { method: 'POST' }))
+          )
+
+          // Reload to ensure consistency
+          await get().loadRecordings()
+          await get().loadArchived()
+
+          set({ loading: false, error: null })
+        } catch (error) {
+          // Rollback on error
+          await get().loadRecordings()
+          await get().loadArchived()
+          set({ loading: false, error: error.message })
+          throw error
+        }
+      },
+
+      unarchiveRecording: async id => {
+        try {
+          set({ loading: true, error: null })
+
+          // Optimistic update
+          const archivedRecording = get().archivedRecordings.find(r => r.id === id)
+          if (!archivedRecording) {
+            set({ loading: false, error: 'Recording not found' })
+            return
           }
-        }),
 
-      unarchiveRecording: id =>
-        set(state => {
-          const archivedRecording = state.archivedRecordings.find(r => r.id === id)
-          if (!archivedRecording) return state
-
-          return {
+          set(state => ({
             recordings: [
               {
                 ...archivedRecording,
                 updatedAt: new Date().toISOString(),
-                // Remove archivedAt property
-                archivedAt: undefined,
               },
               ...state.recordings,
             ],
             archivedRecordings: state.archivedRecordings.filter(r => r.id !== id),
-          }
-        }),
+          }))
 
-      bulkUnarchive: ids =>
-        set(state => {
-          const recordingsToUnarchive = state.archivedRecordings.filter(r => ids.includes(r.id))
+          // API call
+          await apiRequest(`${VOICE_API_BASE}/${id}/unarchive`, { method: 'POST' })
 
-          return {
+          // Reload to ensure consistency
+          await get().loadRecordings()
+          await get().loadArchived()
+
+          set({ loading: false, error: null })
+        } catch (error) {
+          // Rollback on error
+          await get().loadRecordings()
+          await get().loadArchived()
+          set({ loading: false, error: error.message })
+          throw error
+        }
+      },
+
+      bulkUnarchive: async ids => {
+        try {
+          set({ loading: true, error: null })
+
+          const recordingsToUnarchive = get().archivedRecordings.filter(r => ids.includes(r.id))
+          
+          set(state => ({
             recordings: [
               ...recordingsToUnarchive.map(r => ({
                 ...r,
                 updatedAt: new Date().toISOString(),
-                archivedAt: undefined,
               })),
               ...state.recordings,
             ],
             archivedRecordings: state.archivedRecordings.filter(r => !ids.includes(r.id)),
-          }
-        }),
+            selectedIds: [],
+          }))
+
+          // API call for each ID
+          await Promise.all(
+            ids.map(id => apiRequest(`${VOICE_API_BASE}/${id}/unarchive`, { method: 'POST' }))
+          )
+
+          // Reload to ensure consistency
+          await get().loadRecordings()
+          await get().loadArchived()
+
+          set({ loading: false, error: null })
+        } catch (error) {
+          // Rollback on error
+          await get().loadRecordings()
+          await get().loadArchived()
+          set({ loading: false, error: error.message })
+          throw error
+        }
+      },
 
       deleteArchived: id =>
         set(state => ({
@@ -570,13 +708,11 @@ export const useVoiceStore = create(
           archivedRecordings: state.archivedRecordings.filter(r => !ids.includes(r.id)),
         })),
 
-      // Advanced Search with Filters
       searchRecordings: (query, filters = {}) => {
         const { recordings } = get()
         const lowerQuery = query.toLowerCase()
 
         return recordings.filter(r => {
-          // Text search
           const matchesQuery =
             !query ||
             (r.title && r.title.toLowerCase().includes(lowerQuery)) ||
@@ -585,7 +721,6 @@ export const useVoiceStore = create(
 
           if (!matchesQuery) return false
 
-          // Date range filter
           if (filters.dateRange) {
             const recordingDate = new Date(r.createdAt)
             const { start, end } = filters.dateRange
@@ -593,19 +728,16 @@ export const useVoiceStore = create(
             if (end && recordingDate > end) return false
           }
 
-          // Duration filter
           if (filters.duration) {
             const { min, max } = filters.duration
             if (min && r.duration < min) return false
             if (max && r.duration > max) return false
           }
 
-          // Type filter
           if (filters.type && r.type !== filters.type) {
             return false
           }
 
-          // Tag filter (must match ALL tags)
           if (filters.tags && filters.tags.length > 0) {
             const hasAllTags = filters.tags.every(tag => (r.tags || []).includes(tag))
             if (!hasAllTags) return false
@@ -615,7 +747,6 @@ export const useVoiceStore = create(
         })
       },
 
-      // Sort Recordings
       sortRecordings: (sortBy, sortOrder = 'desc') => {
         const { recordings } = get()
         return [...recordings].sort((a, b) => {
@@ -623,28 +754,24 @@ export const useVoiceStore = create(
 
           switch (sortBy) {
             case 'date':
-              comparison = new Date(b.createdAt) - new Date(a.createdAt)
+              comparison = new Date(a.createdAt) - new Date(b.createdAt)
               break
             case 'duration':
-              comparison = b.duration - a.duration
+              comparison = a.duration - b.duration
               break
             case 'title':
               comparison = a.title.localeCompare(b.title)
-              break
-            case 'size':
-              comparison = (b.audioData?.length || 0) - (a.audioData?.length || 0)
               break
             default:
               comparison = 0
           }
 
-          return sortOrder === 'asc' ? -comparison : comparison
+          // Return comparison for ascending, invert for descending
+          return sortOrder === 'asc' ? comparison : -comparison
         })
       },
 
       // Phase 5: Advanced Features Actions
-
-      // Speaker Diarization
       setSpeakerSegments: (recordingId, segments) => {
         set(state => ({
           recordings: state.recordings.map(r =>
@@ -674,7 +801,6 @@ export const useVoiceStore = create(
         })
       },
 
-      // Cross-Feature Integration: Link to Documents
       linkToDocument: (voiceId, documentId) =>
         set(state => ({
           recordings: state.recordings.map(r =>
@@ -701,7 +827,6 @@ export const useVoiceStore = create(
           ),
         })),
 
-      // Audio Editing
       updateAudioData: (recordingId, newAudioData, edits = []) => {
         set(state => ({
           recordings: state.recordings.map(r =>
@@ -717,7 +842,6 @@ export const useVoiceStore = create(
         }))
       },
 
-      // AI Enhancements
       applyEnhancements: (recordingId, enhancementTypes) => {
         set(state => ({
           recordings: state.recordings.map(r =>
@@ -746,7 +870,6 @@ export const useVoiceStore = create(
         }))
       },
 
-      // Analytics Helpers
       getRecordingStats: recordingId => {
         const { recordings } = get()
         const recording = recordings.find(r => r.id === recordingId)
@@ -761,7 +884,7 @@ export const useVoiceStore = create(
           characterCount,
           duration: recording.duration || 0,
           speakingRate: (wordCount / (recording.duration || 1)) * 60,
-          readingTime: Math.ceil((wordCount / 200) * 60), // 200 words per minute
+          readingTime: Math.ceil((wordCount / 200) * 60),
           hasTranscript: transcript.length > 0,
           hasSpeakerSegments: (recording.speakerSegments || []).length > 0,
           linkedDocumentsCount: (recording.linkedDocuments || []).length,
@@ -770,7 +893,6 @@ export const useVoiceStore = create(
         }
       },
 
-      // Import/Export Actions
       importRecordings: newRecordings => {
         const { recordings } = get()
         let importedCount = 0
@@ -779,13 +901,11 @@ export const useVoiceStore = create(
 
         const validatedRecordings = newRecordings
           .filter(rec => {
-            // Basic validation
             if (!rec.title || !rec.transcript) {
               errorCount++
               return false
             }
 
-            // Check for duplicates by content or ID
             const isDuplicate = recordings.some(
               r => r.id === rec.id || (r.title === rec.title && r.transcript === rec.transcript)
             )
@@ -830,7 +950,6 @@ export const useVoiceStore = create(
         const notesCount = recordings.filter(r => r.type === 'notes').length
         const galleryCount = recordings.filter(r => r.type === 'gallery').length
 
-        // Word frequency
         const wordFrequency = {}
         recordings.forEach(r => {
           const words = (r.transcript || '').toLowerCase().match(/\b\w+\b/g) || []
@@ -846,7 +965,6 @@ export const useVoiceStore = create(
           .slice(0, 10)
           .map(([word, count]) => ({ word, count }))
 
-        // Recordings by day
         const byDay = {}
         recordings.forEach(r => {
           const date = new Date(r.createdAt).toLocaleDateString('en-US', {
@@ -858,9 +976,8 @@ export const useVoiceStore = create(
 
         const recordingsByDay = Object.entries(byDay)
           .map(([date, count]) => ({ date, count }))
-          .slice(-7) // Last 7 days
+          .slice(-7)
 
-        // Tag usage
         const tagUsage = {}
         recordings.forEach(r => {
           ;(r.tags || []).forEach(tag => {
@@ -889,9 +1006,100 @@ export const useVoiceStore = create(
           avgSpeakingRate: (totalWords / totalDuration) * 60,
         }
       },
+
+      resetRecordingState: () => {
+        set({
+          recordingState: 'idle',
+          currentTranscript: '',
+          currentSummary: '',
+          currentAudio: null,
+          recordingStartTime: null,
+          recordingDuration: 0,
+          error: null,
+          activeRecordingId: null,
+          transcriptHistory: [],
+          historyIndex: -1,
+        })
+      },
+
+      clearCorruptedRecordings: () => {
+        const { recordings } = get()
+        const validRecordings = recordings.filter(
+          r => r.id && r.title && (r.transcript || r.audioData || r.audio_file_path)
+        )
+        
+        set({
+          recordings: validRecordings,
+        })
+        
+        return {
+          removed: recordings.length - validRecordings.length,
+        }
+      },
+
+      recoverStuckRecording: (recordingId) => {
+        const { recordings } = get()
+        const recording = recordings.find(r => r.id === recordingId)
+        
+        if (recording) {
+          const updatedRecording = {
+            ...recording,
+            recordingState: 'idle',
+            updatedAt: new Date().toISOString(),
+          }
+          
+          set({
+            recordings: recordings.map(r =>
+              r.id === recordingId ? updatedRecording : r
+            ),
+          })
+          
+          return { success: true }
+        }
+        
+        return { success: false, error: 'Recording not found' }
+      },
+
+      clearError: () => set({ error: null }),
     }),
     {
       name: 'glassy-voice-storage',
+      onRehydrateStorage: () => (state) => {
+        if (!state) return defaultVoiceState
+        
+        const issues = []
+        
+        if (state.recordingState === 'processing' || state.recordingState === 'recording') {
+          issues.push('Recording stuck in processing state')
+        }
+        
+        if (state.recordings && state.recordings.some(r => !r.id || !r.title)) {
+          issues.push('Found recordings with invalid structure')
+        }
+        
+        if (issues.length > 0) {
+          console.warn('[VoiceStore] Storage issues detected:', issues)
+          return {
+            ...state,
+            recordingState: 'idle',
+            currentTranscript: '',
+            currentSummary: '',
+            currentAudio: null,
+            error: null,
+          }
+        }
+        
+        return state
+      },
+      onRehydrateStorageError: (error) => {
+        console.error('[VoiceStore] Failed to load storage:', error)
+        return defaultVoiceState
+      },
+      partialize: state => ({
+        activeRecordingId: state.activeRecordingId,
+        studioCollapsed: state.studioCollapsed,
+        galleryViewMode: state.galleryViewMode,
+      }),
     }
   )
 )
