@@ -1,13 +1,13 @@
 # Development Guide
 
-**Version:** ALPHA 1.0  
-**Last Updated:** January 19, 2026
+**Version:** ALPHA 2.0  
+**Last Updated:** January 31, 2026
 
 ---
 
 ## Overview
 
-This guide covers everything you need to know for developing GlassKeep, from setting up your environment to understanding the codebase architecture.
+This guide covers everything you need to know for developing GlassyDash, from setting up your environment to understanding the codebase architecture.
 
 ---
 
@@ -186,7 +186,7 @@ App.jsx
 
 **State Management:**
 
-GlassKeep uses React Context API for state management:
+GlassyDash uses React Context API for state management:
 
 - **AuthContext** - Authentication and user session
 - **NotesContext** - Note CRUD, search, filtering, SSE sync
@@ -404,7 +404,7 @@ describe('NoteCard', () => {
 
 **Current Coverage:**
 
-- GlassKeep: 20 test cases
+- GlassyDash: 20 test cases
 - DashyDash: 28 test cases
 - Total: 48 test cases
 
@@ -762,5 +762,5 @@ npm run build
 ---
 
 **Document Version:** 1.0  
-**Last Updated:** January 19, 2026  
+**Last Updated:** January 31, 2026  
 **Status:** Complete

@@ -1,13 +1,13 @@
-# Getting Started with GlassKeep
+# Getting Started with GlassyDash
 
 **Version:** ALPHA 1.0  
-**Last Updated:** January 19, 2026
+**Last Updated:** January 31, 2026
 
 ---
 
 ## Overview
 
-GlassKeep is a modern, production-ready note-taking application with real-time collaboration, AI assistance, and enterprise-grade features. This guide will help you get up and running in 5 minutes.
+GlassyDash is a modern, production-ready note-taking application with real-time collaboration, AI assistance, and enterprise-grade features. This guide will help you get up and running in 5 minutes.
 
 ---
 
@@ -247,9 +247,9 @@ If you create an admin account (first registered user is admin):
 
 **A:** Click "Export JSON" in settings to download all notes as JSON.
 
-### Q: Can I use GlassKeep offline?
+### Q: Can I use GlassyDash offline?
 
-**A:** Yes! GlassKeep is a PWA. Install it from your browser to use offline.
+**A:** Yes! GlassyDash is a PWA. Install it from your browser to use offline.
 
 ### Q: How do I reset my password?
 
@@ -257,7 +257,7 @@ If you create an admin account (first registered user is admin):
 
 ### Q: Is my data secure?
 
-**A:** Yes. GlassKeep uses JWT authentication, bcrypt password hashing, and SQL injection prevention.
+**A:** Yes. GlassyDash uses JWT authentication, bcrypt password hashing, and SQL injection prevention.
 
 ### Q: Can I collaborate in real-time?
 
@@ -309,6 +309,6 @@ If you create an admin account (first registered user is admin):
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** January 19, 2026  
+**Document Version:** 2.0  
+**Last Updated:** January 31, 2026  
 **Status:** Complete
