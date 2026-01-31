@@ -49,22 +49,25 @@
               - img [ref=e81]
               - generic [ref=e83]: Voice Recorder
             - generic [ref=e84]:
-              - img [ref=e89]
-              - button [ref=e93]:
-                - img [ref=e94]
-          - generic [ref=e97]:
-            - generic [ref=e98]:
-              - heading "Recent Recordings" [level=2] [ref=e99]
-              - generic [ref=e100]:
-                - button "Import" [ref=e101]:
-                  - img [ref=e102]
-                  - generic [ref=e105]: Import
-                - generic [ref=e106]:
-                  - img [ref=e107]
-                  - textbox "Search recordings..." [ref=e110]
-            - generic [ref=e111]:
-              - img [ref=e112]
-              - paragraph [ref=e115]: No recordings yet. Start recording your ideas!
-  - button "Report a bug" [ref=e116]:
-    - img [ref=e117]
+              - generic [ref=e85]:
+                - img [ref=e86]
+                - text: Could not access microphone. Please check permissions.
+              - img [ref=e93]
+              - button [ref=e97]:
+                - img [ref=e98]
+          - generic [ref=e101]:
+            - generic [ref=e102]:
+              - heading "Recent Recordings" [level=2] [ref=e103]
+              - generic [ref=e104]:
+                - button "Import" [ref=e105]:
+                  - img [ref=e106]
+                  - generic [ref=e109]: Import
+                - generic [ref=e110]:
+                  - img [ref=e111]
+                  - textbox "Search recordings..." [ref=e114]
+            - generic [ref=e115]:
+              - img [ref=e116]
+              - paragraph [ref=e119]: No recordings yet. Start recording your ideas!
+  - button "Report a bug" [ref=e120]:
+    - img [ref=e121]
 ```

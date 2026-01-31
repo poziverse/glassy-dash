@@ -2,47 +2,9 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Documents Feature (Updated)', () => {
   test.beforeEach(async ({ page }) => {
-    // Create unique test user for each test
-    const timestamp = Date.now()
-    const random = Math.floor(Math.random() * 1000)
-    const testUser = {
-      name: `Test User ${timestamp}${random}`,
-      email: `test${timestamp}${random}@example.com`,
-      password: 'test123456!',
-    }
-    
-    // Register new user
-    await page.goto('/#/register', { waitUntil: 'networkidle' })
-    await page.waitForSelector('body', { state: 'attached' })
-    await page.waitForSelector('input[placeholder="Name"]', { timeout: 10000 })
-    
-    await page.fill('input[placeholder="Name"]', testUser.name)
-    await page.fill('input[placeholder="Username"]', testUser.email)
-    await page.fill('input[placeholder="Password (min 6 chars)"]', testUser.password)
-    await page.fill('input[placeholder="Confirm password"]', testUser.password)
-    
-    await page.waitForTimeout(500)
-    await page.click('button:has-text("Create Account")')
-    
-    // Wait for registration to complete (may redirect to login or dashboard)
-    await page.waitForTimeout(2000)
-    
-    // Check if we need to login (some apps redirect to login after registration)
-    const currentUrl = page.url()
-    if (currentUrl.includes('login')) {
-      await page.fill('input[placeholder="Username"]', testUser.email)
-      await page.fill('input[placeholder="Password"]', testUser.password)
-      await page.waitForTimeout(500)
-      await page.click('button:has-text("Sign In")')
-    }
-    
-    // Wait for successful redirect
-    await page.waitForURL(/#\/(dashboard|docs)/, { timeout: 10000 })
-    await page.waitForSelector('body', { state: 'attached' })
-    await page.waitForTimeout(1000)
-    
+    // User is already authenticated via global setup
     // Navigate to docs
-    await page.goto('/#/docs', { waitUntil: 'networkidle' })
+    await page.goto('/#/docs', { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('body', { state: 'attached' })
     
     // Wait for DocsView component to mount and render

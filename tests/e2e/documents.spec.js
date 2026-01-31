@@ -2,18 +2,9 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Documents Feature', () => {
   test.beforeEach(async ({ page }) => {
-    // Mock authentication or login
-    await page.goto('/', { waitUntil: 'networkidle' })
-    await page.waitForSelector('body', { state: 'attached' })
-    await page.waitForTimeout(500)
-    
-    // If login needed:
-    // await page.fill('input[name="email"]', 'test@example.com');
-    // await page.fill('input[name="password"]', 'password');
-    // await page.click('button[type="submit"]');
-
+    // User is already authenticated via global setup
     // Navigate to docs
-    await page.goto('/#/docs', { waitUntil: 'networkidle' })
+    await page.goto('/#/docs', { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('body', { state: 'attached' })
     await page.waitForTimeout(500)
   })

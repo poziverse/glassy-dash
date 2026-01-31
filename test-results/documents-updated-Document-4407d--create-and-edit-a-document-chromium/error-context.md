@@ -32,10 +32,10 @@
     - generic [ref=e55]:
       - banner [ref=e56]:
         - generic [ref=e57]:
-          - heading "All Notes" [level=1] [ref=e58]
+          - heading "Documents" [level=1] [ref=e58]
           - generic [ref=e59]:
             - img [ref=e60]
-            - textbox "Search notes..." [ref=e63]
+            - textbox "Search docs..." [ref=e63]
         - generic [ref=e64]:
           - button "AI Assistant (⌘J)" [ref=e65]:
             - img [ref=e66]
@@ -43,10 +43,51 @@
           - button "T" [ref=e73]:
             - generic [ref=e74]: T
       - main [ref=e75]:
-        - generic [ref=e76]:
-          - textbox "Write a note..." [ref=e80]
-          - main [ref=e81]:
-            - paragraph [ref=e82]: No notes yet. Add one to get started!
-  - button "Report a bug" [ref=e83]:
-    - img [ref=e84]
+        - generic [ref=e77]:
+          - generic [ref=e78]:
+            - generic [ref=e79]:
+              - button "Back to Docs" [ref=e80]:
+                - img [ref=e81]
+              - textbox "Untitled Document" [ref=e83]
+              - generic [ref=e84]: Unsaved
+              - button [ref=e85]:
+                - img [ref=e86]
+            - generic [ref=e92]:
+              - generic [ref=e93]:
+                - button "Undo (Ctrl+Z)" [disabled] [ref=e94]:
+                  - img [ref=e95]
+                - button "Redo (Ctrl+Shift+Z)" [disabled] [ref=e98]:
+                  - img [ref=e99]
+                - button "Bold (Ctrl+B)" [ref=e103] [cursor=pointer]:
+                  - img [ref=e104]
+                - button "Italic (Ctrl+I)" [ref=e106] [cursor=pointer]:
+                  - img [ref=e107]
+                - button "Underline (Ctrl+U)" [ref=e109] [cursor=pointer]:
+                  - img [ref=e110]
+                - button "Strikethrough" [ref=e112] [cursor=pointer]:
+                  - img [ref=e113]
+                - button "Inline Code" [ref=e116] [cursor=pointer]:
+                  - img [ref=e117]
+                - button "Heading 1" [ref=e121] [cursor=pointer]:
+                  - img [ref=e122]
+                - button "Heading 2" [ref=e124] [cursor=pointer]:
+                  - img [ref=e125]
+                - button "Heading 3" [ref=e127] [cursor=pointer]:
+                  - img [ref=e128]
+                - button "Bullet List" [ref=e132] [cursor=pointer]:
+                  - img [ref=e133]
+                - button "Numbered List" [ref=e134] [cursor=pointer]:
+                  - img [ref=e135]
+                - button "Quote" [ref=e139] [cursor=pointer]:
+                  - img [ref=e140]
+                - button "Horizontal Rule" [ref=e143] [cursor=pointer]:
+                  - img [ref=e144]
+                - button "Clear Formatting" [ref=e146] [cursor=pointer]:
+                  - img [ref=e147]
+              - paragraph [ref=e155]
+          - generic [ref=e156]:
+            - img [ref=e157]
+            - generic [ref=e160]: New document created
+  - button "Report a bug" [ref=e161]:
+    - img [ref=e162]
 ```

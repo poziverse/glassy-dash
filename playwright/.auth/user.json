@@ -1,0 +1,18 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:5173",
+      "localStorage": [
+        {
+          "name": "glassy-dash-auth",
+          "value": "{\"state\":{\"currentUser\":{\"id\":86,\"name\":\"Test User 1769841156399\",\"email\":\"test1769841156399@example.com\",\"is_admin\":false,\"announcements_opt_out\":false},\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjg2LCJlbWFpbCI6InRlc3QxNzY5ODQxMTU2Mzk5QGV4YW1wbGUuY29tIiwibmFtZSI6IlRlc3QgVXNlciAxNzY5ODQxMTU2Mzk5IiwiaXNfYWRtaW4iOmZhbHNlLCJhbm5vdW5jZW1lbnRzX29wdF9vdXQiOmZhbHNlLCJpYXQiOjE3Njk4NDExNTYsImV4cCI6MTc3MDQ0NTk1Nn0.Z1ceKM4VRjED-dMikV02LUuNBqGS4i_CwbuHbmQJrLc\",\"isAuthenticated\":true},\"version\":0}"
+        },
+        {
+          "name": "glassy-dash-token",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjg2LCJlbWFpbCI6InRlc3QxNzY5ODQxMTU2Mzk5QGV4YW1wbGUuY29tIiwibmFtZSI6IlRlc3QgVXNlciAxNzY5ODQxMTU2Mzk5IiwiaXNfYWRtaW4iOmZhbHNlLCJhbm5vdW5jZW1lbnRzX29wdF9vdXQiOmZhbHNlLCJpYXQiOjE3Njk4NDExNTYsImV4cCI6MTc3MDQ0NTk1Nn0.Z1ceKM4VRjED-dMikV02LUuNBqGS4i_CwbuHbmQJrLc"
+        }
+      ]
+    }
+  ]
+}

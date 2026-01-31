@@ -32,10 +32,10 @@
     - generic [ref=e55]:
       - banner [ref=e56]:
         - generic [ref=e57]:
-          - heading "All Notes" [level=1] [ref=e58]
+          - heading "Documents" [level=1] [ref=e58]
           - generic [ref=e59]:
             - img [ref=e60]
-            - textbox "Search notes..." [ref=e63]
+            - textbox "Search docs..." [ref=e63]
         - generic [ref=e64]:
           - button "AI Assistant (⌘J)" [ref=e65]:
             - img [ref=e66]
@@ -44,9 +44,40 @@
             - generic [ref=e74]: T
       - main [ref=e75]:
         - generic [ref=e76]:
-          - textbox "Write a note..." [ref=e80]
-          - main [ref=e81]:
-            - paragraph [ref=e82]: No notes yet. Add one to get started!
-  - button "Report a bug" [ref=e83]:
-    - img [ref=e84]
+          - generic [ref=e78]:
+            - generic [ref=e79]:
+              - heading "Storage" [level=3] [ref=e80]
+              - button "New Folder" [ref=e81]:
+                - img [ref=e82]
+            - generic [ref=e86]:
+              - img [ref=e87]
+              - textbox "Folder Name" [active] [ref=e89]: Test Folder E2E
+            - generic [ref=e90]:
+              - generic [ref=e94]: 75%
+              - generic [ref=e95]: Storage Used
+          - generic [ref=e97]:
+            - generic [ref=e98]:
+              - heading "All Documents (0)" [level=2] [ref=e100]:
+                - text: All Documents
+                - generic [ref=e101]: (0)
+              - generic [ref=e102]:
+                - button "Trash" [ref=e103]:
+                  - img [ref=e104]
+                  - generic [ref=e107]: Trash
+                - button "Date" [ref=e109]
+                - 'button "Sort Order: Desc" [ref=e110]':
+                  - img [ref=e111]
+                - button [ref=e114]:
+                  - img [ref=e115]
+                - button [ref=e120]:
+                  - img [ref=e121]
+                - button "Select Multiple" [ref=e122]:
+                  - img [ref=e123]
+            - generic [ref=e126]:
+              - button "New Document" [ref=e127]:
+                - img [ref=e129]
+                - generic [ref=e130]: New Document
+              - generic [ref=e131]: No documents found in this folder
+  - button "Report a bug" [ref=e132]:
+    - img [ref=e133]
 ```

@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 test.describe('Voice Studio Feature', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to Voice Studio
-    await page.goto('/#/voice', { waitUntil: 'networkidle' })
+    await page.goto('/#/voice', { waitUntil: 'domcontentloaded' })
     await page.waitForSelector('body', { state: 'attached' })
     await page.waitForTimeout(500)
   })

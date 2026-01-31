@@ -32,10 +32,10 @@
     - generic [ref=e55]:
       - banner [ref=e56]:
         - generic [ref=e57]:
-          - heading "All Notes" [level=1] [ref=e58]
+          - heading "Documents" [level=1] [ref=e58]
           - generic [ref=e59]:
             - img [ref=e60]
-            - textbox "Search notes..." [ref=e63]
+            - textbox "Search docs..." [ref=e63]
         - generic [ref=e64]:
           - button "AI Assistant (⌘J)" [ref=e65]:
             - img [ref=e66]
@@ -44,9 +44,96 @@
             - generic [ref=e74]: T
       - main [ref=e75]:
         - generic [ref=e76]:
-          - textbox "Write a note..." [ref=e80]
-          - main [ref=e81]:
-            - paragraph [ref=e82]: No notes yet. Add one to get started!
-  - button "Report a bug" [ref=e83]:
-    - img [ref=e84]
+          - generic [ref=e78]:
+            - generic [ref=e79]:
+              - heading "Storage" [level=3] [ref=e80]
+              - button "New Folder" [ref=e81]:
+                - img [ref=e82]
+            - generic [ref=e85]:
+              - generic [ref=e89]: 75%
+              - generic [ref=e90]: Storage Used
+          - generic [ref=e92]:
+            - generic [ref=e93]:
+              - heading "All Documents (5)" [level=2] [ref=e95]:
+                - text: All Documents
+                - generic [ref=e96]: (5)
+              - generic [ref=e97]:
+                - button "Trash" [ref=e98]:
+                  - img [ref=e99]
+                  - generic [ref=e102]: Trash
+                - button "Date" [ref=e104]
+                - 'button "Sort Order: Desc" [ref=e105]':
+                  - img [ref=e106]
+                - button [ref=e109]:
+                  - img [ref=e110]
+                - button [ref=e115]:
+                  - img [ref=e116]
+                - button "Select Multiple" [ref=e117]:
+                  - img [ref=e118]
+            - generic [ref=e121]:
+              - button "New Document" [active] [ref=e122]:
+                - img [ref=e124]
+                - generic [ref=e125]: New Document
+              - generic [ref=e126] [cursor=pointer]:
+                - img [ref=e128]
+                - heading "Untitled Document" [level=3] [ref=e132]
+                - generic [ref=e133]:
+                  - generic [ref=e134]:
+                    - img [ref=e135]
+                    - text: Invalid Date
+                  - generic [ref=e137]:
+                    - button "Pin" [ref=e138]:
+                      - img [ref=e139]
+                    - button [ref=e141]:
+                      - img [ref=e142]
+              - generic [ref=e145] [cursor=pointer]:
+                - img [ref=e147]
+                - heading "Untitled Document" [level=3] [ref=e151]
+                - generic [ref=e152]:
+                  - generic [ref=e153]:
+                    - img [ref=e154]
+                    - text: Invalid Date
+                  - generic [ref=e156]:
+                    - button "Pin" [ref=e157]:
+                      - img [ref=e158]
+                    - button [ref=e160]:
+                      - img [ref=e161]
+              - generic [ref=e164] [cursor=pointer]:
+                - img [ref=e166]
+                - heading "Untitled Document" [level=3] [ref=e170]
+                - generic [ref=e171]:
+                  - generic [ref=e172]:
+                    - img [ref=e173]
+                    - text: Invalid Date
+                  - generic [ref=e175]:
+                    - button "Pin" [ref=e176]:
+                      - img [ref=e177]
+                    - button [ref=e179]:
+                      - img [ref=e180]
+              - generic [ref=e183] [cursor=pointer]:
+                - img [ref=e185]
+                - heading "Untitled Document" [level=3] [ref=e189]
+                - generic [ref=e190]:
+                  - generic [ref=e191]:
+                    - img [ref=e192]
+                    - text: Invalid Date
+                  - generic [ref=e194]:
+                    - button "Pin" [ref=e195]:
+                      - img [ref=e196]
+                    - button [ref=e198]:
+                      - img [ref=e199]
+              - generic [ref=e202] [cursor=pointer]:
+                - img [ref=e204]
+                - heading "Untitled Document" [level=3] [ref=e208]
+                - generic [ref=e209]:
+                  - generic [ref=e210]:
+                    - img [ref=e211]
+                    - text: Invalid Date
+                  - generic [ref=e213]:
+                    - button "Pin" [ref=e214]:
+                      - img [ref=e215]
+                    - button [ref=e217]:
+                      - img [ref=e218]
+  - button "Report a bug" [ref=e221]:
+    - img [ref=e222]
 ```

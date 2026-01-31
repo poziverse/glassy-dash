@@ -9,7 +9,7 @@ async function globalSetup(config: FullConfig) {
   console.log('Global setup: Creating auth directory and authenticating user');
   const fs = await import('fs');
   
-  const authFile = path.join(__dirname, '../playwright/.auth/user.json');
+  const authFile = path.join(__dirname, '../../playwright/.auth/user.json');
   const authDir = path.dirname(authFile);
   
   console.log('Auth file path:', authFile);

@@ -20,7 +20,7 @@ export default defineConfig({
     waitForLoadState: 'domcontentloaded',
     actionTimeout: 10000,
     navigationTimeout: 15000,
-    storageState: 'tests/playwright/.auth/user.json',
+    storageState: 'playwright/.auth/user.json',
   },
 
   webServer: {
